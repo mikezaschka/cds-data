@@ -1,0 +1,24 @@
+@shipmentDeleteId = a6f3c0e0-0001-4000-8000-000000000005
+
+### Event action:delete — removes the local replica row by source key (ID).
+### OData management execute does not carry the nested event object in v1;
+### this demo action wraps executeEvent for the HTTP scenario.
+POST http://localhost:4107/odata/v4/example/runEventDelete
+Content-Type: application/json
+
+{"id": "{{shipmentDeleteId}}"}
+
+###
+GET http://localhost:4107/odata/v4/example/Shipments?$filter=id eq {{shipmentDeleteId}}
+
+### Remote row still exists on the provider.
+GET http://localhost:4455/odata/v4/logistics/Shipments({{shipmentDeleteId}})
+
+### Batch full refresh restores the local copy.
+POST http://localhost:4107/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"full","trigger":"manual"}
+
+###
+GET http://localhost:4107/odata/v4/example/Shipments?$filter=id eq {{shipmentDeleteId}}

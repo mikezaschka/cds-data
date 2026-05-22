@@ -1,0 +1,43 @@
+/* Landing hero — centered, minimal chrome (VitePress-inspired) */
+.home-vp-hero {
+  text-align: center;
+  padding: 2.5rem 0 3rem;
+  max-width: 48rem;
+  margin: 0 auto 2rem;
+}
+
+.home-vp-hero h1 {
+  margin: 0 0 1rem;
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 2.75rem);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: var(--md-default-fg-color);
+  border: 0;
+  padding: 0;
+}
+
+.home-vp-hero > p {
+  font-size: 1.1rem;
+  line-height: 1.55;
+  color: var(--md-default-fg-color--light);
+  margin: 0 auto 1.5rem;
+  max-width: 40rem;
+}
+
+.home-vp-hero .md-button {
+  margin: 0.25rem 0.35rem;
+}
+
+.home-vp-lede {
+  max-width: 44rem;
+  margin: 0 auto 2rem;
+  text-align: center;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.home-vp-lede a {
+  font-weight: 500;
+}

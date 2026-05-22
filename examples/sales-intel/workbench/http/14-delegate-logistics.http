@@ -1,0 +1,14 @@
+### Shipments are delegated to the bundled LogisticsService CAP app
+### (port 4455). Same pattern as delegating to a public OData service —
+### the federation plugin does not care whether the target is remote
+### SaaS or an internal CAP service.
+GET http://localhost:4005/odata/v4/sales-intel/Shipments?$top=5
+
+### Filter by Northwind OrderID — a plain integer field in the shipment
+GET http://localhost:4005/odata/v4/sales-intel/Shipments?$filter=orderId eq 10248
+
+### Delegated expand: to-many tracking events nested on the shipment
+GET http://localhost:4005/odata/v4/sales-intel/Shipments?$top=2&$expand=events($orderby=timestamp desc;$top=3)
+
+### Only exceptional shipments
+GET http://localhost:4005/odata/v4/sales-intel/Shipments?$filter=status eq 'exception'

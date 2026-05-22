@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pipeline Console</title>
+    <style>
+        /* FCL needs a full height chain: body → component host → UIComponent root → view */
+        html,
+        body,
+        .sapUiBody {
+            height: 100%;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+        [data-sap-ui-component],
+        .sapUiComponentContainer {
+            height: 100%;
+            min-height: 100%;
+            display: block;
+        }
+    </style>
+    <script
+        id="sap-ui-bootstrap"
+        src="https://ui5.sap.com/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-resourceroots='{"pipeline.monitor.fcl": "./"}'
+        data-sap-ui-oninit="module:sap/ui/core/ComponentSupport"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-async="true"></script>
+</head>
+<body class="sapUiBody">
+    <div data-sap-ui-component
+        data-name="pipeline.monitor.fcl"
+        data-id="container"
+        data-settings='{"id":"pipelineConsole"}'></div>
+</body>
+</html>

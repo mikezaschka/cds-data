@@ -1,0 +1,11 @@
+### Example 07 — event-driven pipeline runs (ADR 0009)
+### Health checks against the provider and the consumer.
+
+### LogisticsService — direct ping
+GET http://localhost:4455/odata/v4/logistics/Shipments?$top=2
+
+### Example consumer — target table (empty until first batch run)
+GET http://localhost:4107/odata/v4/example/Shipments?$top=2
+
+### Management service — pipeline registered?
+GET http://localhost:4107/pipeline/Pipelines?$filter=name eq 'Shipments'

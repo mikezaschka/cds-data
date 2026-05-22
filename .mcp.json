@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "fiori-mcp": {
+      "command": "npx",
+      "args": ["-y", "@sap-ux/fiori-mcp-server"]
+    },
+    "cap-mcp": {
+      "command": "npx",
+      "args": ["-y", "--package=@cap-js/mcp-server", "cds-mcp"]
+    }
+  }
+}

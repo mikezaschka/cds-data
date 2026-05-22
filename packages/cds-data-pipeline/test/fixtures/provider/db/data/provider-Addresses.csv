@@ -1,0 +1,7 @@
+customerID;type;street;city;zipCode
+C001;billing;123 Main St;Berlin;10115
+C001;shipping;456 Oak Ave;Munich;80331
+C002;billing;789 Elm Blvd;Hamburg;20095
+C003;billing;321 Pine Rd;London;SW1A 1AA
+C004;billing;654 Maple Dr;Paris;75001
+C004;shipping;987 Cedar Ln;Lyon;69001

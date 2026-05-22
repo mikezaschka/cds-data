@@ -1,0 +1,19 @@
+### Batch baseline — full refresh copies all provider rows and sets lastSync.
+POST http://localhost:4107/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"full","trigger":"manual"}
+
+### Local replica after batch run
+GET http://localhost:4107/odata/v4/example/Shipments?$orderby=modifiedAt desc&$top=5
+
+### Capture watermark — note lastSync for comparison after event runs.
+GET http://localhost:4107/pipeline/Pipelines?$filter=name eq 'Shipments'&$select=name,lastSync,status,mode
+
+### Delta batch run — advances lastSync when rows changed on the remote.
+POST http://localhost:4107/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"delta","trigger":"manual"}
+
+GET http://localhost:4107/pipeline/Pipelines?$filter=name eq 'Shipments'&$select=name,lastSync

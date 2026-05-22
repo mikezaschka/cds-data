@@ -1,0 +1,24 @@
+### First run — no watermark, RestAdapter fetches every page.
+POST http://localhost:4102/pipeline/execute
+Content-Type: application/json
+
+{"name":"ExchangeRates","mode":"delta","trigger":"manual"}
+
+### Query the local replica.
+GET http://localhost:4102/odata/v4/example/ExchangeRates?$orderby=rateDate desc&$top=10
+
+### Second run — adapter issues `modifiedSince=<tracker.lastSync>` and
+### fetches only newer rows. No rows changed upstream → 0 inserts / updates.
+POST http://localhost:4102/pipeline/execute
+Content-Type: application/json
+
+{"name":"ExchangeRates","mode":"delta","trigger":"manual"}
+
+### Full refresh — clears the local table and replays every page.
+POST http://localhost:4102/pipeline/execute
+Content-Type: application/json
+
+{"name":"ExchangeRates","mode":"full","trigger":"manual"}
+
+### Filtered analytics on the local replica (no remote hit)
+GET http://localhost:4102/odata/v4/example/ExchangeRates?$filter=quoteCurrency eq 'USD'&$orderby=rateDate desc

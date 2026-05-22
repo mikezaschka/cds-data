@@ -1,0 +1,11 @@
+### Both trackers with their runs
+GET http://localhost:4105/pipeline/Pipelines?$filter=startswith(name,'Shipments_')&$expand=runs($orderby=startTime desc;$top=3)
+
+### Full refresh for DEV only — deletes DEV rows only, replays from source.
+POST http://localhost:4105/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments_DEV","mode":"full","trigger":"manual"}
+
+### Confirm PROD rows untouched.
+GET http://localhost:4105/odata/v4/example/Shipments?$filter=source eq 'PROD'

@@ -1,0 +1,10 @@
+### Example 04 — move-to-service (OData source → OData target)
+
+### Source: LogisticsService.Shipments
+GET http://localhost:4455/odata/v4/logistics/Shipments?$top=3
+
+### Target: LogisticsService.ShipmentArchive (empty at start)
+GET http://localhost:4455/odata/v4/logistics/ShipmentArchive?$top=3
+
+### Pipeline registered?
+GET http://localhost:4104/pipeline/Pipelines?$filter=name eq 'ShipmentArchive'

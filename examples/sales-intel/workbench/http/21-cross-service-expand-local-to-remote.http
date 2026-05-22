@@ -1,0 +1,22 @@
+### Cross-service expand: local → remote. A LOCAL entity with an association
+### to a DELEGATED entity. The client requests `$expand=customer` on
+### `CustomerNotes`. The plugin strips the expand, runs the local SELECT,
+### collects distinct FK values, fires a single batch request against Northwind,
+### and stitches the remote rows back into each note.
+GET http://localhost:4005/odata/v4/sales-intel/CustomerNotes?$expand=customer&$top=5
+
+### With $select on the expanded entity — only the requested remote columns
+### come back over the wire.
+GET http://localhost:4005/odata/v4/sales-intel/CustomerNotes?$expand=customer($select=customerId,companyName,country)&$top=3
+
+### Cross-service expand: local → remote across two different remote services
+### in a single request. `FollowUpTasks` has two associations: `customer` →
+### Northwind V4 and `order` → Northwind V4 (same service, different entity).
+### Both are batch-fetched and stitched.
+GET http://localhost:4005/odata/v4/sales-intel/FollowUpTasks?$expand=customer,order&$top=3
+
+### Cross-service expand: local → remote against a local CAP provider —
+### `ShipmentAlerts.shipment` points at the LogisticsService. Validates that
+### the plugin resolves cross-service expands uniformly regardless of the
+### remote's protocol.
+GET http://localhost:4005/odata/v4/sales-intel/ShipmentAlerts?$expand=shipment

@@ -1,0 +1,11 @@
+### Tracker + last 5 runs
+GET http://localhost:4102/pipeline/Pipelines?$filter=name eq 'ExchangeRates'&$expand=runs($orderby=startTime desc;$top=5)
+
+### Status convenience function
+GET http://localhost:4102/pipeline/status(name='ExchangeRates')
+
+### Flush — reset the tracker and clear the local table.
+POST http://localhost:4102/pipeline/flush
+Content-Type: application/json
+
+{"name":"ExchangeRates"}

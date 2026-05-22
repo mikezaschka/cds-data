@@ -1,0 +1,58 @@
+/* FCL: FlexibleColumnLayout only stretches when ancestors have a defined height. */
+#pipelineConsole---app,
+#container---app,
+.fclAppRoot {
+    height: 100%;
+    min-height: 100%;
+    box-sizing: border-box;
+}
+.fclApp {
+    height: 100%;
+    min-height: 100%;
+    box-sizing: border-box;
+}
+
+.fclApp .fclPipelinesTable {
+    min-width: 0;
+}
+.fclApp .fclNameCell .sapMObjIdentifierTitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.fclApp .fclMText,
+.fclApp .fclErrorCell {
+    font-size: 0.85rem;
+    word-break: break-word;
+}
+.fclApp .fclErrorBtn {
+    flex-shrink: 0;
+}
+.fclApp .fclForm .sapMText {
+    font-size: 0.85rem;
+}
+.fclApp .fclActionToolbar,
+.fclApp .fclNavBackInHeader {
+    margin: 0.25rem 0 0.5rem;
+}
+.fclApp .fclStat .sapMObjStatusText {
+    font-size: 0.85rem;
+}
+.fclApp .fclDetailHeading {
+    font-size: 1.1rem;
+}
+.fclActionDialog .fclActionDialogForm {
+    padding: 0.5rem 0.25rem;
+    gap: 0.5rem 0;
+}
+.fclActionDialog .fclDialogLabel {
+    margin-top: 0.35rem;
+}
+.fclActionDialog .fclActionSelect,
+.fclActionDialog .fclActionInput {
+    width: 100%;
+    margin-bottom: 0.5rem;
+}
+.fclActionDialog .fclDialogAsyncRow {
+    margin-top: 0.5rem;
+    gap: 0.5rem;
+}

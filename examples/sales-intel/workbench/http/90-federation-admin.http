@@ -1,0 +1,20 @@
+### Federation Monitor — all replications registered by the plugin
+GET http://localhost:4005/pipeline/Pipelines
+
+### Run history (most recent first)
+GET http://localhost:4005/pipeline/PipelineRuns?$orderby=startTime desc&$top=20
+
+### Status for a single replication (convenience function)
+GET http://localhost:4005/pipeline/status(name='ExchangeRates')
+
+### Trigger a named replication
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"Categories","mode":"full"}
+
+### Flush a cache entry (affects delegate entries, not replicated tables)
+POST http://localhost:4005/pipeline/flush
+Content-Type: application/json
+
+{"name":"Carriers"}

@@ -1,0 +1,23 @@
+### Trigger a delta run on demand. On first run this is equivalent to a
+### full refresh (no watermark yet); subsequent runs only fetch rows with
+### modifiedAt > tracker.lastSync.
+POST http://localhost:4101/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"delta","trigger":"manual"}
+
+### Query the local replica — no remote roundtrip on this request.
+GET http://localhost:4101/odata/v4/example/Shipments?$orderby=modifiedAt desc&$top=10
+
+### Re-trigger — UPSERT keeps the local table idempotent.
+POST http://localhost:4101/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"delta","trigger":"manual"}
+
+### Force a full refresh — truncates the local table and replays all rows.
+### Use sparingly: it drops the watermark and re-scans the full source.
+POST http://localhost:4101/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"full","trigger":"manual"}

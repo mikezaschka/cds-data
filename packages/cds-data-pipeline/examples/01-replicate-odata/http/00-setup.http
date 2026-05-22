@@ -1,0 +1,11 @@
+### Example 01 — replicate from remote OData V4 into local DB
+### Health checks against the provider and the consumer.
+
+### LogisticsService (bundled CAP provider) — direct ping
+GET http://localhost:4455/odata/v4/logistics/Shipments?$top=2
+
+### Example consumer — is the service alive? (target table may still be empty)
+GET http://localhost:4101/odata/v4/example/Shipments?$top=2
+
+### Management service — is the pipeline registered?
+GET http://localhost:4101/pipeline/Pipelines?$filter=name eq 'Shipments'

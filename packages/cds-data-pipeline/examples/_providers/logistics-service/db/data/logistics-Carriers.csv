@@ -1,0 +1,5 @@
+code;name;serviceLevel;contactEmail
+UPS;United Parcel Service;standard;dispatch@ups.example
+FDX;FedEx;express;support@fedex.example
+DHL;DHL Express;overnight;contact@dhl.example
+FRT;Global Freight Co.;freight;ops@globalfreight.example

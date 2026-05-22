@@ -1,0 +1,17 @@
+### Products are fetched from Northwind **V2** and the consumption view
+### renames the legacy PascalCase field names:
+###   ProductID       → productId
+###   ProductName     → productName
+###   QuantityPerUnit → packSize
+###   UnitPrice       → unitPrice
+###   UnitsInStock    → inStock
+###
+### The client only ever sees the local names.
+GET http://localhost:4005/odata/v4/sales-intel/Products?$top=5&$select=productId,productName,packSize,unitPrice,inStock
+
+### $filter on a renamed field — translated to the remote name before the
+### request goes out.
+GET http://localhost:4005/odata/v4/sales-intel/Products?$filter=unitPrice gt 25&$orderby=unitPrice desc&$top=5
+
+### $orderby on a renamed field
+GET http://localhost:4005/odata/v4/sales-intel/Products?$orderby=productName&$top=3&$select=productId,productName

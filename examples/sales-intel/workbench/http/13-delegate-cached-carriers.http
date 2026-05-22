@@ -1,0 +1,30 @@
+### Cache demo — LogisticsService.Carriers is deliberately slow.
+### Set LOGISTICS_CARRIERS_DELAY_MS in the env to tune the sleep
+### (default 2000 ms). The consumption view caches the response:
+###
+###   @federation.delegate: { cache: { ttl: 300000 } }
+###   entity Carriers as projection on logistics.Carriers;
+###
+### First request: ~2 s (cache miss → hits the slow provider).
+### Subsequent requests: a few ms (cache hit) until the TTL expires.
+###
+### Open the browser dev tools or use VS Code REST Client and compare
+### request timings between the first and second call.
+
+### 1) Cold — watch this one: it will take ~2 seconds
+GET http://localhost:4005/odata/v4/sales-intel/Carriers
+
+### 2) Warm — same request, served from cache in ms
+GET http://localhost:4005/odata/v4/sales-intel/Carriers
+
+### 3) Different $filter → different cache entry → cold again
+GET http://localhost:4005/odata/v4/sales-intel/Carriers?$filter=serviceLevel eq 'express'
+
+### 4) Flush the cache for the whole service
+POST http://localhost:4005/pipeline/flush
+Content-Type: application/json
+
+{"name":"Carriers"}
+
+### 5) After flush — cold again
+GET http://localhost:4005/odata/v4/sales-intel/Carriers

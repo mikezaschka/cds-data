@@ -1,0 +1,8 @@
+### Tracker with mixed manual + event run history
+GET http://localhost:4107/pipeline/Pipelines?$filter=name eq 'Shipments'&$expand=runs($orderby=startTime desc;$top=10)
+
+### Event-triggered runs only
+GET http://localhost:4107/pipeline/PipelineRuns?$filter=name eq 'Shipments' and trigger eq 'event'&$orderby=startTime desc&$top=10
+
+### Status convenience function
+GET http://localhost:4107/pipeline/status(name='Shipments')

@@ -1,0 +1,63 @@
+{
+    "name": "sales-intel-workbench",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "start": "cds-serve --port 4005",
+        "watch": "cds watch --port 4005"
+    },
+    "dependencies": {
+        "@sap/cds": "^8",
+        "express": "^4",
+        "cds-data-federation": "*",
+        "cds-data-pipeline": "*",
+        "cds-caching": "^1",
+        "@sap-cloud-sdk/http-client": "^4",
+        "@sap-cloud-sdk/resilience": "^4",
+        "@cap-js-community/odata-v2-adapter": "^1"
+    },
+    "devDependencies": {
+        "@cap-js/sqlite": "^1"
+    },
+    "cds": {
+        "requires": {
+            "db": {
+                "kind": "sqlite",
+                "credentials": {
+                    "url": ":memory:"
+                }
+            },
+            "northwind_v4_metadata": {
+                "kind": "odata",
+                "model": "srv/external/northwind-v4-metadata",
+                "credentials": {
+                    "url": "https://services.odata.org/v4/northwind/northwind.svc"
+                }
+            },
+            "northwind_v2_metadata": {
+                "kind": "odata-v2",
+                "model": "srv/external/northwind-v2-metadata",
+                "credentials": {
+                    "url": "https://services.odata.org/v2/northwind/northwind.svc"
+                }
+            },
+            "LogisticsService": {
+                "kind": "odata",
+                "model": "srv/external/LogisticsService",
+                "credentials": {
+                    "url": "http://localhost:4455/odata/v4/logistics"
+                }
+            },
+            "FXService": {
+                "kind": "rest",
+                "credentials": {
+                    "url": "http://localhost:4456"
+                }
+            },
+            "caching": {
+                "impl": "cds-caching"
+            },
+            "API_BUSINESS_PARTNER": false
+        }
+    }
+}

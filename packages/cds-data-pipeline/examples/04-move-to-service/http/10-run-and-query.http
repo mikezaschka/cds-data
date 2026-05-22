@@ -1,0 +1,20 @@
+### Run the pipeline — rows flow source → target over HTTP.
+POST http://localhost:4104/pipeline/execute
+Content-Type: application/json
+
+{"name":"ShipmentArchive","mode":"delta","trigger":"manual"}
+
+### Verify the archive now has rows (remote target, remote query).
+GET http://localhost:4455/odata/v4/logistics/ShipmentArchive?$orderby=archivedAt desc&$top=10
+
+### Second run — UPSERT keeps the target idempotent.
+POST http://localhost:4104/pipeline/execute
+Content-Type: application/json
+
+{"name":"ShipmentArchive","mode":"delta","trigger":"manual"}
+
+### Full refresh — O(n) remote DELETEs. Only useful on small targets.
+POST http://localhost:4104/pipeline/execute
+Content-Type: application/json
+
+{"name":"ShipmentArchive","mode":"full","trigger":"manual"}

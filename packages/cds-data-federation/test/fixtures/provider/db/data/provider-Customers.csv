@@ -1,0 +1,6 @@
+ID;name;city;country;email;blocked;modifiedAt
+C001;Acme Corp;Berlin;DE;acme@example.com;false;2025-01-15T10:00:00Z
+C002;Globex Inc;Munich;DE;globex@example.com;false;2025-02-01T12:00:00Z
+C003;Initech Ltd;London;GB;initech@example.com;true;2025-02-15T08:30:00Z
+C004;Umbrella Corp;Paris;FR;umbrella@example.com;false;2025-03-01T09:00:00Z
+C005;Stark Industries;New York;US;stark@example.com;false;2025-03-10T14:00:00Z

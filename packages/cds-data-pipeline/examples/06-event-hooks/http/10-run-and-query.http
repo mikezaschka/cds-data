@@ -1,0 +1,30 @@
+### Trigger a run — watch the server log for [START], [MAP], [WRITE], [DONE] lines.
+POST http://localhost:4106/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"delta","trigger":"manual"}
+
+### Confirm the pending shipments were filtered out by the MAP hook.
+### The logistics provider has one row with status='pending' in its seed
+### data (order 10255). That row should NOT appear here.
+GET http://localhost:4106/odata/v4/example/Shipments?$filter=status eq 'pending'
+
+### Active rows landed as expected.
+GET http://localhost:4106/odata/v4/example/Shipments?$orderby=modifiedAt desc
+
+### Per-batch metrics — one row per batch of the last run.
+GET http://localhost:4106/odata/v4/example/BatchMetrics?$orderby=writtenAt desc&$top=10
+
+### Trigger again — with no upstream changes you'll see 0 rows written,
+### but the [START] / [WRITE] / [DONE] log lines still fire.
+POST http://localhost:4106/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"delta","trigger":"manual"}
+
+### Full refresh — exercises `mode: 'full'`, which re-reads everything
+### and re-applies the MAP filter.
+POST http://localhost:4106/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments","mode":"full","trigger":"manual"}

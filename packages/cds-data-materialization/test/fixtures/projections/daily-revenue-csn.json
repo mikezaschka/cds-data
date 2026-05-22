@@ -1,0 +1,27 @@
+{
+  "projection": {
+    "from": { "ref": ["spike.Orders"] },
+    "columns": [
+      { "key": true, "ref": ["customerId"] },
+      {
+        "func": "sum",
+        "args": [{ "ref": ["amount"] }],
+        "as": "totalAmount",
+        "cast": { "type": "cds.Decimal", "precision": 15, "scale": 2 }
+      },
+      {
+        "func": "count",
+        "args": ["*"],
+        "as": "orderCount",
+        "cast": { "type": "cds.Integer" }
+      },
+      {
+        "func": "max",
+        "args": [{ "ref": ["modifiedAt"] }],
+        "as": "lastActivity",
+        "cast": { "type": "cds.Timestamp" }
+      }
+    ],
+    "groupBy": [{ "ref": ["customerId"] }]
+  }
+}

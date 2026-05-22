@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cds-data-pipeline example</title>
+    <script>
+        window['sap-ushell-config'] = {
+            defaultRenderer: 'fiori2',
+            services: {
+                NavTargetResolution: {
+                    config: {
+                        allowTestUrlComponentConfig: true,
+                        enableClientSideTargetResolution: true
+                    }
+                }
+            },
+            renderers: {
+                fiori2: {
+                    componentData: {
+                        config: {
+                            enableSearch: false
+                        }
+                    }
+                }
+            },
+            applications: {
+                'pipeline-monitor': {
+                    title: 'Pipeline Monitor',
+                    subTitle: 'Fiori elements',
+                    description: 'List report and object page',
+                    additionalInformation: 'SAPUI5.Component=pipeline.monitor',
+                    applicationType: 'URL',
+                    url: '/pipeline-monitor',
+                    navigationMode: 'embedded'
+                },
+                'pipeline-console': {
+                    title: 'Pipeline Console',
+                    subTitle: 'Flexible column layout',
+                    description: 'FCL console: pipelines, detail, and runs',
+                    additionalInformation: 'SAPUI5.Component=pipeline.monitor.fcl',
+                    applicationType: 'URL',
+                    url: '/pipeline-console',
+                    navigationMode: 'embedded'
+                }
+            }
+        };
+    </script>
+    <script src="https://ui5.sap.com/test-resources/sap/ushell/bootstrap/sandbox.js"></script>
+    <script
+        src="https://ui5.sap.com/resources/sap-ui-core.js"
+        data-sap-ui-libs="sap.m, sap.ushell, sap.fe.templates, sap.f"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-frameOptions="allow"
+        data-sap-ui-bindingSyntax="complex"
+        data-sap-ui-async="true"></script>
+    <script>
+        sap.ui.getCore().attachInit(function () {
+            sap.ushell.Container.createRenderer().placeAt('content');
+        });
+    </script>
+</head>
+<body class="sapUiBody" id="content"></body>
+</html>

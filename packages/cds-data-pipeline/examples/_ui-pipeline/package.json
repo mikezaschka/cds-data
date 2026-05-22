@@ -1,0 +1,13 @@
+{
+    "name": "cds-data-pipeline-ui-examples",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Shared UI5 apps (Pipeline Monitor + Pipeline Console) for all numbered examples — linked via file: dependencies and cds-plugin-ui5.",
+    "workspaces": [
+        "pipeline-monitor",
+        "pipeline-console"
+    ],
+    "scripts": {
+        "build": "npm run build --workspaces --if-present"
+    }
+}

@@ -1,0 +1,33 @@
+---
+description: Mandatory MCP tool usage for CAP, Fiori, and UI5 work in the cds-data-pipeline monorepo package
+alwaysApply: true
+globs: ["packages/cds-data-pipeline/**"]
+---
+
+# Agent guidelines (MCP)
+
+This repository configures **CAP**, **Fiori**, and **UI5** MCP servers (see `.cursor/mcp.json`). Use their tools when the task touches CDS, CAP APIs, Fiori elements, or UI5 — before guessing from memory or only reading files.
+
+## CAP (`@cap-js/mcp-server`)
+
+- Use **`search_model`** to find CDS definitions (entities, fields, services, HTTP endpoints, annotations). If that is not enough, read the relevant `*.cds` files in the project.
+- Use **`search_docs`** **whenever** you create or change CDS models, use CAP runtime APIs, or use the `cds` CLI. Do not propose CAP changes without checking current CAP documentation via this tool.
+
+## SAP Fiori elements (`@sap-ux/fiori-mcp-server`)
+
+- When creating a Fiori elements app, confirm the ask maps to one or more pages of table or form content; if not, ask the user to clarify.
+- A typical app starts with a **List Report** on the base entity; row details use an **Object Page** on that same base entity.
+- An Object Page may include table sections from **to-many** associations; deeper object pages can target those associated entities.
+- The service model should fit Fiori elements (clear main entity, navigations, sensible types). **Exception:** this repo's pipeline **tracker** (`plugin.data_pipeline`) intentionally uses `String` keys (e.g. pipeline `name`) — do not force UUID keys on those definitions; UUID guidance below applies to **sample consumer / greenfield FE** models, not to replacing the plugin's tracker schema.
+- For generated sample data in CSVs, prefer UUID-shaped keys and foreign keys where the model uses UUIDs.
+- When building or changing a Fiori elements app on top of CAP here, prefer **Fiori MCP** tools (`list_functionalities` → `get_functionality_details` → `execute_functionality`, `search_docs`, etc.) over ad hoc edits.
+- Prefer **project code and annotations** over end-user screen personalization when changing columns or behavior; check whether an MCP tool can perform the change first.
+- For preview, use the most specific `npm run watch-*` (or equivalent) script from that app's `package.json`.
+
+## UI5 (`@ui5/mcp-server`)
+
+- For UI5 coding standards and practices, call **`get_guidelines`** (and related tools such as **`get_api_reference`** or **`run_ui5_linter`** when validating UI5 or manifest work).
+
+## Project context
+
+- **`cds-data-pipeline`** is a CAP **plugin** (pipeline engine + `/pipeline` management OData). Examples under `examples/` embed the shared Pipeline Monitor FE; UI annotations for the monitor live in `srv/monitor-annotations.cds`.

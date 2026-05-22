@@ -1,0 +1,15 @@
+### Tracker row with run history
+GET http://localhost:4101/pipeline/Pipelines?$filter=name eq 'Shipments'&$expand=runs($orderby=startTime desc;$top=5)
+
+### Status convenience function
+GET http://localhost:4101/pipeline/status(name='Shipments')
+
+### All run history, most recent first
+GET http://localhost:4101/pipeline/PipelineRuns?$orderby=startTime desc&$top=20
+
+### Flush — clears the local table and resets lastSync / lastKey on the
+### tracker so the next run starts from scratch.
+POST http://localhost:4101/pipeline/flush
+Content-Type: application/json
+
+{"name":"Shipments"}

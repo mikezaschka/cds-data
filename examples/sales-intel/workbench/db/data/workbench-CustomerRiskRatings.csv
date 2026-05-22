@@ -1,0 +1,8 @@
+ID;customer_customerId;rating;reason;setBy;setAt
+r1000000-0001-4000-8000-000000000001;ALFKI;2;Strong payer. Long-term account.;sales-ops;2025-01-15T09:00:00Z
+r1000000-0001-4000-8000-000000000002;ANATR;3;Moderate — seasonal demand swings.;sales-ops;2025-01-15T09:05:00Z
+r1000000-0001-4000-8000-000000000003;ANTON;2;Steady account, low variance.;sales-ops;2025-01-15T09:10:00Z
+r1000000-0001-4000-8000-000000000004;AROUT;5;Two invoices 60+ days overdue. Exec attention required.;credit;2025-02-04T14:00:00Z
+r1000000-0001-4000-8000-000000000005;BERGS;1;Flagship account. Pays early, forecasts accurately.;sales-ops;2025-01-15T09:20:00Z
+r1000000-0001-4000-8000-000000000006;BLAUS;4;Recent payment delays. Monitor.;credit;2025-02-07T10:00:00Z
+r1000000-0001-4000-8000-000000000007;BLONP;3;Seasonal only — normal risk.;sales-ops;2025-01-15T09:30:00Z

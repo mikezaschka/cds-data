@@ -1,0 +1,13 @@
+### Example 05 — multi-source fan-in (DEV + PROD → one table)
+
+### DEV source
+GET http://localhost:4455/odata/v4/logistics/Shipments?$top=5
+
+### PROD source — different seed data (see _providers/logistics-service/srv/logistics-service.js)
+GET http://localhost:4465/odata/v4/logistics/Shipments?$top=5
+
+### Consolidated local target (possibly empty)
+GET http://localhost:4105/odata/v4/example/Shipments?$top=5
+
+### Both pipelines registered, each with its own origin on the tracker
+GET http://localhost:4105/pipeline/Pipelines?$filter=startswith(name,'Shipments_')&$select=name,origin,mode,status

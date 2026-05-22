@@ -1,0 +1,19 @@
+### Trigger a full replication run for `Categories` from Northwind V4.
+### The source is public; no delta field on the remote, so every run is
+### a full refresh. Typically finishes in a second or two.
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"Categories","mode":"full"}
+
+### Query the locally replicated table — no remote hit.
+GET http://localhost:4005/odata/v4/sales-intel/Categories?$orderby=categoryName
+
+### Re-trigger — UPSERT keeps the table idempotent (no duplicates).
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"Categories","mode":"full"}
+
+### Inspect run history for Categories
+GET http://localhost:4005/pipeline/Pipelines?$filter=name eq 'Categories'&$expand=runs($orderby=startTime desc;$top=3)

@@ -1,0 +1,41 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="startDialog"
+        title="{i18n>actionStart}"
+        resizable="false"
+        contentWidth="20rem"
+        class="fclActionDialog"
+        type="Message">
+        <content>
+            <VBox class="fclActionDialogForm">
+                <Label text="{i18n>fdModeParam}" class="fclDialogLabel" />
+                <Select
+                    id="startMode"
+                    class="fclActionSelect"
+                    items="{ path: '/PipelineRunModes', sorter: { path: 'code' } }"
+                    required="true" >
+                    <core:Item key="{code}" text="{name}" />
+                </Select>
+                <Label text="{i18n>fdTriggerParam}" class="fclDialogLabel" />
+                <Select
+                    id="startTrigger"
+                    class="fclActionSelect"
+                    items="{ path: '/PipelineRunTriggers', sorter: { path: 'code' } }" >
+                    <core:Item key="{code}" text="{name}" />
+                </Select>
+                <HBox alignItems="Center" class="fclDialogAsyncRow" >
+                    <Label text="{i18n>fdAsync}" class="fclDialogLabel" />
+                    <CheckBox id="startAsync" selected="false" class="fclActionAsync" />
+                </HBox>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button type="Emphasized" text="{i18n>ok}" press="onStartConfirm" />
+        </beginButton>
+        <endButton>
+            <Button text="{i18n>cancel}" press="onStartCancel" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

@@ -1,0 +1,34 @@
+### REST replication. The FXService has no CDS model — the consumption
+### entity declares its shape locally and points at a plain HTTP endpoint:
+###
+###   @federation.replicate: {
+###       source: 'FXService',
+###       delta: { field: 'modifiedAt' },
+###       rest: {
+###           path: '/api/rates',
+###           pagination: { type: 'offset', pageSize: 100 },
+###           deltaParam: 'modifiedSince',
+###           dataPath: 'results'
+###       }
+###   }
+###
+### The REST adapter pages through the endpoint via `limit`/`offset`, then
+### the pipeline UPSERTs each row into the local `ExchangeRates` table.
+
+### Full sync
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"ExchangeRates","mode":"full"}
+
+### Query replicated rates locally — orderable, filterable, countable
+GET http://localhost:4005/odata/v4/sales-intel/ExchangeRates?$filter=quoteCurrency eq 'USD'&$orderby=rateDate
+
+### Delta sync — only rows with modifiedAt > lastSync on the tracker
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"ExchangeRates","mode":"delta"}
+
+### Idempotency check — same run twice, same row count
+GET http://localhost:4005/odata/v4/sales-intel/ExchangeRates?$count=true&$top=0

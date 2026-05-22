@@ -1,0 +1,13 @@
+### Example 02 — replicate from REST into local DB
+
+### FXService (bundled provider) — direct ping
+GET http://localhost:4456/api/rates?limit=3
+
+### Inspect the envelope FXService returns (dataPath target)
+GET http://localhost:4456/api/rates?limit=2&offset=0
+
+### Example consumer — target table (possibly empty)
+GET http://localhost:4102/odata/v4/example/ExchangeRates?$top=2
+
+### Pipeline tracker row
+GET http://localhost:4102/pipeline/Pipelines?$filter=name eq 'ExchangeRates'

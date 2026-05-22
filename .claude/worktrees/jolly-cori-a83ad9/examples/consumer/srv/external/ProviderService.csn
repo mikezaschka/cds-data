@@ -1,0 +1,436 @@
+{
+  "definitions": {
+    "ProviderService": {
+      "kind": "service"
+    },
+    "ProviderService.Movies": {
+      "kind": "entity",
+      "projection": {
+        "from": {
+          "ref": [
+            "studio.Movies"
+          ]
+        }
+      },
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "title": {
+          "type": "cds.String",
+          "length": 200
+        },
+        "year": {
+          "type": "cds.Integer"
+        },
+        "runtime": {
+          "type": "cds.Integer"
+        },
+        "avgRating": {
+          "type": "cds.Decimal",
+          "precision": 3,
+          "scale": 1
+        },
+        "voteCount": {
+          "type": "cds.Integer"
+        },
+        "posterUrl": {
+          "type": "cds.String",
+          "length": 500
+        },
+        "synopsis": {
+          "type": "cds.String",
+          "length": 2000
+        },
+        "releaseDate": {
+          "type": "cds.Date"
+        },
+        "language": {
+          "type": "cds.String",
+          "length": 10
+        },
+        "country": {
+          "type": "cds.String",
+          "length": 3
+        },
+        "modifiedAt": {
+          "type": "cds.Timestamp"
+        },
+        "genre": {
+          "type": "cds.Association",
+          "target": "ProviderService.Genres",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "director": {
+          "type": "cds.Association",
+          "target": "ProviderService.Directors",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "castings": {
+          "type": "cds.Association",
+          "cardinality": {
+            "max": "*"
+          },
+          "target": "ProviderService.Castings",
+          "on": [
+            {
+              "ref": [
+                "castings",
+                "movie"
+              ]
+            },
+            "=",
+            {
+              "ref": [
+                "$self"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "ProviderService.Genres": {
+      "kind": "entity",
+      "projection": {
+        "from": {
+          "ref": [
+            "studio.Genres"
+          ]
+        }
+      },
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "description": {
+          "type": "cds.String",
+          "length": 500
+        }
+      }
+    },
+    "ProviderService.Directors": {
+      "kind": "entity",
+      "projection": {
+        "from": {
+          "ref": [
+            "studio.Directors"
+          ]
+        }
+      },
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "birthYear": {
+          "type": "cds.Integer"
+        },
+        "nationality": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "bio": {
+          "type": "cds.String",
+          "length": 2000
+        }
+      }
+    },
+    "ProviderService.Actors": {
+      "kind": "entity",
+      "projection": {
+        "from": {
+          "ref": [
+            "studio.Actors"
+          ]
+        }
+      },
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "birthYear": {
+          "type": "cds.Integer"
+        },
+        "nationality": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "bio": {
+          "type": "cds.String",
+          "length": 2000
+        }
+      }
+    },
+    "ProviderService.Castings": {
+      "kind": "entity",
+      "projection": {
+        "from": {
+          "ref": [
+            "studio.Castings"
+          ]
+        }
+      },
+      "elements": {
+        "movie": {
+          "key": true,
+          "type": "cds.Association",
+          "target": "ProviderService.Movies",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "actor": {
+          "key": true,
+          "type": "cds.Association",
+          "target": "ProviderService.Actors",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "role": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "billingOrder": {
+          "type": "cds.Integer"
+        }
+      }
+    },
+    "studio.Movies": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "title": {
+          "type": "cds.String",
+          "length": 200
+        },
+        "year": {
+          "type": "cds.Integer"
+        },
+        "runtime": {
+          "type": "cds.Integer"
+        },
+        "avgRating": {
+          "type": "cds.Decimal",
+          "precision": 3,
+          "scale": 1
+        },
+        "voteCount": {
+          "type": "cds.Integer"
+        },
+        "posterUrl": {
+          "type": "cds.String",
+          "length": 500
+        },
+        "synopsis": {
+          "type": "cds.String",
+          "length": 2000
+        },
+        "releaseDate": {
+          "type": "cds.Date"
+        },
+        "language": {
+          "type": "cds.String",
+          "length": 10
+        },
+        "country": {
+          "type": "cds.String",
+          "length": 3
+        },
+        "modifiedAt": {
+          "type": "cds.Timestamp"
+        },
+        "genre": {
+          "type": "cds.Association",
+          "target": "studio.Genres",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "director": {
+          "type": "cds.Association",
+          "target": "studio.Directors",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "castings": {
+          "type": "cds.Association",
+          "cardinality": {
+            "max": "*"
+          },
+          "target": "studio.Castings",
+          "on": [
+            {
+              "ref": [
+                "castings",
+                "movie"
+              ]
+            },
+            "=",
+            {
+              "ref": [
+                "$self"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "studio.Genres": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "description": {
+          "type": "cds.String",
+          "length": 500
+        }
+      }
+    },
+    "studio.Directors": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "birthYear": {
+          "type": "cds.Integer"
+        },
+        "nationality": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "bio": {
+          "type": "cds.String",
+          "length": 2000
+        }
+      }
+    },
+    "studio.Actors": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "birthYear": {
+          "type": "cds.Integer"
+        },
+        "nationality": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "bio": {
+          "type": "cds.String",
+          "length": 2000
+        }
+      }
+    },
+    "studio.Castings": {
+      "kind": "entity",
+      "elements": {
+        "movie": {
+          "key": true,
+          "type": "cds.Association",
+          "target": "studio.Movies",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "actor": {
+          "key": true,
+          "type": "cds.Association",
+          "target": "studio.Actors",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "role": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "billingOrder": {
+          "type": "cds.Integer"
+        }
+      }
+    }
+  }
+}

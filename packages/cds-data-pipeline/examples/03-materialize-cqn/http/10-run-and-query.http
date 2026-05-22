@@ -1,0 +1,47 @@
+### Full refresh — clears DailyCustomerRevenue, re-aggregates all completed orders.
+POST http://localhost:4103/pipeline/execute
+Content-Type: application/json
+
+{"name":"DailyCustomerRevenue","trigger":"manual"}
+
+### Inspect the snapshot — one row per customer with completed orders.
+GET http://localhost:4103/odata/v4/reporting/DailyCustomerRevenue?$orderby=totalAmount desc
+
+### Partial refresh — first run has no watermark, aggregates all completed orders.
+POST http://localhost:4103/pipeline/execute
+Content-Type: application/json
+
+{"name":"RecentCustomerRevenue","trigger":"manual"}
+
+### Inspect — mirrors DailyCustomerRevenue on the first run.
+GET http://localhost:4103/odata/v4/reporting/RecentCustomerRevenue?$orderby=totalAmount desc
+
+### Insert a new completed order → only the affected customer's aggregate
+### row will be rebuilt by the next partial refresh.
+POST http://localhost:4103/odata/v4/sales/Orders
+Content-Type: application/json
+
+{
+    "ID": "O-2001",
+    "customerId": "ALFKI",
+    "status": "completed",
+    "amount": 999.99,
+    "placedAt": "2025-02-20",
+    "modifiedAt": "2025-02-20T12:00:00Z"
+}
+
+### Partial refresh — only re-aggregates customers whose orders moved since
+### the tracker's lastSync. Watch `statistics.deleted` == `statistics.created`
+### for the single touched customer, while the others stay untouched.
+POST http://localhost:4103/pipeline/execute
+Content-Type: application/json
+
+{"name":"RecentCustomerRevenue","trigger":"manual"}
+
+GET http://localhost:4103/odata/v4/reporting/RecentCustomerRevenue?$orderby=totalAmount desc
+
+### For comparison — same event forces a full rebuild on the full-refresh pipeline.
+POST http://localhost:4103/pipeline/execute
+Content-Type: application/json
+
+{"name":"DailyCustomerRevenue","trigger":"manual"}

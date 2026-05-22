@@ -1,0 +1,27 @@
+{
+  "name": "test-materialize-consumer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@sap/cds": "^9",
+    "express": "^4",
+    "cds-data-materialization": "*",
+    "cds-data-pipeline": "*"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2"
+  },
+  "cds": {
+    "requires": {
+      "DataPipelineService": {
+        "impl": "cds-data-pipeline/srv/DataPipelineService.js"
+      },
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      }
+    }
+  }
+}

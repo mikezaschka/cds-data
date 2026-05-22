@@ -1,0 +1,4 @@
+ID;shipment_ID;severity;message;createdAt
+s1000000-0001-4000-8000-000000000001;a6f3c0e0-0001-4000-8000-000000000004;critical;Address refused — customer escalation opened.;2025-02-06T16:45:00Z
+s1000000-0001-4000-8000-000000000002;a6f3c0e0-0001-4000-8000-000000000010;warning;Stuck in customs 24h+ — watch for further delay.;2025-02-12T20:00:00Z
+s1000000-0001-4000-8000-000000000003;a6f3c0e0-0001-4000-8000-000000000003;info;Final mile tracking available to customer.;2025-02-06T08:00:00Z

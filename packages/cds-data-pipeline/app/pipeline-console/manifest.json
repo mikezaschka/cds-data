@@ -1,0 +1,141 @@
+{
+	"_version": "1.59.0",
+	"sap.app": {
+		"id": "pipeline.monitor.fcl",
+		"type": "application",
+		"title": "{{appTitle}}",
+		"description": "{{appDescription}}",
+		"applicationVersion": {
+			"version": "1.0.0"
+		},
+		"dataSources": {
+			"mainService": {
+				"uri": "/pipeline/",
+				"type": "OData",
+				"settings": {
+					"odataVersion": "4.0"
+				}
+			}
+		},
+		"i18n": {
+			"bundleUrl": "i18n/i18n.properties",
+			"supportedLocales": [
+				""
+			]
+		}
+	},
+	"sap.ui": {
+		"technology": "UI5",
+		"deviceTypes": {
+			"desktop": true,
+			"tablet": true,
+			"phone": true
+		}
+	},
+	"sap.ui5": {
+		"flexEnabled": true,
+		"rootView": {
+			"viewName": "pipeline.monitor.fcl.view.App",
+			"type": "XML",
+			"async": false,
+			"id": "app"
+		},
+		"dependencies": {
+			"minUI5Version": "1.120.0",
+			"libs": {
+				"sap.m": {},
+				"sap.f": {},
+				"sap.ui.core": {},
+				"sap.ui.layout": {}
+			}
+		},
+		"models": {
+			"i18n": {
+				"type": "sap.ui.model.resource.ResourceModel",
+				"settings": {
+					"bundleName": "pipeline.monitor.fcl.i18n.i18n",
+					"supportedLocales": [
+						""
+					]
+				}
+			},
+			"": {
+				"dataSource": "mainService",
+				"settings": {
+					"synchronizationMode": "None",
+					"operationMode": "Server",
+					"autoExpandSelect": true,
+					"earlyRequests": true
+				},
+				"type": "sap.ui.model.odata.v4.ODataModel"
+			}
+		},
+		"routing": {
+			"config": {
+				"routerClass": "sap.f.routing.Router",
+				"type": "View",
+				"viewType": "XML",
+				"path": "pipeline.monitor.fcl.view",
+				"viewPath": "pipeline.monitor.fcl.view",
+				"controlId": "fcl",
+				"async": true
+			},
+			"bypassed": {
+				"target": "master"
+			},
+			"routes": [
+				{
+					"name": "detail",
+					"pattern": "Pipelines/{name}:?query:",
+					"target": [
+						"master",
+						"detail",
+						"end"
+					]
+				},
+				{
+					"name": "master",
+					"pattern": ":?query:",
+					"target": [
+						"master"
+					]
+				}
+			],
+			"targets": {
+				"master": {
+					"type": "View",
+					"name": "Master",
+					"id": "master",
+					"controlAggregation": "beginColumnPages"
+				},
+				"detail": {
+					"type": "View",
+					"name": "Detail",
+					"id": "detail",
+					"controlAggregation": "midColumnPages"
+				},
+				"end": {
+					"type": "View",
+					"name": "EndRuns",
+					"id": "endRuns",
+					"controlAggregation": "endColumnPages"
+				}
+			}
+		},
+		"resources": {
+			"css": [
+				{
+					"uri": "css/style.css"
+				}
+			]
+		},
+		"contentDensities": {
+			"compact": true,
+			"cozy": true
+		},
+		"pipelineConsole": {
+			"refreshIntervalSeconds": 30
+		},
+		"flexBundle": false
+	}
+}

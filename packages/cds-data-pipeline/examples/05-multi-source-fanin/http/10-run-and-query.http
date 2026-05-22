@@ -1,0 +1,33 @@
+### Run DEV first — rows land with source='DEV'
+POST http://localhost:4105/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments_DEV","mode":"delta","trigger":"manual"}
+
+### Then PROD — rows land with source='PROD', DEV rows untouched
+POST http://localhost:4105/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments_PROD","mode":"delta","trigger":"manual"}
+
+### Consolidated view — rows from both origins coexist via the `source` key
+GET http://localhost:4105/odata/v4/example/Shipments?$orderby=source,modifiedAt desc
+
+### Filter by origin
+GET http://localhost:4105/odata/v4/example/Shipments?$filter=source eq 'DEV'
+GET http://localhost:4105/odata/v4/example/Shipments?$filter=source eq 'PROD'
+
+### Per-origin flush — drop DEV, leave PROD intact.
+POST http://localhost:4105/pipeline/flush
+Content-Type: application/json
+
+{"name":"Shipments_DEV"}
+
+### Confirm — only PROD rows survive.
+GET http://localhost:4105/odata/v4/example/Shipments?$orderby=source
+
+### Re-run DEV — brings it back.
+POST http://localhost:4105/pipeline/execute
+Content-Type: application/json
+
+{"name":"Shipments_DEV","mode":"delta","trigger":"manual"}

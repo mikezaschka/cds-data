@@ -1,0 +1,76 @@
+{
+  "name": "test-consumer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@sap/cds": "^9",
+    "express": "^4",
+    "cds-data-federation": "*",
+    "cds-data-pipeline": "*",
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2"
+  },
+  "cds": {
+    "requires": {
+      "DataPipelineService": {
+        "impl": "cds-data-pipeline/srv/DataPipelineService.js"
+      },
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      },
+      "ProviderService": {
+        "kind": "odata",
+        "model": "srv/external/ProviderService",
+        "credentials": {
+          "url": "http://localhost:4444/odata/v4/provider"
+        }
+      },
+      "ProviderServiceV2": {
+        "kind": "odata-v2",
+        "model": "srv/external/ProviderServiceV2",
+        "credentials": {
+          "url": "http://localhost:4444/odata/v2/provider"
+        }
+      },
+      "InventoryService": {
+        "kind": "odata",
+        "model": "srv/external/InventoryService",
+        "credentials": {
+          "url": "http://localhost:4445/odata/v4/inventory"
+        }
+      },
+      "northwind_v4_metadata": {
+        "kind": "odata",
+        "model": "srv/external/northwind-v4-metadata",
+        "credentials": {
+          "url": "https://services.odata.org/v4/northwind/northwind.svc"
+        }
+      },
+      "northwind_v2_metadata": {
+        "kind": "odata-v2",
+        "model": "srv/external/northwind-v2-metadata",
+        "credentials": {
+          "url": "https://services.odata.org/v2/northwind/northwind.svc"
+        }
+      },
+      "RestProvider": {
+        "kind": "rest",
+        "credentials": {
+          "url": "http://localhost:4446"
+        }
+      },
+      "caching": {
+        "impl": "cds-caching"
+      },
+      "longTermCache": {
+        "impl": "cds-caching"
+      }
+    }
+  }
+}

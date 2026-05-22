@@ -1,0 +1,313 @@
+{
+  "definitions": {
+    "LogisticsProd": {
+      "kind": "service",
+      "@path": "/odata/v4/logistics"
+    },
+    "LogisticsProd.Carriers": {
+      "kind": "entity",
+      "@readonly": true,
+      "projection": {
+        "from": {
+          "ref": [
+            "logistics.Carriers"
+          ]
+        }
+      },
+      "elements": {
+        "code": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "serviceLevel": {
+          "type": "logistics.ServiceLevel",
+          "length": 20
+        },
+        "contactEmail": {
+          "type": "cds.String",
+          "length": 100
+        }
+      }
+    },
+    "LogisticsProd.Shipments": {
+      "kind": "entity",
+      "@readonly": true,
+      "projection": {
+        "from": {
+          "ref": [
+            "logistics.Shipments"
+          ]
+        }
+      },
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.UUID"
+        },
+        "orderId": {
+          "type": "cds.Integer"
+        },
+        "status": {
+          "type": "logistics.ShipmentStatus",
+          "length": 20
+        },
+        "carrier": {
+          "type": "cds.Association",
+          "target": "LogisticsService.Carriers",
+          "keys": [
+            {
+              "ref": [
+                "code"
+              ]
+            }
+          ]
+        },
+        "trackingNumber": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "shippedAt": {
+          "type": "cds.Timestamp"
+        },
+        "estimatedDelivery": {
+          "type": "cds.Timestamp"
+        },
+        "actualDelivery": {
+          "type": "cds.Timestamp"
+        },
+        "destinationCity": {
+          "type": "cds.String",
+          "length": 80
+        },
+        "destinationCountry": {
+          "type": "cds.String",
+          "length": 3
+        },
+        "modifiedAt": {
+          "type": "cds.Timestamp"
+        },
+        "events": {
+          "type": "cds.Composition",
+          "cardinality": {
+            "max": "*"
+          },
+          "target": "LogisticsService.TrackingEvents",
+          "on": [
+            {
+              "ref": [
+                "events",
+                "shipment"
+              ]
+            },
+            "=",
+            {
+              "ref": [
+                "$self"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "LogisticsProd.TrackingEvents": {
+      "kind": "entity",
+      "@readonly": true,
+      "projection": {
+        "from": {
+          "ref": [
+            "logistics.TrackingEvents"
+          ]
+        }
+      },
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.UUID"
+        },
+        "shipment": {
+          "type": "cds.Association",
+          "target": "LogisticsService.Shipments",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "timestamp": {
+          "type": "cds.Timestamp"
+        },
+        "eventType": {
+          "type": "cds.String",
+          "length": 30
+        },
+        "location": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "notes": {
+          "type": "cds.String",
+          "length": 200
+        }
+      }
+    },
+    "logistics.Carriers": {
+      "kind": "entity",
+      "elements": {
+        "code": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "serviceLevel": {
+          "type": "logistics.ServiceLevel",
+          "length": 20
+        },
+        "contactEmail": {
+          "type": "cds.String",
+          "length": 100
+        }
+      }
+    },
+    "logistics.ServiceLevel": {
+      "kind": "type",
+      "type": "cds.String",
+      "length": 20,
+      "enum": {
+        "standard": {},
+        "express": {},
+        "overnight": {},
+        "freight": {}
+      }
+    },
+    "logistics.Shipments": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.UUID"
+        },
+        "orderId": {
+          "type": "cds.Integer"
+        },
+        "status": {
+          "type": "logistics.ShipmentStatus",
+          "length": 20
+        },
+        "carrier": {
+          "type": "cds.Association",
+          "target": "logistics.Carriers",
+          "keys": [
+            {
+              "ref": [
+                "code"
+              ]
+            }
+          ]
+        },
+        "trackingNumber": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "shippedAt": {
+          "type": "cds.Timestamp"
+        },
+        "estimatedDelivery": {
+          "type": "cds.Timestamp"
+        },
+        "actualDelivery": {
+          "type": "cds.Timestamp"
+        },
+        "destinationCity": {
+          "type": "cds.String",
+          "length": 80
+        },
+        "destinationCountry": {
+          "type": "cds.String",
+          "length": 3
+        },
+        "modifiedAt": {
+          "type": "cds.Timestamp"
+        },
+        "events": {
+          "type": "cds.Composition",
+          "cardinality": {
+            "max": "*"
+          },
+          "target": "logistics.TrackingEvents",
+          "on": [
+            {
+              "ref": [
+                "events",
+                "shipment"
+              ]
+            },
+            "=",
+            {
+              "ref": [
+                "$self"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "logistics.ShipmentStatus": {
+      "kind": "type",
+      "type": "cds.String",
+      "length": 20,
+      "enum": {
+        "pending": {},
+        "in_transit": {},
+        "out_for_delivery": {},
+        "delivered": {},
+        "exception": {}
+      }
+    },
+    "logistics.TrackingEvents": {
+      "kind": "entity",
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.UUID"
+        },
+        "shipment": {
+          "type": "cds.Association",
+          "target": "logistics.Shipments",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "timestamp": {
+          "type": "cds.Timestamp"
+        },
+        "eventType": {
+          "type": "cds.String",
+          "length": 30
+        },
+        "location": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "notes": {
+          "type": "cds.String",
+          "length": 200
+        }
+      }
+    }
+  }
+}

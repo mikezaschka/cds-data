@@ -1,0 +1,25 @@
+{
+  "name": "test-fixture-inventory-provider",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "cds-serve"
+  },
+  "dependencies": {
+    "@sap/cds": "^9",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["@openui5/types"]
+  },
+  "include": ["webapp/**/*.ts"]
+}

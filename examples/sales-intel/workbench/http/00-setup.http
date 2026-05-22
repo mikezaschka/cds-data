@@ -1,0 +1,14 @@
+### Workbench health — expect CSV-seeded local data
+GET http://localhost:4005/odata/v4/sales-intel/CustomerNotes?$top=2
+
+### LogisticsService (bundled CAP provider, port 4455) direct ping
+GET http://localhost:4455/odata/v4/logistics/Carriers
+
+### FXService (bundled REST provider, port 4456) direct ping
+GET http://localhost:4456/
+
+### Northwind V4 public service — reached through the workbench as `Customers`
+GET http://localhost:4005/odata/v4/sales-intel/Customers?$top=1
+
+### Northwind V2 public service — reached through the workbench as `Products`
+GET http://localhost:4005/odata/v4/sales-intel/Products?$top=1

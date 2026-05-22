@@ -1,0 +1,73 @@
+<mvc:View controllerName="pipeline.monitor.fcl.controller.Detail"
+    xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:f="sap.f"
+    xmlns:form="sap.ui.layout.form"
+    xmlns:core="sap.ui.core">
+    <f:DynamicPage id="detailPage" class="fclAppDetail" showFooter="false" stickySubheaderProvider="iconTabBar" backgroundDesign="Solid" headerExpanded="true">
+        <f:title>
+            <f:DynamicPageTitle>
+                <f:heading>
+                    <ObjectIdentifier class="fclDetailHeading sapUiNoContentPadding" title="{name}" />
+                </f:heading>
+                <f:content>
+                    <ObjectStatus class="fclDetailStatus" text="{status}" state="{
+                            path: 'status',
+                            formatter: '.statusState'
+                        }" />
+                </f:content>
+                <f:actions>
+                      <Button type="Emphasized" text="{i18n>actionStart}" press="onStartDialog" />
+                            <Button type="Default" text="{i18n>actionSetSchedule}" press="onSetScheduleDialog" />
+                            <Button type="Transparent" text="{i18n>actionClearSchedule}" press="onClearSchedule" />
+                </f:actions>
+            </f:DynamicPageTitle>
+        </f:title>
+        
+        <f:content>
+            <IconTabBar expandable="false" headerMode="Inline" id="iconTabBar" class="sapUiResponsiveContentPadding">
+                <items>
+                    <IconTabFilter text="{i18n>overviewGroup}" key="overview" icon="sap-icon://overview">
+                        <form:SimpleForm id="detailForm" maxContainerCols="2" labelSpanL="3" labelSpanM="3" columnsL="2" columnsM="1" layout="ColumnLayout" width="100%" editable="false" class="fclForm">
+                            <form:content>
+                                <core:Title text="{i18n>overviewGroup}" />
+                                <Label text="{i18n>fdDescription}" />
+                                <Text text="{description}" class="fclMText" wrapping="true" />
+                                <Label text="{i18n>fdMode}" />
+                                <Text text="{mode}" />
+                                <Label text="{i18n>fdOrigin}" />
+                                <Text text="{origin}" />
+                                <Label text="{i18n>fdLastSync}" />
+                                <Text text="{
+                            path: 'lastSync',
+                            type: 'sap.ui.model.odata.type.DateTimeOffset',
+                            formatOptions: { style: 'medium' }
+                        }" />
+                                <Label text="{i18n>fdLastKey}" />
+                                <Text text="{lastKey}" class="fclMText" />
+                                <core:Title text="{i18n>errorsGroup}" />
+                                <Label text="{i18n>fdErrorCount}" />
+                                <ObjectNumber number="{errorCount}" state="{
+                            path: 'errorCount',
+                            formatter: '.errorState'
+                        }" />
+                                <Label text="{i18n>fdLastError}" />
+                                <Text text="{lastError}" wrapping="true" class="fclMText" />
+                                <core:Title text="{i18n>statsGroup}" />
+                                <Label text="{i18n>fdCreated}" />
+                                <ObjectNumber class="fclStat" number="{statistics_created}" />
+                                <Label text="{i18n>fdUpdated}" />
+                                <ObjectNumber class="fclStat" number="{statistics_updated}" />
+                                <Label text="{i18n>fdDeleted}" />
+                                <ObjectNumber class="fclStat" number="{statistics_deleted}" />
+                            </form:content>
+                        </form:SimpleForm>
+                    </IconTabFilter>
+                    <IconTabFilter text="{i18n>errorsGroup}" key="errors" icon="sap-icon://errors" />
+                    <IconTabFilter text="{i18n>statsGroup}" key="stats" icon="sap-icon://stats" />
+                </items>
+            </IconTabBar>
+
+        </f:content>
+    </f:DynamicPage>
+</mvc:View>

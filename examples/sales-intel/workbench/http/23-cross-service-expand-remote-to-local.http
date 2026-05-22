@@ -1,0 +1,21 @@
+### Cross-service expand: remote → local. A DELEGATED entity with backlink
+### associations to LOCAL entities. The Customers consumption view declares
+### three local backlinks:
+###
+###   notes : Association to many CustomerNotes       on notes.customer = $self
+###   tasks : Association to many FollowUpTasks       on tasks.customer = $self
+###   risk  : Association to one  CustomerRiskRatings on risk.customer  = $self
+###
+### When the client asks `$expand=notes,risk`, the plugin strips those items,
+### forwards a pure Northwind query for the customer(s), then queries the
+### local tables for matching rows and stitches them back in.
+GET http://localhost:4005/odata/v4/sales-intel/Customers('ALFKI')?$expand=notes,risk
+
+### Same pattern on a list — works for multiple parents in one request.
+GET http://localhost:4005/odata/v4/sales-intel/Customers?$top=5&$expand=notes,risk&$select=customerId,companyName,city
+
+### Mix cross-service expand: remote → local with delegated expand (remote →
+### remote). Here `buyer` expands into the Northwind Customer for each order —
+### a pure remote → remote expand handled by CAP — while the outer query is
+### still a delegate on Orders.
+GET http://localhost:4005/odata/v4/sales-intel/Orders?$top=3&$expand=buyer($select=CompanyName,Country)

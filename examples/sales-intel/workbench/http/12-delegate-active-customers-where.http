@@ -1,0 +1,15 @@
+### `ActiveCustomers` is defined as:
+###
+###   @federation.delegate
+###   entity ActiveCustomers as projection on nw.Customers { ... }
+###     where Country != 'Mexico';
+###
+### The `where` clause in a consumption view is a plugin feature — CAP alone
+### rejects it for delegate entities. The plugin extracts the clause from the
+### CSN at load time and injects it into every remote query.
+###
+### Expect: zero customers with country = Mexico in the response.
+GET http://localhost:4005/odata/v4/sales-intel/ActiveCustomers?$top=50&$select=customerId,companyName,country
+
+### Combine with a client $filter — both conditions are applied remotely.
+GET http://localhost:4005/odata/v4/sales-intel/ActiveCustomers?$filter=country eq 'France'&$select=customerId,companyName,country

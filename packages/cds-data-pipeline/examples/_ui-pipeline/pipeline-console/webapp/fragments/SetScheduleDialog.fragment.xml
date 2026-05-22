@@ -1,0 +1,27 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Dialog
+        id="scheduleDialog"
+        title="{i18n>actionSetSchedule}"
+        resizable="false"
+        contentWidth="18rem"
+        class="fclActionDialog"
+        type="Message">
+        <content>
+            <VBox class="fclActionDialogForm">
+                <Label text="{i18n>fdEveryMs}" class="fclDialogLabel" />
+                <Input
+                    id="scheduleEvery"
+                    type="Number"
+                    class="fclActionInput" />
+            </VBox>
+        </content>
+        <beginButton>
+            <Button type="Emphasized" text="{i18n>ok}" press="onSetScheduleConfirm" />
+        </beginButton>
+        <endButton>
+            <Button text="{i18n>cancel}" press="onSetScheduleCancel" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

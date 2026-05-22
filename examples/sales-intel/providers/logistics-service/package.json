@@ -1,0 +1,25 @@
+{
+    "name": "sales-intel-logistics-service",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "start": "cds-serve --port 4455"
+    },
+    "dependencies": {
+        "@sap/cds": "^8",
+        "express": "^4"
+    },
+    "devDependencies": {
+        "@cap-js/sqlite": "^1"
+    },
+    "cds": {
+        "requires": {
+            "db": {
+                "kind": "sqlite",
+                "credentials": {
+                    "url": ":memory:"
+                }
+            }
+        }
+    }
+}

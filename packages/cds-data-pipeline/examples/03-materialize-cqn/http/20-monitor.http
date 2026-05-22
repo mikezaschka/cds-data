@@ -1,0 +1,12 @@
+### Pipelines side by side
+GET http://localhost:4103/pipeline/Pipelines?$expand=runs($orderby=startTime desc;$top=3)
+
+### Status function
+GET http://localhost:4103/pipeline/status(name='DailyCustomerRevenue')
+GET http://localhost:4103/pipeline/status(name='RecentCustomerRevenue')
+
+### Flush one of them
+POST http://localhost:4103/pipeline/flush
+Content-Type: application/json
+
+{"name":"RecentCustomerRevenue"}

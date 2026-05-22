@@ -1,0 +1,13 @@
+### Example 06 — event hooks
+
+### Provider health
+GET http://localhost:4455/odata/v4/logistics/Shipments?$top=2
+
+### Local target (likely empty on first request)
+GET http://localhost:4106/odata/v4/example/Shipments?$top=2
+
+### Per-batch metrics captured by the WRITE_BATCH hook
+GET http://localhost:4106/odata/v4/example/BatchMetrics?$orderby=writtenAt desc&$top=5
+
+### Pipeline registered
+GET http://localhost:4106/pipeline/Pipelines?$filter=name eq 'Shipments'

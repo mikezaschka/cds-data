@@ -1,0 +1,12 @@
+### Tracker + recent runs (each row in BatchMetrics joins back via runId)
+GET http://localhost:4106/pipeline/Pipelines?$filter=name eq 'Shipments'&$expand=runs($orderby=startTime desc;$top=5)
+
+### Status
+GET http://localhost:4106/pipeline/status(name='Shipments')
+
+### Flush — resets tracker + clears the local table (BatchMetrics is a
+### separate table and survives flushes by design).
+POST http://localhost:4106/pipeline/flush
+Content-Type: application/json
+
+{"name":"Shipments"}

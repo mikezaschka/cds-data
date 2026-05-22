@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://sap.github.io/ui5-tooling/schema/ui5.yaml.json
+specVersion: "3.0"
+metadata:
+  name: pipeline.monitor
+type: application
+framework:
+  name: SAPUI5
+  version: "1.120.0"
+  libraries:
+    - name: sap.m
+    - name: sap.ui.core
+    - name: sap.fe.templates
+    - name: themelib_sap_horizon
+resources:
+  configuration:
+    paths:
+      webapp: webapp
+customConfiguration:
+  cds-plugin-ui5:
+    mountPath: /pipeline-monitor
+server:
+  customMiddleware:
+    - name: ui5-tooling-transpile-middleware
+      afterMiddleware: compression
+      configuration:
+        transformTypeScript: true
+        debug: true
+builder:
+  customTasks:
+    - name: ui5-tooling-transpile-task
+      afterTask: replaceVersion
+      configuration:
+        transformTypeScript: true

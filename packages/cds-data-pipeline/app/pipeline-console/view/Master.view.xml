@@ -1,0 +1,70 @@
+<mvc:View controllerName="pipeline.monitor.fcl.controller.Master"
+    xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core"
+    xmlns:f="sap.f">
+    <f:DynamicPage id="masterPage" class="fclAppMaster" showNavButton="false">
+        <f:title>
+            <f:DynamicPageTitle>
+                <f:heading>
+                    <Title text="{i18n>masterPageTitle}" />
+                </f:heading>
+            </f:DynamicPageTitle>
+        </f:title>
+        <f:content>
+            <Table id="pipelineTable" class="fclPipelinesTable" growing="true" growingThreshold="20" width="100%" mode="SingleSelectMaster" selectionChange="onSelectionChange" noDataText="{i18n>noPipelines}" updateFinished="onTableUpdateFinished" items="{
+                path: '/Pipelines',
+                sorter: { path: 'name' },
+                templateShareable: false
+            }">
+                <headerToolbar>
+                    <Toolbar>
+                        <SearchField id="searchField" width="30rem" placeholder="{i18n>searchPlaceholder}" search="onSearch" />
+                    </Toolbar>
+                </headerToolbar>
+                <columns>
+                    <Column hAlign="Begin" width="11rem">
+                        <Text text="{i18n>colName}"/>
+                    </Column>
+                    <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block" width="7rem">
+                        <Text text="{i18n>colStatus}"/>
+                    </Column>
+                    <Column hAlign="Begin" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block" width="5rem">
+                        <Text text="{i18n>colMode}"/>
+                    </Column>
+                    <Column hAlign="Begin" minScreenWidth="Desktop" demandPopin="true" popinDisplay="Block" width="10rem">
+                        <Text text="{i18n>colLastSync}"/>
+                    </Column>
+                    <Column hAlign="Begin" minScreenWidth="Desktop" demandPopin="true" popinDisplay="Block" width="8rem">
+                        <Text text="{i18n>colOrigin}"/>
+                    </Column>
+                    <Column hAlign="End" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block" width="4.5rem">
+                        <Text text="{i18n>colErrors}"/>
+                    </Column>
+                </columns>
+                <items>
+                    <ColumnListItem vAlign="Top" type="Active">
+                        <cells>
+                            <ObjectIdentifier title="{name}" text="{description}" class="fclNameCell"/>
+                            <ObjectStatus inverted="true" text="{status}" state="{
+                                path: 'status',
+                                formatter: '.statusState'
+                            }" />
+                            <Text text="{mode}" class="fclMText" />
+                            <Text text="{
+                                path: 'lastSync',
+                                type: 'sap.ui.model.odata.type.DateTimeOffset',
+                                formatOptions: { style: 'medium' }
+                            }" />
+                            <Text text="{origin}" />
+                            <ObjectNumber number="{errorCount}" state="{
+                                path: 'errorCount',
+                                formatter: '.errorState'
+                            }" />
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </f:content>
+    </f:DynamicPage>
+</mvc:View>

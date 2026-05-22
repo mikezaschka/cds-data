@@ -1,0 +1,14 @@
+<mvc:View
+    controllerName="pipeline.monitor.fcl.controller.App"
+    xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    height="100%"
+    xmlns:f="sap.f"
+    displayBlock="true"
+    class="fclAppRoot sapUiSizeCompact"
+>   
+<App id="app" height="100%">
+    <f:FlexibleColumnLayout id="fcl" layout="{fcl>/layout}" class="fclApp sapUiSizeCompact">
+    </f:FlexibleColumnLayout>
+</App> 
+</mvc:View>

@@ -1,0 +1,15 @@
+{
+    "name": "pipeline-console",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "build": "ui5 build --clean-dest",
+        "start": "ui5 serve -o /index.html"
+    },
+    "devDependencies": {
+        "@ui5/cli": "^4.0.0",
+        "@openui5/types": "^1.120.0",
+        "typescript": "^5.0.0",
+        "ui5-tooling-transpile": "^3.3.0"
+    }
+}

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sales Intelligence Workbench — cds-data-federation</title>
+
+    <script>
+        // Phase 1 MVP: 5 tiles across 4 sandbox tile groups.
+        // The `Customer 360` tile reuses the same Fiori Elements app as
+        // `Customers` — clicking it lands the user on the Object Page
+        // view, which stitches local notes / tasks / risk into the
+        // remote Northwind customer record via cross-service expand: remote → local.
+        window['sap-ushell-config'] = {
+            defaultRenderer: 'fiori2',
+            renderers: {
+                fiori2: {
+                    componentData: {
+                        config: {
+                            enableSearch: false,
+                            enableMergeAppAndShellGroup: false,
+                            applications: {
+                                'Shell-home': { enableTilesOpacity: false }
+                            }
+                        }
+                    }
+                }
+            },
+            applications: {
+                // ─── My Work ────────────────────────────────────────────────
+                'customernotes-app': {
+                    title: 'Customer Notes',
+                    subTitle: 'My Work',
+                    description: 'Local notes, stitched to remote customers via cross-service expand: local → remote',
+                    additionalInformation: 'SAPUI5.Component=sales.customernotes',
+                    applicationType: 'URL',
+                    url: './customer-notes/webapp',
+                    navigationMode: 'embedded'
+                },
+
+                // ─── Master Data ────────────────────────────────────────────
+                'customers-app': {
+                    title: 'Customers',
+                    subTitle: 'Master Data',
+                    description: 'Live V4 delegation to public Northwind',
+                    additionalInformation: 'SAPUI5.Component=sales.customers',
+                    applicationType: 'URL',
+                    url: './customers/webapp',
+                    navigationMode: 'embedded'
+                },
+
+                // ─── Intelligence ───────────────────────────────────────────
+                'customer360-app': {
+                    title: 'Customer 360',
+                    subTitle: 'Intelligence',
+                    description: 'Open a customer — notes + tasks + risk stitched in (cross-service expand: remote → local)',
+                    additionalInformation: 'SAPUI5.Component=sales.customers',
+                    applicationType: 'URL',
+                    url: './customers/webapp',
+                    navigationMode: 'embedded'
+                },
+                'salesanalytics-app': {
+                    title: 'Sales Analytics',
+                    subTitle: 'Intelligence',
+                    description: 'ALP over replicated SalesOrders — $apply/groupby needs replication',
+                    additionalInformation: 'SAPUI5.Component=sales.salesanalytics',
+                    applicationType: 'URL',
+                    url: './sales-analytics/webapp',
+                    navigationMode: 'embedded'
+                },
+
+                // ─── Admin ──────────────────────────────────────────────────
+                'federationmonitor-app': {
+                    title: 'Federation Monitor',
+                    subTitle: 'Admin',
+                    description: 'Plugin management — runs, status, errors',
+                    additionalInformation: 'SAPUI5.Component=sales.federationmonitor',
+                    applicationType: 'URL',
+                    url: './federation-monitor/webapp',
+                    navigationMode: 'embedded'
+                }
+            }
+        };
+    </script>
+
+    <script src="https://ui5.sap.com/test-resources/sap/ushell/bootstrap/sandbox.js"></script>
+    <script
+        src="https://ui5.sap.com/resources/sap-ui-core.js"
+        data-sap-ui-libs="sap.m, sap.ushell, sap.fe.templates"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-frameOptions="allow"
+        data-sap-ui-bindingSyntax="complex"
+        data-sap-ui-async="true"></script>
+    <script>
+        sap.ui.getCore().attachInit(function () {
+            sap.ushell.Container.createRenderer().placeAt('content');
+        });
+    </script>
+</head>
+<body class="sapUiBody" id="content"></body>
+</html>

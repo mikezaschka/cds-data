@@ -1,0 +1,54 @@
+{
+    "name": "cds-data-pipeline-example-05-multi-source-fanin",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "start": "cds-serve --port 4105",
+        "ui:build": "npm run build --prefix ../_ui-pipeline"
+    },
+    "dependencies": {
+        "@sap/cds": "^9.2",
+        "express": "^4",
+        "cds-data-pipeline": "file:../.."
+    },
+    "devDependencies": {
+        "@cap-js/sqlite": "^2",
+        "cds-plugin-ui5": "^0.9",
+        "pipeline-console": "file:../_ui-pipeline/pipeline-console",
+        "pipeline-monitor": "file:../_ui-pipeline/pipeline-monitor"
+    },
+    "cds": {
+        "requires": {
+            "db": {
+                "kind": "sqlite",
+                "credentials": {
+                    "url": ":memory:"
+                }
+            },
+            "LogisticsDev": {
+                "kind": "odata",
+                "model": "srv/external/LogisticsDev",
+                "credentials": {
+                    "url": "http://localhost:4455/odata/v4/logistics"
+                }
+            },
+            "LogisticsProd": {
+                "kind": "odata",
+                "model": "srv/external/LogisticsProd",
+                "credentials": {
+                    "url": "http://localhost:4465/odata/v4/logistics"
+                }
+            }
+        },
+        "cds-plugin-ui5": {
+            "modules": {
+                "pipeline-monitor": {
+                    "mountPath": "/pipeline-monitor"
+                },
+                "pipeline-console": {
+                    "mountPath": "/pipeline-console"
+                }
+            }
+        }
+    }
+}

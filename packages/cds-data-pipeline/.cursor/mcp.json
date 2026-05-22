@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "cap-js/mcp-server": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@cap-js/mcp-server"],
+      "env": {}
+    },
+    "sap-ux/fiori-mcp-server": {
+      "type": "stdio",
+      "timeout": 600,
+      "command": "npx",
+      "args": ["-y", "@sap-ux/fiori-mcp-server", "fiori-mcp"],
+      "env": {}
+    },
+    "ui5/mcp-server": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@ui5/mcp-server"],
+      "env": {
+        "UI5_MCP_SERVER_RESPONSE_NO_RESOURCES": "1"
+      }
+    }
+  }
+}

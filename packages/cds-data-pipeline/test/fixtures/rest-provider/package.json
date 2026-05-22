@@ -1,0 +1,8 @@
+{
+  "name": "test-fixture-rest-provider",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "express": "^4"
+  }
+}

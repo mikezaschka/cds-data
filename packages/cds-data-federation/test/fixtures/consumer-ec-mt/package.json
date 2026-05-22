@@ -1,0 +1,93 @@
+{
+  "name": "test-consumer-ec-mt",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@sap/cds": "^9",
+    "express": "^4",
+    "cds-data-federation": "*",
+    "cds-data-pipeline": "*",
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2"
+  },
+  "cds": {
+    "folders": {
+      "db": "../consumer/db",
+      "srv": "../consumer/srv"
+    },
+    "requires": {
+      "DataPipelineService": {
+        "impl": "cds-data-pipeline/srv/DataPipelineService.js"
+      },
+      "auth": {
+        "kind": "mocked",
+        "users": {
+          "alice": { "attr": { "tenant": "t1" }, "roles": ["admin"] },
+          "erin": { "attr": { "tenant": "t2" }, "roles": ["admin"] }
+        }
+      },
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      },
+      "FederationEntityCache": {
+        "kind": "sqlite",
+        "schema_evolution": "auto",
+        "credentials": {
+          "url": "federation-entity-cache.sqlite"
+        }
+      },
+      "cds-data-federation": {
+        "entityCache": {
+          "urlTemplate": "federation-entity-cache-{tenant}.sqlite",
+          "baseDir": ".entity-cache-mt"
+        },
+        "multitenancy": {
+          "active": true,
+          "tenantIds": ["t1", "t2"]
+        }
+      },
+      "cds-data-pipeline": {
+        "multitenancy": {
+          "active": true,
+          "fanOutScheduledRuns": true
+        }
+      },
+      "ProviderService": {
+        "kind": "odata",
+        "model": "srv/external/ProviderService",
+        "credentials": {
+          "url": "http://localhost:4444/odata/v4/provider"
+        }
+      },
+      "ProviderServiceV2": {
+        "kind": "odata-v2",
+        "model": "srv/external/ProviderServiceV2",
+        "credentials": {
+          "url": "http://localhost:4444/odata/v2/provider"
+        }
+      },
+      "InventoryService": {
+        "kind": "odata",
+        "model": "srv/external/InventoryService",
+        "credentials": {
+          "url": "http://localhost:4445/odata/v4/inventory"
+        }
+      },
+      "RestProvider": {
+        "kind": "rest",
+        "credentials": {
+          "url": "http://localhost:4446"
+        }
+      },
+      "caching": {
+        "impl": "cds-caching"
+      }
+    }
+  }
+}

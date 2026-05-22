@@ -1,0 +1,11 @@
+### Example 03 — materialize CQN aggregate
+
+### Seeded orders (source)
+GET http://localhost:4103/odata/v4/sales/Orders?$top=5
+
+### Aggregate targets (possibly empty)
+GET http://localhost:4103/odata/v4/reporting/DailyCustomerRevenue?$top=5
+GET http://localhost:4103/odata/v4/reporting/RecentCustomerRevenue?$top=5
+
+### Both pipelines should be registered
+GET http://localhost:4103/pipeline/Pipelines?$select=name,mode,status

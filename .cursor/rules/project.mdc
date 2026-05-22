@@ -1,0 +1,38 @@
+---
+description: Project entry point for cds-data-federation — points at CLAUDE.md and the canonical docs
+alwaysApply: true
+globs: ["**/*"]
+---
+
+# cds-data-federation — project rules
+
+This rule loads automatically on every Cursor session. It is a pointer, not a copy — read the linked files when relevant to the task.
+
+## Start here
+
+1. [`CLAUDE.md`](mdc:CLAUDE.md) — project primer, terminology, core principles, the "don'ts" list.
+2. [`spec/reference/requirements.md`](mdc:spec/reference/requirements.md) — numbered feature matrix with statuses.
+3. [`spec/concepts/cross-service-scenarios.md`](mdc:spec/concepts/cross-service-scenarios.md) — canonical reference for expand + navigation scenarios. Use directional names, not `Scenario A/B/C` in new prose.
+4. [`spec/internal/ai-assistant-context.md`](mdc:spec/internal/ai-assistant-context.md) — deep architecture, plugin lifecycle, CDS quirks.
+5. [`AGENTS.md`](mdc:AGENTS.md) — tool-agnostic summary of this rule (same content, different delivery).
+
+## Workflows
+
+When the user asks for a task that fits one of these intents, follow the phases in the linked command file:
+
+- Loose idea → [`.claude/commands/brainstorm.md`](mdc:.claude/commands/brainstorm.md)
+- Architectural decision → [`.claude/commands/discuss-architecture.md`](mdc:.claude/commands/discuss-architecture.md)
+- Implement a feature → [`.claude/commands/implement-feature.md`](mdc:.claude/commands/implement-feature.md)
+- Fix a bug → [`.claude/commands/fix-bug.md`](mdc:.claude/commands/fix-bug.md)
+- Review a diff → [`.claude/commands/review.md`](mdc:.claude/commands/review.md)
+- Deprecate a feature → [`.claude/commands/deprecate.md`](mdc:.claude/commands/deprecate.md)
+- Sync requirements → [`.claude/commands/update-requirements.md`](mdc:.claude/commands/update-requirements.md)
+
+## Conventions (summary; authoritative source is CLAUDE.md)
+
+- Log via `cds.log('cds-data-federation')`, never `console.log`.
+- Clone CQN with `cds.ql.clone(query)` before any mutation.
+- Wrap remote I/O in `withRetry(...)` from `srv/lib/retry.js`.
+- Tests use the real providers from `test/setup.js`, not mocks.
+- Docs: low-redundancy rule. Facts live in one place; cross-reference elsewhere. Internal vs. external doc duplication is the only allowed exception.
+- Scenario naming: use the directional names from [`spec/concepts/cross-service-scenarios.md`](mdc:spec/concepts/cross-service-scenarios.md). Short IDs (`A1`, `B1`, `C1`, `N1`, ...) are still valid as test identifiers.

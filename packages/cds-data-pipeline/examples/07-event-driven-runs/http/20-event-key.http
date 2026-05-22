@@ -1,0 +1,29 @@
+@shipmentKeyId = a6f3c0e0-0001-4000-8000-000000000002
+
+### Event read:key — provider emits a key-only message; the consumer bridge
+### calls executeEvent → one-shot OData read → MAP → WRITE.
+### Allow ~1s for file-based messaging to deliver before querying local rows.
+POST http://localhost:4455/odata/v4/logistics/emitShipmentKeyTest
+Content-Type: application/json
+
+{"ID": "{{shipmentKeyId}}"}
+
+###
+GET http://localhost:4107/odata/v4/example/Shipments?$filter=id eq {{shipmentKeyId}}
+
+### Watermark unchanged — event micro-runs must not advance batch lastSync.
+GET http://localhost:4107/pipeline/Pipelines?$filter=name eq 'Shipments'&$select=name,lastSync
+
+### Event runs in history (trigger = event)
+GET http://localhost:4107/pipeline/PipelineRuns?$filter=name eq 'Shipments' and trigger eq 'event'&$orderby=startTime desc&$top=5
+
+### Delete local row, then re-emit key — read:key recreates from remote.
+DELETE http://localhost:4107/odata/v4/example/Shipments(id={{shipmentKeyId}})
+
+POST http://localhost:4455/odata/v4/logistics/emitShipmentKeyTest
+Content-Type: application/json
+
+{"ID": "{{shipmentKeyId}}"}
+
+###
+GET http://localhost:4107/odata/v4/example/Shipments?$filter=id eq {{shipmentKeyId}}

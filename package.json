@@ -1,0 +1,72 @@
+{
+  "name": "cds-data-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Monorepo root for cds-data-pipeline, cds-data-federation, and cds-data-materialization. See packages/*/README.md.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikezaschka/cds-data-monorepo.git"
+  },
+  "author": "Mike Zaschka <opensource@mikezaschka.com>",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "packages/cds-data-pipeline/test/fixtures/consumer",
+    "packages/cds-data-pipeline/test/fixtures/provider",
+    "packages/cds-data-pipeline/test/fixtures/inventory-provider",
+    "packages/cds-data-pipeline/test/fixtures/rest-provider",
+    "packages/cds-data-federation/test/fixtures/consumer",
+    "packages/cds-data-federation/test/fixtures/provider",
+    "packages/cds-data-federation/test/fixtures/inventory",
+    "packages/cds-data-federation/test/fixtures/rest-provider",
+    "packages/cds-data-materialization/test/fixtures/consumer",
+    "examples/provider",
+    "examples/inventory",
+    "examples/rest-provider",
+    "examples/consumer",
+    "examples/sales-intel/providers/logistics-service",
+    "examples/sales-intel/providers/fx-service",
+    "examples/sales-intel/workbench"
+  ],
+  "scripts": {
+    "test": "npm run test -w cds-data-pipeline && npm run test -w cds-data-federation && npm run test -w cds-data-materialization",
+    "test:pipeline": "npm run test -w cds-data-pipeline",
+    "test:federation": "npm run test -w cds-data-federation",
+    "test:materialization": "npm run test -w cds-data-materialization",
+    "test:watch": "npm run test:watch -w cds-data-pipeline",
+    "lint": "eslint .",
+    "examples:install": "npm install",
+    "examples:start": "bash examples/start-all.sh",
+    "examples:watch:consumer": "npm run watch --workspace=examples-consumer",
+    "examples:regen-csn": "node examples/regen-csn.js",
+    "docs:serve": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "sync:requirements": "node scripts/sync-requirements-progress.js",
+    "check:requirements": "node scripts/sync-requirements-progress.js --check",
+    "check:scenario-naming": "node scripts/check-scenario-naming.js"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2",
+    "@sap-cloud-sdk/http-client": "^4.6.0",
+    "@sap-cloud-sdk/resilience": "^4.6.0",
+    "@sap/cds": "^9",
+    "axios": "^1.15.0",
+    "cds-caching": "^1.3.0",
+    "chai": "^4.5.0",
+    "chai-as-promised": "^7.1.2",
+    "chai-subset": "^1.6.0",
+    "eslint": "^8.57.0",
+    "express": "^4",
+    "husky": "^9.0.11",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.0",
+    "vitepress": "^1.6.3",
+    "vitepress-plugin-mermaid": "^2.0.17"
+  },
+  "lint-staged": {
+    "*.js": "eslint --fix"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

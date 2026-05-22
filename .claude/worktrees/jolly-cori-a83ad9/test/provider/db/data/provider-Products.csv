@@ -1,0 +1,6 @@
+ID;name;category;price;currency;stock;modifiedAt
+P001;Laptop Pro;Electronics;1299.99;EUR;50;2025-01-10T10:00:00Z
+P002;Wireless Mouse;Electronics;29.99;EUR;200;2025-01-12T11:00:00Z
+P003;Office Desk;Furniture;449.00;EUR;30;2025-02-01T09:00:00Z
+P004;Ergonomic Chair;Furniture;599.00;EUR;25;2025-02-05T14:00:00Z
+P005;USB-C Hub;Electronics;79.99;EUR;100;2025-03-01T08:00:00Z

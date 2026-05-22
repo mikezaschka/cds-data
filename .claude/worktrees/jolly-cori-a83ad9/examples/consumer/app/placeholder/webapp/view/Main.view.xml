@@ -1,0 +1,12 @@
+<mvc:View
+    xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    displayBlock="true">
+    <Page title="Replication Management" showHeader="true" showFooter="false">
+        <MessagePage
+            title="Coming soon"
+            text="A Fiori Elements UI for the DataReplicationManagementService (Federations and ReplicationRuns) will live here."
+            icon="sap-icon://synchronise"
+            showHeader="false" />
+    </Page>
+</mvc:View>

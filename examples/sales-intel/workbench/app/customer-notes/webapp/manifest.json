@@ -1,0 +1,106 @@
+{
+  "_version": "1.59.0",
+  "sap.app": {
+    "id": "sales.customernotes",
+    "type": "application",
+    "title": "{{appTitle}}",
+    "description": "{{appTitle}}",
+    "applicationVersion": {
+      "version": "1.0.0"
+    },
+    "dataSources": {
+      "mainService": {
+        "uri": "/odata/v4/sales-intel/",
+        "type": "OData",
+        "settings": {
+          "odataVersion": "4.0"
+        }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": {
+      "desktop": true,
+      "tablet": true,
+      "phone": true
+    }
+  },
+  "sap.ui5": {
+    "dependencies": {
+      "minUI5Version": "1.120.0",
+      "libs": {
+        "sap.m": {},
+        "sap.ui.core": {},
+        "sap.fe.templates": {}
+      }
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": {
+          "bundleName": "sales.customernotes.i18n.i18n"
+        }
+      },
+      "": {
+        "dataSource": "mainService",
+        "settings": {
+          "synchronizationMode": "None",
+          "operationMode": "Server",
+          "autoExpandSelect": true,
+          "earlyRequests": true
+        },
+        "type": "sap.ui.model.odata.v4.ODataModel"
+      }
+    },
+    "routing": {
+      "routes": [
+        {
+          "pattern": ":?query:",
+          "name": "List",
+          "target": "List"
+        },
+        {
+          "pattern": "CustomerNotes({key}):?query:",
+          "name": "Detail",
+          "target": "Detail"
+        }
+      ],
+      "targets": {
+        "List": {
+          "type": "Component",
+          "id": "List",
+          "name": "sap.fe.templates.ListReport",
+          "options": {
+            "settings": {
+              "contextPath": "/CustomerNotes",
+              "variantManagement": "Page",
+              "initialLoad": true,
+              "navigation": {
+                "CustomerNotes": {
+                  "detail": {
+                    "route": "Detail"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "Detail": {
+          "type": "Component",
+          "id": "Detail",
+          "name": "sap.fe.templates.ObjectPage",
+          "options": {
+            "settings": {
+              "contextPath": "/CustomerNotes"
+            }
+          }
+        }
+      }
+    },
+    "contentDensities": {
+      "compact": true,
+      "cozy": true
+    }
+  }
+}

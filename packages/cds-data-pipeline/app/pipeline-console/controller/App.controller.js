@@ -1,0 +1,2 @@
+sap.ui.define(["sap/ui/core/mvc/Controller"],function(n){"use strict";var e=n.extend("pipeline.monitor.fcl.controller.App",{onInit(){},onExit(){}});return e});
+//# sourceMappingURL=App.controller.js.map

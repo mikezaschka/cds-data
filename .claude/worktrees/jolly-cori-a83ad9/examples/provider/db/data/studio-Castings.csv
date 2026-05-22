@@ -1,0 +1,50 @@
+movie_ID;actor_ID;role;billingOrder
+M001;A006;Red;1
+M001;A017;Andy Dufresne;2
+M001;A007;Samuel Norton;3
+M002;A004;Michael Corleone;1
+M002;A005;Vito Corleone (young);2
+M002;A006;Tom Hagen;3
+M003;A007;Jules Winnfield;1
+M003;A018;Vincent Vega;2
+M003;A015;Mia Wallace;3
+M004;A009;Bruce Wayne;1
+M004;A010;Lucius Fox;2
+M004;A006;Lucius;3
+M004;A008;Bane;4
+M005;A002;Tyler Durden;1
+M005;A010;The Narrator;2
+M006;A001;Dom Cobb;1
+M006;A008;Eames;2
+M006;A010;Robert Fischer;3
+M007;A019;Neo;1
+M007;A007;The Oracle Emissary;2
+M008;A003;Forrest Gump;1
+M008;A006;Lt. Dan;2
+M009;A020;Cooper;1
+M009;A008;Mann;2
+M010;A011;Frodo Baggins;1
+M010;A012;Aragorn;2
+M011;A011;Frodo Baggins;1
+M011;A008;Eomer;2
+M012;A011;Frodo Baggins;1
+M012;A006;Elrond;2
+M013;A012;Luke Skywalker;1
+M013;A013;Han Solo;2
+M013;A014;Princess Leia;3
+M013;A007;Obi-Wan Emissary;4
+M014;A013;Dr. Alan Grant;1
+M014;A003;Ian Malcolm;2
+M015;A001;Jack Dawson;1
+M015;A017;Caledon;2
+M016;A002;Jake Sully;1
+M016;A020;Parker Selfridge;2
+M017;A016;Arthur Fleck;1
+M017;A005;Murray Franklin;2
+M018;A016;Kim Ki-taek;1
+M018;A020;Park Dong-ik;2
+M019;A005;Jimmy Conway;1
+M019;A002;Henry Hill;2
+M019;A007;Tommy DeVito;3
+M020;A006;Oskar Schindler;1
+M020;A017;Itzhak Stern;2

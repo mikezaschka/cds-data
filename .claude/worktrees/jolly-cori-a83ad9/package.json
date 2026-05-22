@@ -1,0 +1,91 @@
+{
+  "name": "cds-data-federation",
+  "version": "0.1.0",
+  "description": "A data federation plugin for SAP CAP applications supporting delegation, caching, and replication strategies",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mikezaschka/cds-data-federation.git"
+  },
+  "keywords": [
+    "sap",
+    "cap",
+    "cds",
+    "federation",
+    "replication",
+    "delegation",
+    "remote-services"
+  ],
+  "author": "Mike Zaschka <opensource@mikezaschka.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mikezaschka/cds-data-federation/issues"
+  },
+  "homepage": "https://github.com/mikezaschka/cds-data-federation#readme",
+  "main": "cds-plugin.js",
+  "files": [
+    "srv/**",
+    "db/**",
+    "index.cds"
+  ],
+  "scripts": {
+    "test": "jest --runInBand --silent",
+    "test:watch": "jest --watch",
+    "lint": "eslint .",
+    "examples:install": "npm install",
+    "examples:start": "bash examples/start-all.sh",
+    "examples:watch:consumer": "npm run watch --workspace=examples-consumer",
+    "examples:regen-csn": "node examples/regen-csn.js",
+    "docs:setup": "python3 -m venv .venv && .venv/bin/pip install --upgrade pip && .venv/bin/pip install -r docs-requirements.txt",
+    "docs:serve": ".venv/bin/mkdocs serve",
+    "docs:build": ".venv/bin/mkdocs build --strict"
+  },
+  "peerDependencies": {
+    "@sap/cds": ">=8",
+    "cds-caching": ">=1"
+  },
+  "peerDependenciesMeta": {
+    "cds-caching": {
+      "optional": true
+    }
+  },
+  "workspaces": [
+    ".",
+    "test/provider",
+    "test/inventory",
+    "test/consumer",
+    "examples/provider",
+    "examples/inventory",
+    "examples/rest-provider",
+    "examples/consumer",
+    "examples/sales-intel/providers/logistics-service",
+    "examples/sales-intel/providers/fx-service",
+    "examples/sales-intel/workbench"
+  ],
+  "devDependencies": {
+    "@cap-js/sqlite": "^1",
+    "@sap-cloud-sdk/http-client": "^4.6.0",
+    "@sap-cloud-sdk/resilience": "^4.6.0",
+    "@sap/cds": "^8",
+    "axios": "^1.15.0",
+    "cds-caching": "^1.3.0",
+    "chai": "^4.5.0",
+    "chai-as-promised": "^7.1.2",
+    "chai-subset": "^1.6.0",
+    "eslint": "^8.57.0",
+    "express": "^4",
+    "husky": "^9.0.11",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.0"
+  },
+  "lint-staged": {
+    "*.js": "eslint --fix"
+  },
+  "jest": {
+    "roots": [
+      "<rootDir>/test"
+    ]
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

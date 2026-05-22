@@ -1,0 +1,44 @@
+### The teaching moment for "why replicate?". Run the Categories, SalesOrders,
+### SalesOrderLines and SalesProducts replications first (either once up-front
+### or via the Federation Monitor tile).
+###
+### The queries below need `$apply` with `groupby` and `aggregate`. CAP
+### rejects these for delegate entities (the remote OData service cannot
+### evaluate them). Because `SalesOrderLines` / `SalesOrders` etc. are
+### REPLICATED into the local SQLite, the exact same CQL translates to a
+### local SQL GROUP BY and works fine.
+
+### Bootstrap — trigger all four replications if you haven't already.
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"Categories","mode":"full"}
+
+###
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"SalesOrders","mode":"full"}
+
+###
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"SalesOrderLines","mode":"full"}
+
+###
+POST http://localhost:4005/pipeline/run
+Content-Type: application/json
+
+{"name":"SalesProducts","mode":"full"}
+
+### Revenue per product (local SQL GROUP BY, driven entirely by $apply)
+GET http://localhost:4005/odata/v4/sales-intel/SalesOrderLines?$apply=groupby((productId),aggregate(quantity with sum as TotalQty))&$top=10
+
+### Orders per country (a dimension that came straight from Northwind)
+GET http://localhost:4005/odata/v4/sales-intel/SalesOrders?$apply=groupby((shipCountry),aggregate($count as OrderCount))&$orderby=OrderCount desc
+
+### Contrast: the same $apply against the DELEGATED `Orders` will fail with
+### "Feature not supported" — CAP can't translate groupby to remote OData.
+### Uncomment to observe the error.
+### GET http://localhost:4005/odata/v4/sales-intel/Orders?$apply=groupby((shipCountry),aggregate($count as OrderCount))

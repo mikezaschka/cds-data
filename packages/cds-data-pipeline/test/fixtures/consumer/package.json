@@ -1,0 +1,78 @@
+{
+  "name": "cds-data-pipeline-test-consumer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@sap-cloud-sdk/http-client": "^3",
+    "@sap-cloud-sdk/resilience": "^3",
+    "@sap/cds": "^9",
+    "cds-data-pipeline": "file:../../..",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^2"
+  },
+  "cds": {
+    "server": {
+      "exit_on_multi_install": false
+    },
+    "requires": {
+      "DataPipelineService": {
+        "impl": "cds-data-pipeline/srv/DataPipelineService.js"
+      },
+      "messaging": {
+        "[development]": {
+          "kind": "file-based-messaging",
+          "credentials": { "directory": "../.messaging-shared" }
+        }
+      },
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      },
+      "ProviderService": {
+        "kind": "odata",
+        "model": "../provider/srv/provider-service.cds",
+        "credentials": {
+          "url": "http://localhost:4444/odata/v4/provider"
+        }
+      },
+      "ProviderServiceV2": {
+        "kind": "odata-v2",
+        "model": "srv/external/ProviderServiceV2",
+        "credentials": {
+          "url": "http://localhost:4444/odata/v2/provider"
+        }
+      },
+      "InventoryService": {
+        "kind": "odata",
+        "model": "../inventory-provider/srv/inventory-service.cds",
+        "credentials": {
+          "url": "http://localhost:4445/odata/v4/inventory"
+        }
+      },
+      "RestProvider": {
+        "kind": "rest",
+        "credentials": {
+          "url": "http://localhost:4446"
+        }
+      },
+      "auth": {
+        "[development]": {
+          "kind": "mocked",
+          "users": {
+            "alice": {
+              "password": "alice",
+              "roles": ["PipelineRunner"],
+              "jwt": {
+                "user_name": "alice"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

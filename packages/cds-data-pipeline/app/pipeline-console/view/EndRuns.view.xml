@@ -1,0 +1,108 @@
+<mvc:View
+    controllerName="pipeline.monitor.fcl.controller.EndRuns"
+    xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:core="sap.ui.core">
+    <Page
+        id="endRunsPage"
+        title="{i18n>runsPageTitle}"
+        class="fclAppEnd"
+        showNavButton="{device>/showBack}"
+        navButtonPress="onNavBackMid">
+        <content>
+            <Table
+                id="runsTable"
+                class="fclRunsTable"
+                growing="true"
+                growingThreshold="30"
+                width="100%"
+                items="{
+                    path: 'runs',
+                    sorter: { path: 'startTime', descending: true },
+                    templateShareable: false
+                }"
+                noDataText="{i18n>noRuns}">
+                <headerToolbar>
+                    <Toolbar>
+                        <Title text="{i18n>runsTableTitle}"/>
+                    </Toolbar>
+                </headerToolbar>
+                <columns>
+                    <Column width="7rem" minScreenWidth="Phone"><Text text="{i18n>colStart}"/></Column>
+                    <Column width="7rem" minScreenWidth="Phone"><Text text="{i18n>colEnd}"/></Column>
+                    <Column minScreenWidth="Tablet" width="5rem" demandPopin="true" popinDisplay="Block">
+                        <Text text="{i18n>colRunStatus}"/>
+                    </Column>
+                    <Column minScreenWidth="Tablet" width="5rem" demandPopin="true" popinDisplay="Block">
+                        <Text text="{i18n>colTrigger}"/>
+                    </Column>
+                    <Column minScreenWidth="Desktop" width="4rem" demandPopin="true" popinDisplay="Block">
+                        <Text text="{i18n>colMode}"/>
+                    </Column>
+                    <Column minScreenWidth="Desktop" width="5rem" demandPopin="true" popinDisplay="Block">
+                        <Text text="{i18n>colRunOrigin}"/>
+                    </Column>
+                    <Column hAlign="End" width="4rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                        <Text text="{i18n>colC}"/>
+                    </Column>
+                    <Column hAlign="End" width="4rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                        <Text text="{i18n>colU}"/>
+                    </Column>
+                    <Column hAlign="End" width="4rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                        <Text text="{i18n>colD}"/>
+                    </Column>
+                    <Column minScreenWidth="Desktop" minWidth="8rem" demandPopin="true" popinDisplay="Block">
+                        <Text text="{i18n>colError}"/>
+                    </Column>
+                </columns>
+                <items>
+                    <ColumnListItem type="Inactive" vAlign="Top">
+                        <cells>
+                            <Text
+                                text="{
+                                    path: 'startTime',
+                                    type: 'sap.ui.model.odata.type.DateTimeOffset',
+                                    formatOptions: { style: 'medium' }
+                                }" />
+                            <Text
+                                text="{
+                                    path: 'endTime',
+                                    type: 'sap.ui.model.odata.type.DateTimeOffset',
+                                    formatOptions: { style: 'medium' }
+                                }" />
+                            <ObjectStatus
+                                text="{status}"
+                                state="{
+                                    path: 'status',
+                                    formatter: '.runStatusState'
+                                }" />
+                            <Text text="{trigger}"/>
+                            <Text text="{mode}"/>
+                            <Text text="{origin}"/>
+                            <ObjectNumber class="fclStat" number="{statistics_created}"/>
+                            <ObjectNumber class="fclStat" number="{statistics_updated}"/>
+                            <ObjectNumber class="fclStat" number="{statistics_deleted}"/>
+                            <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                <Text
+                                    text="{
+                                        path: 'error',
+                                        formatter: '.errorPreview'
+                                    }"
+                                    class="fclMText fclErrorCell"
+                                    maxLines="2"
+                                    width="100%" />
+                                <Button
+                                    class="fclErrorBtn"
+                                    type="Transparent"
+                                    icon="sap-icon://message-information"
+                                    tooltip="{i18n>viewFullError}"
+                                    press="onShowError"
+                                    enabled="{= !!${error} }" />
+                            </HBox>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+        </content>
+    </Page>
+</mvc:View>

@@ -1,0 +1,11 @@
+### Pipeline tracker + recent runs
+GET http://localhost:4104/pipeline/Pipelines?$filter=name eq 'ShipmentArchive'&$expand=runs($orderby=startTime desc;$top=5)
+
+### Status function
+GET http://localhost:4104/pipeline/status(name='ShipmentArchive')
+
+### Flush — clears the remote target (O(n) DELETEs) and resets the tracker.
+POST http://localhost:4104/pipeline/flush
+Content-Type: application/json
+
+{"name":"ShipmentArchive"}

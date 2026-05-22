@@ -1,0 +1,1091 @@
+{
+ "meta": {
+  "creator": "cds-dk 9.7.2"
+ },
+ "$version": "2.0",
+ "definitions": {
+  "NorthwindModel.Category_Sales_for_1997": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CategoryName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "CategorySales": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "NorthwindModel.Product_Sales_for_1997": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CategoryName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ProductSales": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata": {
+   "kind": "service",
+   "@cds.external": true
+  },
+  "northwind_v4_metadata.Categories": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CategoryID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "CategoryName": {
+     "type": "cds.String"
+    },
+    "Description": {
+     "type": "cds.String"
+    },
+    "Picture": {
+     "type": "cds.LargeBinary"
+    },
+    "Products": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Products",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.CustomerDemographics": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CustomerTypeID": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "CustomerDesc": {
+     "type": "cds.String"
+    },
+    "Customers": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Customers",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Customers": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CustomerID": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "CompanyName": {
+     "type": "cds.String"
+    },
+    "ContactName": {
+     "type": "cds.String"
+    },
+    "ContactTitle": {
+     "type": "cds.String"
+    },
+    "Address": {
+     "type": "cds.String"
+    },
+    "City": {
+     "type": "cds.String"
+    },
+    "Region": {
+     "type": "cds.String"
+    },
+    "PostalCode": {
+     "type": "cds.String"
+    },
+    "Country": {
+     "type": "cds.String"
+    },
+    "Phone": {
+     "type": "cds.String"
+    },
+    "Fax": {
+     "type": "cds.String"
+    },
+    "Orders": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Orders",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    },
+    "CustomerDemographics": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.CustomerDemographics",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Employees": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "EmployeeID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "LastName": {
+     "type": "cds.String"
+    },
+    "FirstName": {
+     "type": "cds.String"
+    },
+    "Title": {
+     "type": "cds.String"
+    },
+    "TitleOfCourtesy": {
+     "type": "cds.String"
+    },
+    "BirthDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "HireDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "Address": {
+     "type": "cds.String"
+    },
+    "City": {
+     "type": "cds.String"
+    },
+    "Region": {
+     "type": "cds.String"
+    },
+    "PostalCode": {
+     "type": "cds.String"
+    },
+    "Country": {
+     "type": "cds.String"
+    },
+    "HomePhone": {
+     "type": "cds.String"
+    },
+    "Extension": {
+     "type": "cds.String"
+    },
+    "Photo": {
+     "type": "cds.LargeBinary"
+    },
+    "Notes": {
+     "type": "cds.String"
+    },
+    "ReportsTo": {
+     "type": "cds.Integer"
+    },
+    "PhotoPath": {
+     "type": "cds.String"
+    },
+    "Employees1": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Employees",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    },
+    "Employee1": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Employees",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    },
+    "Orders": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Orders",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    },
+    "Territories": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Territories",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Order_Details": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "ProductID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "UnitPrice": {
+     "type": "cds.Decimal",
+     "notNull": true
+    },
+    "Quantity": {
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "Discount": {
+     "type": "cds.Double",
+     "@odata.Type": "Edm.Single",
+     "notNull": true
+    },
+    "Order": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Orders",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    },
+    "Product": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Products",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Orders": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "CustomerID": {
+     "type": "cds.String"
+    },
+    "EmployeeID": {
+     "type": "cds.Integer"
+    },
+    "OrderDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "RequiredDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "ShippedDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "ShipVia": {
+     "type": "cds.Integer"
+    },
+    "Freight": {
+     "type": "cds.Decimal"
+    },
+    "ShipName": {
+     "type": "cds.String"
+    },
+    "ShipAddress": {
+     "type": "cds.String"
+    },
+    "ShipCity": {
+     "type": "cds.String"
+    },
+    "ShipRegion": {
+     "type": "cds.String"
+    },
+    "ShipPostalCode": {
+     "type": "cds.String"
+    },
+    "ShipCountry": {
+     "type": "cds.String"
+    },
+    "Customer": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Customers",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    },
+    "Employee": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Employees",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    },
+    "Order_Details": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Order_Details",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    },
+    "Shipper": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Shippers",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Products": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ProductID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "ProductName": {
+     "type": "cds.String"
+    },
+    "SupplierID": {
+     "type": "cds.Integer"
+    },
+    "CategoryID": {
+     "type": "cds.Integer"
+    },
+    "QuantityPerUnit": {
+     "type": "cds.String"
+    },
+    "UnitPrice": {
+     "type": "cds.Decimal"
+    },
+    "UnitsInStock": {
+     "type": "cds.Integer"
+    },
+    "UnitsOnOrder": {
+     "type": "cds.Integer"
+    },
+    "ReorderLevel": {
+     "type": "cds.Integer"
+    },
+    "Discontinued": {
+     "type": "cds.Boolean",
+     "notNull": true
+    },
+    "Category": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Categories",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    },
+    "Order_Details": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Order_Details",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    },
+    "Supplier": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Suppliers",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Regions": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "RegionID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "RegionDescription": {
+     "type": "cds.String"
+    },
+    "Territories": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Territories",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Shippers": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ShipperID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "CompanyName": {
+     "type": "cds.String"
+    },
+    "Phone": {
+     "type": "cds.String"
+    },
+    "Orders": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Orders",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Suppliers": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "SupplierID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "CompanyName": {
+     "type": "cds.String"
+    },
+    "ContactName": {
+     "type": "cds.String"
+    },
+    "ContactTitle": {
+     "type": "cds.String"
+    },
+    "Address": {
+     "type": "cds.String"
+    },
+    "City": {
+     "type": "cds.String"
+    },
+    "Region": {
+     "type": "cds.String"
+    },
+    "PostalCode": {
+     "type": "cds.String"
+    },
+    "Country": {
+     "type": "cds.String"
+    },
+    "Phone": {
+     "type": "cds.String"
+    },
+    "Fax": {
+     "type": "cds.String"
+    },
+    "HomePage": {
+     "type": "cds.String"
+    },
+    "Products": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Products",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Territories": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "TerritoryID": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "TerritoryDescription": {
+     "type": "cds.String"
+    },
+    "RegionID": {
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "Region": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Regions",
+     "cardinality": {
+      "max": 1
+     },
+     "keys": []
+    },
+    "Employees": {
+     "type": "cds.Association",
+     "target": "northwind_v4_metadata.Employees",
+     "cardinality": {
+      "max": "*"
+     },
+     "keys": []
+    }
+   }
+  },
+  "northwind_v4_metadata.Alphabetical_list_of_products": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ProductID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "SupplierID": {
+     "type": "cds.Integer"
+    },
+    "CategoryID": {
+     "type": "cds.Integer"
+    },
+    "QuantityPerUnit": {
+     "type": "cds.String"
+    },
+    "UnitPrice": {
+     "type": "cds.Decimal"
+    },
+    "UnitsInStock": {
+     "type": "cds.Integer"
+    },
+    "UnitsOnOrder": {
+     "type": "cds.Integer"
+    },
+    "ReorderLevel": {
+     "type": "cds.Integer"
+    },
+    "Discontinued": {
+     "key": true,
+     "type": "cds.Boolean",
+     "notNull": true
+    },
+    "CategoryName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    }
+   }
+  },
+  "northwind_v4_metadata.Category_Sales_for_1997": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CategoryName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "CategorySales": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata.Current_Product_Lists": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ProductID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    }
+   }
+  },
+  "northwind_v4_metadata.Customer_and_Suppliers_by_Cities": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "City": {
+     "type": "cds.String"
+    },
+    "CompanyName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ContactName": {
+     "type": "cds.String"
+    },
+    "Relationship": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    }
+   }
+  },
+  "northwind_v4_metadata.Invoices": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ShipName": {
+     "type": "cds.String"
+    },
+    "ShipAddress": {
+     "type": "cds.String"
+    },
+    "ShipCity": {
+     "type": "cds.String"
+    },
+    "ShipRegion": {
+     "type": "cds.String"
+    },
+    "ShipPostalCode": {
+     "type": "cds.String"
+    },
+    "ShipCountry": {
+     "type": "cds.String"
+    },
+    "CustomerID": {
+     "type": "cds.String"
+    },
+    "CustomerName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "Address": {
+     "type": "cds.String"
+    },
+    "City": {
+     "type": "cds.String"
+    },
+    "Region": {
+     "type": "cds.String"
+    },
+    "PostalCode": {
+     "type": "cds.String"
+    },
+    "Country": {
+     "type": "cds.String"
+    },
+    "Salesperson": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "OrderDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "RequiredDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "ShippedDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "ShipperName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ProductID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "UnitPrice": {
+     "key": true,
+     "type": "cds.Decimal",
+     "notNull": true
+    },
+    "Quantity": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "Discount": {
+     "key": true,
+     "type": "cds.Double",
+     "@odata.Type": "Edm.Single",
+     "notNull": true
+    },
+    "ExtendedPrice": {
+     "type": "cds.Decimal"
+    },
+    "Freight": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata.Order_Details_Extendeds": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "ProductID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "UnitPrice": {
+     "key": true,
+     "type": "cds.Decimal",
+     "notNull": true
+    },
+    "Quantity": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "Discount": {
+     "key": true,
+     "type": "cds.Double",
+     "@odata.Type": "Edm.Single",
+     "notNull": true
+    },
+    "ExtendedPrice": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata.Order_Subtotals": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "Subtotal": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata.Orders_Qries": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "CustomerID": {
+     "type": "cds.String"
+    },
+    "EmployeeID": {
+     "type": "cds.Integer"
+    },
+    "OrderDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "RequiredDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "ShippedDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "ShipVia": {
+     "type": "cds.Integer"
+    },
+    "Freight": {
+     "type": "cds.Decimal"
+    },
+    "ShipName": {
+     "type": "cds.String"
+    },
+    "ShipAddress": {
+     "type": "cds.String"
+    },
+    "ShipCity": {
+     "type": "cds.String"
+    },
+    "ShipRegion": {
+     "type": "cds.String"
+    },
+    "ShipPostalCode": {
+     "type": "cds.String"
+    },
+    "ShipCountry": {
+     "type": "cds.String"
+    },
+    "CompanyName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "Address": {
+     "type": "cds.String"
+    },
+    "City": {
+     "type": "cds.String"
+    },
+    "Region": {
+     "type": "cds.String"
+    },
+    "PostalCode": {
+     "type": "cds.String"
+    },
+    "Country": {
+     "type": "cds.String"
+    }
+   }
+  },
+  "northwind_v4_metadata.Product_Sales_for_1997": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CategoryName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ProductSales": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata.Products_Above_Average_Prices": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "UnitPrice": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata.Products_by_Categories": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CategoryName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "QuantityPerUnit": {
+     "type": "cds.String"
+    },
+    "UnitsInStock": {
+     "type": "cds.Integer"
+    },
+    "Discontinued": {
+     "key": true,
+     "type": "cds.Boolean",
+     "notNull": true
+    }
+   }
+  },
+  "northwind_v4_metadata.Sales_by_Categories": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "CategoryID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "CategoryName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ProductName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ProductSales": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata.Sales_Totals_by_Amounts": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "SaleAmount": {
+     "type": "cds.Decimal"
+    },
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "CompanyName": {
+     "key": true,
+     "type": "cds.String",
+     "notNull": true
+    },
+    "ShippedDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    }
+   }
+  },
+  "northwind_v4_metadata.Summary_of_Sales_by_Quarters": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ShippedDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "Subtotal": {
+     "type": "cds.Decimal"
+    }
+   }
+  },
+  "northwind_v4_metadata.Summary_of_Sales_by_Years": {
+   "kind": "entity",
+   "@cds.external": true,
+   "@cds.persistence.skip": true,
+   "elements": {
+    "ShippedDate": {
+     "type": "cds.DateTime",
+     "@odata.Precision": 0,
+     "@odata.Type": "Edm.DateTimeOffset"
+    },
+    "OrderID": {
+     "key": true,
+     "type": "cds.Integer",
+     "notNull": true
+    },
+    "Subtotal": {
+     "type": "cds.Decimal"
+    }
+   }
+  }
+ }
+}

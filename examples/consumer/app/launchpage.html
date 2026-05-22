@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cds-data-federation Examples — Movies Demo</title>
+
+    <script>
+        window['sap-ushell-config'] = {
+            defaultRenderer: 'fiori2',
+            renderers: {
+                fiori2: {
+                    componentData: {
+                        config: {
+                            search: 'hidden'
+                        }
+                    }
+                }
+            },
+            applications: {
+                'movies-app': {
+                    title: 'Movies',
+                    description: 'Delegate read-only — studio V4 catalog',
+                    additionalInformation: 'SAPUI5.Component=ns.movies',
+                    applicationType: 'URL',
+                    url: './movies/webapp',
+                    navigationMode: 'embedded'
+                },
+                'trending-app': {
+                    title: 'Trending Movies',
+                    description: 'Cached delegate — TTL 60s',
+                    additionalInformation: 'SAPUI5.Component=ns.trending',
+                    applicationType: 'URL',
+                    url: './trending/webapp',
+                    navigationMode: 'embedded'
+                },
+                'awardwinners-app': {
+                    title: 'Award-Winning',
+                    description: 'Delegate + static where (rating ≥ 8.5)',
+                    additionalInformation: 'SAPUI5.Component=ns.awardwinners',
+                    applicationType: 'URL',
+                    url: './award-winners/webapp',
+                    navigationMode: 'embedded'
+                },
+                'filmsrebranded-app': {
+                    title: 'Films (Rebranded)',
+                    description: 'Delegate + field renames',
+                    additionalInformation: 'SAPUI5.Component=ns.filmsrebranded',
+                    applicationType: 'URL',
+                    url: './films-rebranded/webapp',
+                    navigationMode: 'embedded'
+                },
+                'actors-app': {
+                    title: 'Actors',
+                    description: 'Delegate writable — full CUD to remote',
+                    additionalInformation: 'SAPUI5.Component=ns.actors',
+                    applicationType: 'URL',
+                    url: './actors/webapp',
+                    navigationMode: 'embedded'
+                },
+                'directors-app': {
+                    title: 'Directors',
+                    description: 'Delegate selective writable — update only',
+                    additionalInformation: 'SAPUI5.Component=ns.directors',
+                    applicationType: 'URL',
+                    url: './directors/webapp',
+                    navigationMode: 'embedded'
+                },
+                'licensedmovies-app': {
+                    title: 'Licensed Movies',
+                    description: 'Delegate V2 + entity and field renames',
+                    additionalInformation: 'SAPUI5.Component=ns.licensedmovies',
+                    applicationType: 'URL',
+                    url: './licensed-movies/webapp',
+                    navigationMode: 'embedded'
+                },
+                'streamingmanifests-app': {
+                    title: 'Streaming Manifests',
+                    description: 'Delegate — second provider (CDN, :4445)',
+                    additionalInformation: 'SAPUI5.Component=ns.streamingmanifests',
+                    applicationType: 'URL',
+                    url: './streaming-manifests/webapp',
+                    navigationMode: 'embedded'
+                },
+                'watchlists-app': {
+                    title: 'Watchlists',
+                    description: 'Local + $expand=movie (cross-service expand: local → remote)',
+                    additionalInformation: 'SAPUI5.Component=ns.watchlists',
+                    applicationType: 'URL',
+                    url: './watchlists/webapp',
+                    navigationMode: 'embedded'
+                },
+                'reviews-app': {
+                    title: 'Reviews',
+                    description: 'Local + $expand=movie (cross-service expand: local → remote)',
+                    additionalInformation: 'SAPUI5.Component=ns.reviews',
+                    applicationType: 'URL',
+                    url: './reviews/webapp',
+                    navigationMode: 'embedded'
+                },
+                'replicatedmovies-app': {
+                    title: 'Replicated Movies',
+                    description: 'Replicate — OData V4 to local SQL',
+                    additionalInformation: 'SAPUI5.Component=ns.replicatedmovies',
+                    applicationType: 'URL',
+                    url: './replicated-movies/webapp',
+                    navigationMode: 'embedded'
+                },
+                'boxoffice-app': {
+                    title: 'Box Office',
+                    description: 'Replicate — REST offset + delta',
+                    additionalInformation: 'SAPUI5.Component=ns.boxoffice',
+                    applicationType: 'URL',
+                    url: './box-office/webapp',
+                    navigationMode: 'embedded'
+                },
+                'replicationmgmt-app': {
+                    title: 'Replication Management',
+                    description: 'Coming soon — Pipelines & Runs UI',
+                    additionalInformation: 'SAPUI5.Component=ns.placeholder',
+                    applicationType: 'URL',
+                    url: './placeholder/webapp',
+                    navigationMode: 'embedded'
+                }
+            }
+        };
+    </script>
+
+    <script src="https://ui5.sap.com/test-resources/sap/ushell/bootstrap/sandbox.js"></script>
+    <script
+        src="https://ui5.sap.com/resources/sap-ui-core.js"
+        data-sap-ui-libs="sap.m, sap.ushell, sap.fe.templates"
+        data-sap-ui-compatVersion="edge"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-frameOptions="allow"
+        data-sap-ui-bindingSyntax="complex"
+        data-sap-ui-async="true"></script>
+    <script>
+        sap.ui.getCore().attachInit(function () {
+            sap.ushell.Container.createRenderer().placeAt('content');
+        });
+    </script>
+</head>
+<body class="sapUiBody" id="content"></body>
+</html>
