@@ -71,4 +71,4 @@ For live CDS model introspection, configure [`@cap-js/mcp-server`](https://www.n
 
 ## Docs
 
-Published documentation: [Materialization plugin](https://mikezaschka.github.io/cds-data-federation/materialization/) (monorepo docs site). Local preview: `npm run docs:serve` from the repository root, then open `/materialization/`.
+Published documentation: [Materialization plugin](https://mikezaschka.github.io/cds-data/materialization/) (monorepo docs site). Local preview: `npm run docs:serve` from the repository root, then open `/materialization/`.

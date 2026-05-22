@@ -57,4 +57,4 @@ pipelines.before('PIPELINE.MAP', 'ReplicatedProducts', async (req) => {
 
 ## Docs
 
-- Event hooks recipe: https://mikezaschka.github.io/cds-data-federation/pipeline/guide/recipes/event-hooks.html
+- Event hooks recipe: https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/event-hooks.html

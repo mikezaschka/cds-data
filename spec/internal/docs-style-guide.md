@@ -88,7 +88,7 @@ If a published page needs to reference the rationale behind a capability and the
 Links between the two packages must be absolute because the rendered surfaces do not share a filesystem:
 
 - Consumer cross-references (e.g. "see the companion package"): `https://www.npmjs.com/package/cds-data-pipeline` or `https://www.npmjs.com/package/cds-data-federation`.
-- Deeper repo pointers (e.g. a specific page of the other package's site): `https://mikezaschka.github.io/cds-data-federation/<section>/<path>` or `https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/<package>/...`.
+- Deeper repo pointers (e.g. a specific page of the other package's site): `https://mikezaschka.github.io/cds-data/<section>/<path>` or `https://github.com/mikezaschka/cds-data/blob/main/packages/<package>/...`.
 
 Relative paths like `../<other-package>/README.md` do **not** resolve on npm, and relative links across `mkdocs` sites break once they are rendered as independent GitHub Pages subpaths.
 

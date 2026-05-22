@@ -91,5 +91,5 @@ entity Products { key ID: UUID; name: String; }
 
 ## Docs
 
-- Annotations: https://mikezaschka.github.io/cds-data-federation/federation/reference/annotations.html
-- Consumption views: https://mikezaschka.github.io/cds-data-federation/federation/concepts/consumption-views.html
+- Annotations: https://mikezaschka.github.io/cds-data/federation/reference/annotations.html
+- Consumption views: https://mikezaschka.github.io/cds-data/federation/concepts/consumption-views.html

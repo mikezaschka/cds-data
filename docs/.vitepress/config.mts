@@ -79,7 +79,7 @@ export default withMermaid(
     title: 'cds-data CAP plugins',
     description:
       'Documentation for cds-data-federation, cds-data-materialization, and cds-data-pipeline — composable SAP CAP plugins.',
-    base: '/',
+    base: '/cds-data/',
     lastUpdated: true,
     ignoreDeadLinks: [
       /^https?:\/\//,
@@ -93,11 +93,11 @@ export default withMermaid(
     themeConfig: {
       search: { provider: 'local' },
       editLink: {
-        pattern: 'https://github.com/mikezaschka/cds-data-monorepo/edit/main/docs/:path',
+        pattern: 'https://github.com/mikezaschka/cds-data/edit/main/docs/:path',
         text: 'Edit this page on GitHub',
       },
       socialLinks: [
-        { icon: 'github', link: 'https://github.com/mikezaschka/cds-data-monorepo' },
+        { icon: 'github', link: 'https://github.com/mikezaschka/cds-data' },
       ],
       nav: [
         { text: 'Home', link: '/' },

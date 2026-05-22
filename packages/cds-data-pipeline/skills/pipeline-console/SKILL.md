@@ -60,5 +60,5 @@ The plugin ships `srv/monitor-annotations.cds` for Fiori Elements list/object pa
 
 ## Docs
 
-- Pipeline Console: https://mikezaschka.github.io/cds-data-federation/pipeline/guide/pipeline-console.html
-- Management API: https://mikezaschka.github.io/cds-data-federation/pipeline/reference/management-service.html
+- Pipeline Console: https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console.html
+- Management API: https://mikezaschka.github.io/cds-data/pipeline/reference/management-service.html

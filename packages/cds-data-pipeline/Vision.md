@@ -84,7 +84,7 @@ Near-term evolution stays aligned with that vision: stronger event-driven ingest
 ## Further reading
 
 - [README.md](README.md) — overview and quick start  
-- [Documentation](https://mikezaschka.github.io/cds-data-federation/pipeline/) — guides, concepts, recipes, reference  
+- [Documentation](https://mikezaschka.github.io/cds-data/pipeline/) — guides, concepts, recipes, reference  
 - [docs/guide/introduction.md](docs/guide/introduction.md) — what it is, why it exists, scope  
 - [decisions/](decisions/) — architecture decisions that refine the vision in code
 

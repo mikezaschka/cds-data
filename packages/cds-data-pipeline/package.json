@@ -4,7 +4,7 @@
   "description": "A CAP application-layer plugin for declarative, traceable, scheduled data pipelines between CAP services. Each pipeline is a linear READ -> MAP -> WRITE job between exactly one source and one target, with built-in tracker, retry, concurrency guard, management OData API, and event hooks.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mikezaschka/cds-data-monorepo.git",
+    "url": "git+https://github.com/mikezaschka/cds-data.git",
     "directory": "packages/cds-data-pipeline"
   },
   "keywords": [
@@ -18,9 +18,9 @@
   "author": "Mike Zaschka <opensource@mikezaschka.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mikezaschka/cds-data-monorepo/issues"
+    "url": "https://github.com/mikezaschka/cds-data/issues"
   },
-  "homepage": "https://github.com/mikezaschka/cds-data-monorepo#readme",
+  "homepage": "https://github.com/mikezaschka/cds-data#readme",
   "main": "cds-plugin.js",
   "files": [
     "srv/**",

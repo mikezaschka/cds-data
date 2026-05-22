@@ -568,7 +568,7 @@ Useful for debugging plugin consumers: test that the consumption view's renames 
 
 ### Why the plugin's test harness uses real provider apps instead of `cds mock`
 
-Despite `cds mock` being the guide's recommended dev workflow, the plugin's [`packages/cds-data-federation/test/support/setup.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/test/support/setup.js) spawns **real** CAP provider apps (`test/fixtures/provider`, `test/fixtures/inventory`, `test/fixtures/rest-provider`) rather than using `cds mock`. Per `CLAUDE.md` §6 ("what NOT to do"):
+Despite `cds mock` being the guide's recommended dev workflow, the plugin's [`packages/cds-data-federation/test/support/setup.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/support/setup.js) spawns **real** CAP provider apps (`test/fixtures/provider`, `test/fixtures/inventory`, `test/fixtures/rest-provider`) rather than using `cds mock`. Per `CLAUDE.md` §6 ("what NOT to do"):
 
 > "Don't write tests that mock the provider service — use the real `test/provider` CAP app via `setup.js`. Mocking gives false confidence; the real OData translation has subtleties (`@odata.count`, OData v2 timestamp format, etc.) that mocks miss."
 

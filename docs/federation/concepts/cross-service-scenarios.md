@@ -107,7 +107,7 @@ Each section below follows the same four-part template:
 1. **What it is** — one-paragraph definition, one concrete `GET` example, one-line topology summary.
 2. **What CAP provides out of the box** — what the CAP runtime does (or fails to do) *without this plugin*.
 3. **What this plugin adds** — the specific handler, function, or registry entry, with a pointer to the source file.
-4. **Status and test coverage** — `supported` / `partial` / `planned`, with the test ids still used in the [`packages/cds-data-federation/test/integration/`](https://github.com/mikezaschka/cds-data-monorepo/tree/main/packages/cds-data-federation/test/integration) suite.
+4. **Status and test coverage** — `supported` / `partial` / `planned`, with the test ids still used in the [`packages/cds-data-federation/test/integration/`](https://github.com/mikezaschka/cds-data/tree/main/packages/cds-data-federation/test/integration) suite.
 
 ---
 
@@ -161,7 +161,7 @@ The cache wraps the outbound `remote.run(req.query)` call — including the enti
 
 ### Status and test coverage
 
-**Supported.** Covered by tests `A1–A7` in [`packages/cds-data-federation/test/integration/delegate/basic.test.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/test/integration/delegate/basic.test.js) (to-one renames, to-many, multi-expand, nested expand, `$expand` + `$select`, single-entity key access).
+**Supported.** Covered by tests `A1–A7` in [`packages/cds-data-federation/test/integration/delegate/basic.test.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/integration/delegate/basic.test.js) (to-one renames, to-many, multi-expand, nested expand, `$expand` + `$select`, single-entity key access).
 
 ---
 
@@ -200,11 +200,11 @@ No native CAP mechanism collects foreign keys from one service's result and issu
 6. Stitch the fetched records back into the main result as nested objects.
 7. Optionally cache the remote sub-query (the outbound batch-fetch is a cacheable unit).
 
-Source: [`srv/delegation/expand-local-to-remote.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/expand-local-to-remote.js). Registry is populated by [`srv/annotation-scanner.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/annotation-scanner.js) and consumed by `resolveFederatedExpand()`.
+Source: [`srv/delegation/expand-local-to-remote.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/expand-local-to-remote.js). Registry is populated by [`srv/annotation-scanner.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/annotation-scanner.js) and consumed by `resolveFederatedExpand()`.
 
 ### Status and test coverage
 
-**Supported.** Covered by tests `B1–B3` in [`packages/cds-data-federation/test/integration/expand-local-to-remote/cross-service-expand-local-to-remote.test.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/test/integration/expand-local-to-remote/cross-service-expand-local-to-remote.test.js) (basic local → delegate, multiple local → delegate associations, `$select` within the remote sub-query).
+**Supported.** Covered by tests `B1–B3` in [`packages/cds-data-federation/test/integration/expand-local-to-remote/cross-service-expand-local-to-remote.test.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/integration/expand-local-to-remote/cross-service-expand-local-to-remote.test.js) (basic local → delegate, multiple local → delegate associations, `$select` within the remote sub-query).
 
 ---
 
@@ -231,7 +231,7 @@ The remote main fetch works: CAP runs `Customers('C001')` against `ProviderServi
 
 ### What this plugin adds
 
-Three functions in [`srv/delegation/expand-remote-to-local.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/expand-remote-to-local.js) cooperate:
+Three functions in [`srv/delegation/expand-remote-to-local.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/expand-remote-to-local.js) cooperate:
 
 1. `buildLocalAssocInfo()` — inspects the consumption view's CSN for local (non-federated) association targets.
 2. `splitLocalExpands()` — before forwarding to the remote, strips local-target expand items out of the query so the remote doesn't reject them.
@@ -241,7 +241,7 @@ The result: from the consumer's perspective, `$expand=bookmarks` "just works" on
 
 ### Status and test coverage
 
-**Supported.** Covered by the `C`-prefixed tests in [`packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js) (remote customer with local bookmarks, key and filtered access).
+**Supported.** Covered by the `C`-prefixed tests in [`packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js) (remote customer with local bookmarks, key and filtered access).
 
 ---
 
@@ -302,7 +302,7 @@ CAP resolves navigation paths within a single service only. When the navigation 
 
 ### What this plugin adds
 
-`resolveLocalToRemoteNavigation()` in [`srv/delegation/cross-service-navigation.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js) rewrites the navigation path at the entry point:
+`resolveLocalToRemoteNavigation()` in [`srv/delegation/cross-service-navigation.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js) rewrites the navigation path at the entry point:
 
 1. Detect the navigation segment whose target is remote-backed.
 2. Resolve the key(s) of the local entry (`Customers('C001')`) against the local DB if the entry is persistent, or against the upstream provider if the entry is itself a remote view.
@@ -311,7 +311,7 @@ CAP resolves navigation paths within a single service only. When the navigation 
 
 ### Status and test coverage
 
-**Supported.** Covered by tests labelled `N1` (and related cases `N3`, `N4`) in [`packages/cds-data-federation/test/integration/navigation/cross-service-navigation.test.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/test/integration/navigation/cross-service-navigation.test.js). Sequence diagrams and gotchas in [Joining Local with Remote](/federation/getting-started/joining-local-with-remote).
+**Supported.** Covered by tests labelled `N1` (and related cases `N3`, `N4`) in [`packages/cds-data-federation/test/integration/navigation/cross-service-navigation.test.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/integration/navigation/cross-service-navigation.test.js). Sequence diagrams and gotchas in [Joining Local with Remote](/federation/getting-started/joining-local-with-remote).
 
 ---
 
@@ -336,7 +336,7 @@ The same limitation as local → remote: CAP handles navigation only within one 
 
 ### What this plugin adds
 
-`rewriteRemoteToLocalNavigation()` in the same [`srv/delegation/cross-service-navigation.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js) handles the mirror-image rewrite:
+`rewriteRemoteToLocalNavigation()` in the same [`srv/delegation/cross-service-navigation.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js) handles the mirror-image rewrite:
 
 1. Fetch the remote entry (`Orders('O001')`) via the standard delegate path.
 2. Extract the foreign key values needed to resolve the local association.
@@ -345,13 +345,13 @@ The same limitation as local → remote: CAP handles navigation only within one 
 
 ### Status and test coverage
 
-**Supported.** Covered by tests labelled `N2` (and related case `N5`) in [`packages/cds-data-federation/test/integration/navigation/cross-service-navigation.test.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/test/integration/navigation/cross-service-navigation.test.js). Walkthrough in [Extending Remote with Local](/federation/getting-started/extending-remote-with-local).
+**Supported.** Covered by tests labelled `N2` (and related case `N5`) in [`packages/cds-data-federation/test/integration/navigation/cross-service-navigation.test.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/integration/navigation/cross-service-navigation.test.js). Walkthrough in [Extending Remote with Local](/federation/getting-started/extending-remote-with-local).
 
 ---
 
 ## View Mapping Registry
 
-The registry is populated by [`srv/annotation-scanner.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/annotation-scanner.js) during CAP bootstrap and consumed by the batch-fetch resolvers. It exists **only to support cross-service expand: local → remote (and cross-provider)** — the one scenario where CAP's automatic query translation can't help because the translation straddles two services.
+The registry is populated by [`srv/annotation-scanner.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/annotation-scanner.js) during CAP bootstrap and consumed by the batch-fetch resolvers. It exists **only to support cross-service expand: local → remote (and cross-provider)** — the one scenario where CAP's automatic query translation can't help because the translation straddles two services.
 
 ```javascript
 // Built during annotation scanning, stored globally
@@ -380,7 +380,7 @@ For the other scenarios the registry is not read: delegated expand and delegated
 
 ## Test matrix
 
-The `A`, `B`, `C`, `N1`, `N2` ids below are the short test identifiers used in the [`packages/cds-data-federation/test/integration/`](https://github.com/mikezaschka/cds-data-monorepo/tree/main/packages/cds-data-federation/test/integration) suite and the `.http` files under [`examples/`](https://github.com/mikezaschka/cds-data-monorepo/tree/main/examples). Prose uses the canonical directional names from the [Legend](#legend-previous-scenario-labels).
+The `A`, `B`, `C`, `N1`, `N2` ids below are the short test identifiers used in the [`packages/cds-data-federation/test/integration/`](https://github.com/mikezaschka/cds-data/tree/main/packages/cds-data-federation/test/integration) suite and the `.http` files under [`examples/`](https://github.com/mikezaschka/cds-data/tree/main/examples). Prose uses the canonical directional names from the [Legend](#legend-previous-scenario-labels).
 
 ### Delegated expand (A)
 
@@ -410,7 +410,7 @@ Main entity is local, expanded entity is remote / `@federation.delegate`.
 
 Main entity is remote / `@federation.delegate`, expanded entity is local.
 
-See the `C`-prefixed tests in [`packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js).
+See the `C`-prefixed tests in [`packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js).
 
 ### Cross-service navigation (N1 / N2)
 
@@ -427,12 +427,12 @@ See the `C`-prefixed tests in [`packages/cds-data-federation/test/integration/ex
 | Scenario | Strategies | Status | Source |
 |---|---|---|---|
 | Delegated expand | `@federation.delegate` ↔ `@federation.delegate` (same provider) | **Done** — CAP handles natively via `remote.run(req.query)` | (no plugin code) |
-| Cross-service expand: local → remote | local / `@federation.replicate` ↔ `@federation.delegate` | **Done** | [`srv/delegation/expand-local-to-remote.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/expand-local-to-remote.js) |
-| Cross-service expand: remote → local | `@federation.delegate` ↔ local / `@federation.replicate` | **Done** | [`srv/delegation/expand-remote-to-local.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/expand-remote-to-local.js) |
+| Cross-service expand: local → remote | local / `@federation.replicate` ↔ `@federation.delegate` | **Done** | [`srv/delegation/expand-local-to-remote.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/expand-local-to-remote.js) |
+| Cross-service expand: remote → local | `@federation.delegate` ↔ local / `@federation.replicate` | **Done** | [`srv/delegation/expand-remote-to-local.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/expand-remote-to-local.js) |
 | Cross-service expand: cross-provider | local / `@federation.replicate` ↔ `@federation.delegate` (multiple providers) | **Supported, not separately tested** | (rides on local → remote) |
-| Cross-service navigation: local → remote | local / `@federation.replicate` ↔ `@federation.delegate` | **Done** | [`srv/delegation/cross-service-navigation.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js) |
-| Cross-service navigation: remote → local | `@federation.delegate` ↔ local / `@federation.replicate` | **Done** | [`srv/delegation/cross-service-navigation.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js) |
-| View mapping registry | — (infrastructure, used only by cross-service expand: local → remote and cross-provider) | **Done** | [`srv/annotation-scanner.js`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/annotation-scanner.js) |
+| Cross-service navigation: local → remote | local / `@federation.replicate` ↔ `@federation.delegate` | **Done** | [`srv/delegation/cross-service-navigation.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js) |
+| Cross-service navigation: remote → local | `@federation.delegate` ↔ local / `@federation.replicate` | **Done** | [`srv/delegation/cross-service-navigation.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js) |
+| View mapping registry | — (infrastructure, used only by cross-service expand: local → remote and cross-provider) | **Done** | [`srv/annotation-scanner.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/annotation-scanner.js) |
 | Response-level caching for delegated expand | `@federation.delegate` | **Done** — via [`cds-caching`](https://github.com/mikezaschka/cds-caching) | (peer dependency) |
 
 ---

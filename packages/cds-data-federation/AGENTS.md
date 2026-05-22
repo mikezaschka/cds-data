@@ -86,8 +86,8 @@ Before proposing CDS or CAP runtime changes, configure [`@cap-js/mcp-server`](ht
 
 ## Documentation
 
-- Federation guide: https://mikezaschka.github.io/cds-data-federation/federation/
-- Annotations: https://mikezaschka.github.io/cds-data-federation/federation/reference/annotations.html
-- Consumption views: https://mikezaschka.github.io/cds-data-federation/federation/concepts/consumption-views.html
-- Cross-service scenarios: https://mikezaschka.github.io/cds-data-federation/federation/concepts/cross-service-scenarios.html
-- Caching: https://mikezaschka.github.io/cds-data-federation/federation/integration/caching.html
+- Federation guide: https://mikezaschka.github.io/cds-data/federation/
+- Annotations: https://mikezaschka.github.io/cds-data/federation/reference/annotations.html
+- Consumption views: https://mikezaschka.github.io/cds-data/federation/concepts/consumption-views.html
+- Cross-service scenarios: https://mikezaschka.github.io/cds-data/federation/concepts/cross-service-scenarios.html
+- Caching: https://mikezaschka.github.io/cds-data/federation/integration/caching.html

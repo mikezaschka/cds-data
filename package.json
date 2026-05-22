@@ -5,7 +5,7 @@
   "description": "Monorepo root for cds-data-pipeline, cds-data-federation, and cds-data-materialization. See packages/*/README.md.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mikezaschka/cds-data-monorepo.git"
+    "url": "git+https://github.com/mikezaschka/cds-data.git"
   },
   "author": "Mike Zaschka <opensource@mikezaschka.com>",
   "license": "MIT",

@@ -59,7 +59,7 @@ Before proposing CDS or CAP runtime changes, configure [`@cap-js/mcp-server`](ht
 
 ## Documentation
 
-- Materialization guide: https://mikezaschka.github.io/cds-data-federation/materialization/
-- Annotations: https://mikezaschka.github.io/cds-data-federation/materialization/reference/annotations.html
-- Stage then aggregate: https://mikezaschka.github.io/cds-data-federation/materialization/concepts/stage-then-aggregate.html
-- First snapshot: https://mikezaschka.github.io/cds-data-federation/materialization/getting-started/first-snapshot.html
+- Materialization guide: https://mikezaschka.github.io/cds-data/materialization/
+- Annotations: https://mikezaschka.github.io/cds-data/materialization/reference/annotations.html
+- Stage then aggregate: https://mikezaschka.github.io/cds-data/materialization/concepts/stage-then-aggregate.html
+- First snapshot: https://mikezaschka.github.io/cds-data/materialization/getting-started/first-snapshot.html

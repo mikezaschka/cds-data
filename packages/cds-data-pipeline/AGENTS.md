@@ -70,8 +70,8 @@ Before proposing CDS or CAP runtime changes, configure [`@cap-js/mcp-server`](ht
 
 ## Documentation
 
-- Pipeline guide: https://mikezaschka.github.io/cds-data-federation/pipeline/
-- Get started: https://mikezaschka.github.io/cds-data-federation/pipeline/guide/get-started.html
-- Inference rules: https://mikezaschka.github.io/cds-data-federation/pipeline/guide/concepts/inference.html
-- Management API: https://mikezaschka.github.io/cds-data-federation/pipeline/reference/management-service.html
-- Pipeline Console: https://mikezaschka.github.io/cds-data-federation/pipeline/guide/pipeline-console.html
+- Pipeline guide: https://mikezaschka.github.io/cds-data/pipeline/
+- Get started: https://mikezaschka.github.io/cds-data/pipeline/guide/get-started.html
+- Inference rules: https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/inference.html
+- Management API: https://mikezaschka.github.io/cds-data/pipeline/reference/management-service.html
+- Pipeline Console: https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console.html

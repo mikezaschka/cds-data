@@ -2,13 +2,13 @@
 
 Composable [SAP CAP](https://cap.cloud.sap/) plugins for integrating remote services, moving data between systems, and persisting local aggregate snapshots — declarative via CDS annotations, with a shared pipeline engine underneath.
 
-**Documentation:** [https://mikezaschka.github.io/cds-data-federation/](https://mikezaschka.github.io/cds-data-federation/)
+**Documentation:** [https://mikezaschka.github.io/cds-data/](https://mikezaschka.github.io/cds-data/)
 
 | Package | Docs |
 |---|---|
-| [cds-data-federation](https://www.npmjs.com/package/cds-data-federation) | [Federation guide](https://mikezaschka.github.io/cds-data-federation/federation/) |
-| [cds-data-materialization](https://www.npmjs.com/package/cds-data-materialization) | [Materialization guide](https://mikezaschka.github.io/cds-data-federation/materialization/) |
-| [cds-data-pipeline](https://www.npmjs.com/package/cds-data-pipeline) | [Pipeline guide](https://mikezaschka.github.io/cds-data-federation/pipeline/) |
+| [cds-data-federation](https://www.npmjs.com/package/cds-data-federation) | [Federation guide](https://mikezaschka.github.io/cds-data/federation/) |
+| [cds-data-materialization](https://www.npmjs.com/package/cds-data-materialization) | [Materialization guide](https://mikezaschka.github.io/cds-data/materialization/) |
+| [cds-data-pipeline](https://www.npmjs.com/package/cds-data-pipeline) | [Pipeline guide](https://mikezaschka.github.io/cds-data/pipeline/) |
 
 This repository is the monorepo for all three npm packages. Install from npm; use the docs site for guides, concepts, and reference.
 
@@ -32,7 +32,7 @@ Three packages compose in one CAP application:
 
 Delegate-only setups can install just `cds-data-federation`. Replication, entity-level caching, and materialization require `cds-data-pipeline`.
 
-Getting started: [first delegation](https://mikezaschka.github.io/cds-data-federation/federation/getting-started/first-delegation) · [first replication](https://mikezaschka.github.io/cds-data-federation/federation/getting-started/first-replication) · [first snapshot](https://mikezaschka.github.io/cds-data-federation/materialization/getting-started/first-snapshot) · [pipeline get started](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/get-started)
+Getting started: [first delegation](https://mikezaschka.github.io/cds-data/federation/getting-started/first-delegation) · [first replication](https://mikezaschka.github.io/cds-data/federation/getting-started/first-replication) · [first snapshot](https://mikezaschka.github.io/cds-data/materialization/getting-started/first-snapshot) · [pipeline get started](https://mikezaschka.github.io/cds-data/pipeline/guide/get-started)
 
 ## Examples
 
@@ -45,7 +45,7 @@ Runnable demos live under [`examples/`](./examples/). See [`examples/README.md`]
 
 ## Links
 
-- [Documentation portal](https://mikezaschka.github.io/cds-data-federation/)
+- [Documentation portal](https://mikezaschka.github.io/cds-data/)
 - [cds-data-federation on npm](https://www.npmjs.com/package/cds-data-federation)
 - [cds-data-pipeline on npm](https://www.npmjs.com/package/cds-data-pipeline)
 - [cds-data-materialization on npm](https://www.npmjs.com/package/cds-data-materialization)

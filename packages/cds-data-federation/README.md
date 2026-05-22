@@ -7,7 +7,7 @@ The annotation-driven SAP CAP plugin for integrating external services into your
 ## Scope
 
 - `@federation.delegate` — live proxy. Reads (and optionally writes) forwarded to the remote service at request time. Cross-service `$expand`, navigation-filter rewriting, field/association renames, opt-in CUD forwarding.
-- `@federation.replicate` — scheduled sync. Annotated consumption view is bound to an entity-shape pipeline on `cds-data-pipeline`; pipeline intent is derived from the config shape (see [inference rules](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/concepts/inference)).
+- `@federation.replicate` — scheduled sync. Annotated consumption view is bound to an entity-shape pipeline on `cds-data-pipeline`; pipeline intent is derived from the config shape (see [inference rules](https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/inference)).
 - Optional delegate caching — default **`cache.strategy: 'response'`** via [`cds-caching`](https://github.com/mikezaschka/cds-caching) (`{ cache: { ttl: 60000 } }`), or **`cache.strategy: 'entity'`** for SQLite-backed full-entity snapshots (secondary `cds.requires` datasource + [`cds-data-pipeline`](https://www.npmjs.com/package/cds-data-pipeline)).
 - Shipped `replicated` aspect (`lastReplicatedAt`, `lastReplicatedBy`) for consumer schemas.
 

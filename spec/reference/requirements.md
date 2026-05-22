@@ -156,7 +156,7 @@ From this single CDS definition, the plugin infers everything:
 
 ## 4. Feature Requirements
 
-**Maintenance rule:** When a requirement moves to "Implemented", also update [README.md](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/README.md) to reflect the new user-visible capability (annotation option, feature matrix entry, protocol support, or example). The README is the glanceable user-facing summary; this document remains the full spec.
+**Maintenance rule:** When a requirement moves to "Implemented", also update [README.md](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/README.md) to reflect the new user-visible capability (annotation option, feature matrix entry, protocol support, or example). The README is the glanceable user-facing summary; this document remains the full spec.
 
 **Priority levels:**
 
@@ -679,7 +679,7 @@ Tests run against **real** local CAP providers -- not mocks. The test infrastruc
 **Two parallel surfaces:**
 
 - **`test/`** — Jest-driven. Correctness source of truth. In-memory SQLite, ephemeral providers started per run. Do not click here.
-- **`examples/`** — manually runnable via `npm run examples:start`. Persistent SQLite, Fiori Elements UIs, launchpad. Use for exploratory validation and demos. See [`examples/README.md`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/examples/README.md) and feature 4.16.
+- **`examples/`** — manually runnable via `npm run examples:start`. Persistent SQLite, Fiori Elements UIs, launchpad. Use for exploratory validation and demos. See [`examples/README.md`](https://github.com/mikezaschka/cds-data/blob/main/examples/README.md) and feature 4.16.
 
 ### Test infrastructure
 

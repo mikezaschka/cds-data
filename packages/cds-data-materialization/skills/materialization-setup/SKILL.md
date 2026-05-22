@@ -50,4 +50,4 @@ Install federation and materialization side by side when you need remote sync an
 
 ## Docs
 
-- Installation: https://mikezaschka.github.io/cds-data-federation/materialization/getting-started/installation.html
+- Installation: https://mikezaschka.github.io/cds-data/materialization/getting-started/installation.html

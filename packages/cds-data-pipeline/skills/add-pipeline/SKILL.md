@@ -87,9 +87,9 @@ await pipelines.addPipeline({ kind: 'replicate', name: 'X', ... });
 
 ❌ **Wrong** — `target.service: 'RemoteOData'` without `target.adapter`.
 
-✅ **Correct** — implement [custom target adapter](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/targets/custom.html) or write to `db`.
+✅ **Correct** — implement [custom target adapter](https://mikezaschka.github.io/cds-data/pipeline/guide/targets/custom.html) or write to `db`.
 
 ## Docs
 
-- Inference: https://mikezaschka.github.io/cds-data-federation/pipeline/guide/concepts/inference.html
-- OData source: https://mikezaschka.github.io/cds-data-federation/pipeline/guide/sources/odata.html
+- Inference: https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/inference.html
+- OData source: https://mikezaschka.github.io/cds-data/pipeline/guide/sources/odata.html

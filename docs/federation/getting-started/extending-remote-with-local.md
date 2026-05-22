@@ -91,12 +91,12 @@ The plugin rewrites the navigation CQN: `Customers('C001').bookmarks` becomes `S
 
 ## Under the hood
 
-This is the **cross-service expand: remote → local** flow described in [Cross-Service Scenarios](../concepts/cross-service-scenarios.md#cross-service-expand-remote-local) (integration tests `C1..C4`). The logic lives in [`buildLocalAssocInfo()`, `splitLocalExpands()`, and `resolveRemoteToLocalExpands()`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/expand-remote-to-local.js). Cross-service navigation remote → local (`N2`) is rewritten by [`rewriteRemoteToLocalNavigation()`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js).
+This is the **cross-service expand: remote → local** flow described in [Cross-Service Scenarios](../concepts/cross-service-scenarios.md#cross-service-expand-remote-local) (integration tests `C1..C4`). The logic lives in [`buildLocalAssocInfo()`, `splitLocalExpands()`, and `resolveRemoteToLocalExpands()`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/expand-remote-to-local.js). Cross-service navigation remote → local (`N2`) is rewritten by [`rewriteRemoteToLocalNavigation()`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/cross-service-navigation.js).
 
 ## Gotchas
 
 - **The FK target type must match.** If the remote `Customers.ID` is `String(10)`, declare the local `Bookmarks.customer` association accordingly so CAP materializes the correct `customer_ID` column type.
-- **Lambda filters on local children work** — `$filter=bookmarks/any(b:b.label eq 'VIP')` is resolved by [`resolveLocalLambdaFilters()`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/lambda-filters.js) which pre-queries the local DB and rewrites to a key IN on the remote query.
+- **Lambda filters on local children work** — `$filter=bookmarks/any(b:b.label eq 'VIP')` is resolved by [`resolveLocalLambdaFilters()`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/lambda-filters.js) which pre-queries the local DB and rewrites to a key IN on the remote query.
 - **Creating a local child is a normal CAP insert** — `POST /consumer/Bookmarks` with `{ "customer_ID": "C001", "label": "VIP" }`. No federation involved; the FK is just a string that happens to match a remote key. No referential integrity is enforced across the boundary (the remote system has no knowledge of your Bookmarks table).
 - **Deleting a remote Customer does not cascade** to local Bookmarks. The plugin does not propagate deletes across the service boundary. If the remote row disappears you will have orphan bookmarks until a reconciliation job cleans them up.
 

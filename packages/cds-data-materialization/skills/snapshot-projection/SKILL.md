@@ -90,5 +90,5 @@ group by customerId;
 
 ## Docs
 
-- Annotations: https://mikezaschka.github.io/cds-data-federation/materialization/reference/annotations.html
-- Stage then aggregate: https://mikezaschka.github.io/cds-data-federation/materialization/concepts/stage-then-aggregate.html
+- Annotations: https://mikezaschka.github.io/cds-data/materialization/reference/annotations.html
+- Stage then aggregate: https://mikezaschka.github.io/cds-data/materialization/concepts/stage-then-aggregate.html

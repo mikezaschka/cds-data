@@ -18,10 +18,10 @@ const VALID_SOURCE_KINDS = new Set(['cqn', 'odata', 'odata-v2', 'rest'])
 // Query-shape pipelines must use `mode: 'full'` or `mode: 'partial-refresh'`.
 const ROW_DELTA_MODES = new Set(['timestamp', 'key', 'datetime-fields'])
 
-const DOC_REF = `See https://mikezaschka.github.io/cds-data-pipeline/concepts/inference/ ` +
+const DOC_REF = `See https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/inference.html ` +
     `for the full inference + registration-validation rules.`
 
-const DOC_REF_FAN_IN = `See https://mikezaschka.github.io/cds-data-pipeline/recipes/multi-source/ ` +
+const DOC_REF_FAN_IN = `See https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/multi-source.html ` +
     `for the multi-source fan-in rules.`
 
 /** Matches `plugin.data_pipeline.Pipelines.description` in db/index.cds */

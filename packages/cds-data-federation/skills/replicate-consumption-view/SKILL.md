@@ -96,5 +96,5 @@ Pipeline name defaults to the entity name.
 
 ## Docs
 
-- First replication: https://mikezaschka.github.io/cds-data-federation/federation/getting-started/first-replication.html
-- Annotations: https://mikezaschka.github.io/cds-data-federation/federation/reference/annotations.html
+- First replication: https://mikezaschka.github.io/cds-data/federation/getting-started/first-replication.html
+- Annotations: https://mikezaschka.github.io/cds-data/federation/reference/annotations.html

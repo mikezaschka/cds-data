@@ -4,7 +4,7 @@
   "description": "A data federation plugin for SAP CAP applications supporting delegation, caching, and replication strategies via declarative CDS annotations.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mikezaschka/cds-data-federation.git",
+    "url": "git+https://github.com/mikezaschka/cds-data.git",
     "directory": "packages/cds-data-federation"
   },
   "keywords": [

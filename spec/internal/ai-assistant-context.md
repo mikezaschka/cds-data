@@ -1,6 +1,6 @@
 # AI Assistant Context (deep)
 
-This page is the detailed counterpart to [`CLAUDE.md`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/CLAUDE.md). Start there for the mental model, terminology, and the "don'ts" list. This page covers:
+This page is the detailed counterpart to [`CLAUDE.md`](https://github.com/mikezaschka/cds-data/blob/main/CLAUDE.md). Start there for the mental model, terminology, and the "don'ts" list. This page covers:
 
 - [Architecture](#architecture) — module tree, plugin lifecycle, CAP-native vs. plugin value-add.
 - [Test architecture](#test-architecture) — providers, test file layout, test categories.
@@ -263,7 +263,7 @@ npm run test -w cds-data-federation -- --testNamePattern "\\[4\\.2\\.5\\] B4"
 
 ## Example apps
 
-[`examples/`](https://github.com/mikezaschka/cds-data-monorepo/tree/main/examples) holds **manually runnable** demo apps complementary to `test/`. Same federation patterns, but:
+[`examples/`](https://github.com/mikezaschka/cds-data/tree/main/examples) holds **manually runnable** demo apps complementary to `test/`. Same federation patterns, but:
 
 - Persistent SQLite (`examples/consumer/db.sqlite`) so clicks through the UI persist across restarts.
 - Fiori Elements UIs + a `sap.ushell` sandbox launchpad so features are clickable, not just query-able.
@@ -326,7 +326,7 @@ When a new **user-visible** feature lands (new annotation option, new adapter, n
 5. If you changed provider/inventory schemas, rerun `npm run examples:regen-csn` so the consumer's external CSN snapshots are up to date.
 6. Verify `npm run examples:start` boots cleanly and the affected tile renders.
 
-This is enforced in [`.claude/commands/implement-feature.md`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/.claude/commands/implement-feature.md) Phase 5 and covered by the `/review` checklist. The launchpad is the user-facing showcase — a broken tile or missing demo for a documented feature is as bad as broken docs.
+This is enforced in [`.claude/commands/implement-feature.md`](https://github.com/mikezaschka/cds-data/blob/main/.claude/commands/implement-feature.md) Phase 5 and covered by the `/review` checklist. The launchpad is the user-facing showcase — a broken tile or missing demo for a documented feature is as bad as broken docs.
 
 ### Regenerating FE apps
 
@@ -336,7 +336,7 @@ The 8 Fiori Elements apps have an identical shape and are generated from a singl
 
 ## Conventions
 
-The short-form versions live in [`CLAUDE.md`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/CLAUDE.md) §Conventions. Expanded rationale and edge cases follow.
+The short-form versions live in [`CLAUDE.md`](https://github.com/mikezaschka/cds-data/blob/main/CLAUDE.md) §Conventions. Expanded rationale and edge cases follow.
 
 ### Annotation naming
 

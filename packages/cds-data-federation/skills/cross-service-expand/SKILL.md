@@ -62,5 +62,5 @@ Filters like `$filter=buyer/name eq 'Acme'` translate to remote `customer/name`.
 
 ## Docs
 
-- Full scenario reference: https://mikezaschka.github.io/cds-data-federation/federation/concepts/cross-service-scenarios.html
-- Cross-provider mashup: https://mikezaschka.github.io/cds-data-federation/federation/getting-started/cross-provider-mashup.html
+- Full scenario reference: https://mikezaschka.github.io/cds-data/federation/concepts/cross-service-scenarios.html
+- Cross-provider mashup: https://mikezaschka.github.io/cds-data/federation/getting-started/cross-provider-mashup.html

@@ -12,7 +12,7 @@ The repository is an npm workspaces monorepo hosting two independent npm package
 - [`packages/cds-data-pipeline/`](../../../packages/cds-data-pipeline/) — the engine. Programmatic `addPipeline({ kind, ... })` surface; no federation annotations.
 - [`packages/cds-data-federation/`](../../../packages/cds-data-federation/) — the annotation layer. `@federation.delegate` / `@federation.replicate`; composes the engine for `replicate`.
 
-The published docs surface did not track the split. [`mkdocs.yml`](../../../mkdocs.yml) line 1 set `site_name: cds-data-pipeline + cds-data-federation` and line 3 set `site_url: https://mikezaschka.github.io/cds-data-federation/`, treating the monorepo as a single product. [ADR 0002](./0002-separate-internal-and-published-docs.md) handled *internal vs. external* separation via `exclude_docs:` and a tone style guide; it left *per-plugin* separation out of scope (non-goals §1).
+The published docs surface did not track the split. [`mkdocs.yml`](../../../mkdocs.yml) line 1 set `site_name: cds-data-pipeline + cds-data-federation` and line 3 set `site_url: https://mikezaschka.github.io/cds-data/`, treating the monorepo as a single product. [ADR 0002](./0002-separate-internal-and-published-docs.md) handled *internal vs. external* separation via `exclude_docs:` and a tone style guide; it left *per-plugin* separation out of scope (non-goals §1).
 
 Two concrete leaks motivated this ADR:
 
@@ -162,8 +162,8 @@ Each `packages/<pkg>/mkdocs.yml` sets:
 
 ```yaml
 docs_dir: docs
-site_url: https://mikezaschka.github.io/cds-data-federation/<pkg>/
-repo_url: https://github.com/mikezaschka/cds-data-monorepo
+site_url: https://mikezaschka.github.io/cds-data/<pkg>/
+repo_url: https://github.com/mikezaschka/cds-data
 repo_name: mikezaschka/cds-data-federation
 edit_uri: edit/main/packages/<pkg>/docs/
 ```
@@ -196,7 +196,7 @@ Six reviewable commits. `main` stays green between commits 1–4 and 6; commit 5
 ### What we accept as trade-offs
 
 - **Second exception to the low-redundancy rule.** Consumer concept pages are duplicated per package with scope differences. This is an explicit policy addition, recorded in §3 and reflected as a one-line clause in [`CLAUDE.md`](../../../CLAUDE.md) §Conventions.
-- **Doubly-nested site URLs.** `mikezaschka.github.io/cds-data-federation/cds-data-pipeline/` names the repo in the subpath of the engine site. The cost is cosmetic; a repo rename is a separate decision.
+- **Doubly-nested site URLs (historical).** Early MkDocs layouts used paths like `mikezaschka.github.io/cds-data-federation/cds-data-pipeline/`. The unified VitePress site now lives at **`https://mikezaschka.github.io/cds-data/`** (repo `mikezaschka/cds-data`, `base: '/cds-data/'`).
 - **Single-commit CI transition.** Commit 5 in §11 changes the deploy mechanism. Mitigated by running the new workflow once on a throwaway branch before merging and by the manual Pages-source flip being a one-line repo setting.
 - **R5 grep is coarse.** It can't distinguish "under `## For contributors`" from "elsewhere in the same README"; reviewer judgment closes the gap. Consistent with how R1–R3 are already enforced.
 - **Two build jobs in CI.** Doubles the pip-install and mkdocs-build time. Acceptable; both are seconds-scale.

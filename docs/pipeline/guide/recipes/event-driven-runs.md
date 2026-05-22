@@ -97,7 +97,7 @@ Static scope from the consumption projection (`where` → `viewMapping.staticWhe
 
 ## Runnable example
 
-[Example 07 — Event-driven runs](https://github.com/mikezaschka/cds-data-monorepo/tree/main/packages/cds-data-pipeline/examples/07-event-driven-runs) — shared LogisticsService emit actions, file-based messaging bridge, batch baseline + key/payload/delete scenarios.
+[Example 07 — Event-driven runs](https://github.com/mikezaschka/cds-data/tree/main/packages/cds-data-pipeline/examples/07-event-driven-runs) — shared LogisticsService emit actions, file-based messaging bridge, batch baseline + key/payload/delete scenarios.
 
 ## See also
 

@@ -123,14 +123,14 @@ GET /consumer/Reviews?$filter=rating ge 4 and product/category eq 'Electronics'&
 
 ## Under the hood
 
-This is the **cross-service expand: local → remote** flow described in detail at [Cross-Service Scenarios](../concepts/cross-service-scenarios.md#cross-service-expand-local-remote) (integration tests `B1..B3`). The plugin's [`registerLocalExpandResolvers()`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/expand-local-to-remote.js) installs an `on('READ')` handler for every local entity that has at least one association to a federated entity, plus [`resolveRemoteNavigationFilters()`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/remote-navigation-filters.js) for the `$filter` case.
+This is the **cross-service expand: local → remote** flow described in detail at [Cross-Service Scenarios](../concepts/cross-service-scenarios.md#cross-service-expand-local-remote) (integration tests `B1..B3`). The plugin's [`registerLocalExpandResolvers()`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/expand-local-to-remote.js) installs an `on('READ')` handler for every local entity that has at least one association to a federated entity, plus [`resolveRemoteNavigationFilters()`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/remote-navigation-filters.js) for the `$filter` case.
 
 ## Gotchas
 
-- **Composite-key associations** work — the plugin builds OR chains of AND conditions for the remote query (OData has no tuple IN). Example: [`AddressNotes → CustomerAddresses`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/test/fixtures/consumer/db/schema.cds) with `custId + addressType`.
+- **Composite-key associations** work — the plugin builds OR chains of AND conditions for the remote query (OData has no tuple IN). Example: [`AddressNotes → CustomerAddresses`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/fixtures/consumer/db/schema.cds) with `custId + addressType`.
 - **Excluding columns** are honoured in the batch-fetch — if the federated target uses `excluding { email }`, the plugin omits `email` from `$select` in the remote call.
 - **Nested `$expand`** inside a federated expand works (`$expand=product($expand=category)`) — remote expand options are forwarded with names translated recursively.
-- **Lambda operators in `$filter` over a federated to-many** (`$filter=reviews/any(r:r.rating eq 5)`) — supported via [`resolveRemoteLambdaFilters()`](https://github.com/mikezaschka/cds-data-monorepo/blob/main/packages/cds-data-federation/srv/delegation/expand-local-to-remote.js), rewrites to an IN filter.
+- **Lambda operators in `$filter` over a federated to-many** (`$filter=reviews/any(r:r.rating eq 5)`) — supported via [`resolveRemoteLambdaFilters()`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/expand-local-to-remote.js), rewrites to an IN filter.
 - **Writing through the association** (creating a Review with `product_productId: 'P001'`) writes only the FK to the local DB. It does **not** create a remote product. Use the federated entity's own CUD endpoints for that.
 
 ## See also

@@ -1,6 +1,6 @@
 # Builds the unified public docs site (VitePress) and publishes to GitHub Pages.
 #
-#   https://mikezaschka.github.io/cds-data-federation/
+#   https://mikezaschka.github.io/cds-data/
 #
 # One-time setup: GitHub repo -> Settings -> Pages -> Deploy from branch gh-pages / (root)
 

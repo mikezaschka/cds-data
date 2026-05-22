@@ -9,7 +9,7 @@
 
 `docs/` currently serves two audiences from one tree:
 
-- **Plugin consumers** via the [MkDocs Material site](https://mikezaschka.github.io/cds-data-federation/) built from `mkdocs.yml`.
+- **Plugin consumers** via the [MkDocs Material site](https://mikezaschka.github.io/cds-data/) built from `mkdocs.yml`.
 - **Plugin contributors + AI assistants** via GitHub-rendered markdown, following the link grid in [`CLAUDE.md`](../../../CLAUDE.md) → `spec/internal/ai-assistant-context.md`, research notes, ADRs, ideas, and the requirements tracker.
 
 Two concrete problems motivated this decision:

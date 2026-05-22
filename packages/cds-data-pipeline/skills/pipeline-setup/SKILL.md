@@ -54,4 +54,4 @@ After boot, `/pipeline/Pipelines` should list registered pipelines. Log lines fr
 
 ## Docs
 
-- Get started: https://mikezaschka.github.io/cds-data-federation/pipeline/guide/get-started.html
+- Get started: https://mikezaschka.github.io/cds-data/pipeline/guide/get-started.html

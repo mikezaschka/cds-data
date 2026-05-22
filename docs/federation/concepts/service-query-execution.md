@@ -149,7 +149,7 @@ describe('Tests', () => {
 
 `cds.test()` boots the full CAP server in-process. Both `GET` (HTTP) and `cs.run` (programmatic) dispatch through `ConsumerService` where the plugin handler is registered.
 
-The test file [`packages/cds-data-federation/test/integration/`](https://github.com/mikezaschka/cds-data-monorepo/tree/main/packages/cds-data-federation/test/integration) demonstrates both patterns:
+The test file [`packages/cds-data-federation/test/integration/`](https://github.com/mikezaschka/cds-data/tree/main/packages/cds-data-federation/test/integration) demonstrates both patterns:
 - HTTP tests use `GET('/odata/v4/consumer/...')`
 - CQL tests use `cs.run(SELECT.from(...))`
 

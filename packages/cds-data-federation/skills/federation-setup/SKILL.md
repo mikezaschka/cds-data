@@ -53,4 +53,4 @@ Configure the remote in `cds.requires` per CAP [Reuse & Compose — Service Inte
 
 - First delegate entity → [delegate-consumption-view](../delegate-consumption-view/SKILL.md)
 - First replicate entity → [replicate-consumption-view](../replicate-consumption-view/SKILL.md)
-- Docs: https://mikezaschka.github.io/cds-data-federation/federation/getting-started/installation.html
+- Docs: https://mikezaschka.github.io/cds-data/federation/getting-started/installation.html

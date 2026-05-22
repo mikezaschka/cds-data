@@ -2,7 +2,7 @@
 
 > **Work in progress.** APIs, schema, and documentation may change before a stable release.
 
-[Documentation](https://mikezaschka.github.io/cds-data-federation/pipeline/) · [npm](https://www.npmjs.com/package/cds-data-pipeline)
+[Documentation](https://mikezaschka.github.io/cds-data/pipeline/) · [npm](https://www.npmjs.com/package/cds-data-pipeline)
 
 **A CAP plugin for declarative, scheduled data pipelines between CAP services.** Each pipeline moves data from one source to one target in a linear `READ → MAP → WRITE` flow — with tracking, retry, delta support, and a management API out of the box.
 
@@ -23,11 +23,11 @@ It sits **above** ad-hoc `cds.spawn` scripts and **below** SAP Integration Suite
 
 ## Key concepts
 
-- **`addPipeline(...)`** — register a pipeline. Behavior is [inferred from the config shape](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/concepts/inference).
+- **`addPipeline(...)`** — register a pipeline. Behavior is [inferred from the config shape](https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/inference).
 - **Event hooks** — `PIPELINE.START → READ → MAP_BATCH → WRITE_BATCH → DONE`, using CAP's standard `before / on / after` API.
-- **Consumption views** — declare the target as a `projection on <remote.Entity>` with `@cds.persistence.table`. One CDS declaration defines schema, column restriction, renames, and filters. See [Consumption views](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/concepts/consumption-views).
-- **Source adapters** — OData V2/V4, REST (cursor/offset/page pagination), CQN, or [custom](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/sources/custom).
-- **Target adapters** — local DB, remote OData, or [custom](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/targets/custom).
+- **Consumption views** — declare the target as a `projection on <remote.Entity>` with `@cds.persistence.table`. One CDS declaration defines schema, column restriction, renames, and filters. See [Consumption views](https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/consumption-views).
+- **Source adapters** — OData V2/V4, REST (cursor/offset/page pagination), CQN, or [custom](https://mikezaschka.github.io/cds-data/pipeline/guide/sources/custom).
+- **Target adapters** — local DB, remote OData, or [custom](https://mikezaschka.github.io/cds-data/pipeline/guide/targets/custom).
 - **Delta modes** — polling-based `timestamp`, `key`, `datetime-fields`, or `full` refresh.
 - **Scheduling** — in-process timer, persistent queue, or external (BTP Job Scheduling Service, CronJob).
 - **Management API** — OData at `/pipeline` with tracker, run history, statistics, and `execute` action.
@@ -58,7 +58,7 @@ cds.on('served', async () => {
 module.exports = cds.server;
 ```
 
-Step-by-step setup: [Get started](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/get-started)
+Step-by-step setup: [Get started](https://mikezaschka.github.io/cds-data/pipeline/guide/get-started)
 
 ## Pipeline Console
 
@@ -70,11 +70,11 @@ require('cds-data-pipeline/lib/mount-pipeline-console')
 module.exports = cds.server
 ```
 
-Or run `cds add data-pipeline-monitor`. Details: [Pipeline Console](https://mikezaschka.github.io/cds-data-federation/pipeline/guide/pipeline-console).
+Or run `cds add data-pipeline-monitor`. Details: [Pipeline Console](https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console).
 
 ## Documentation
 
-Full docs — concepts, recipes, adapter references, management API — at **<https://mikezaschka.github.io/cds-data-federation/pipeline/>**.
+Full docs — concepts, recipes, adapter references, management API — at **<https://mikezaschka.github.io/cds-data/pipeline/>**.
 
 ## AI assistants
 
