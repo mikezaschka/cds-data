@@ -32,12 +32,23 @@ Three npm packages compose in one CAP app. **cds-data-federation** is the usual 
 
 **Delegate** forwards reads (and optional writes) to the remote at query time. **Replicate** and **snapshot** register scheduled pipelines that move data through the engine into your database. Federation optionally layers [cds-caching](https://github.com/mikezaschka/cds-caching) on delegate or replicate; federation and materialization both peer-require the pipeline package.
 
+New to the suite? Start with **[Concepts](/concepts/)** — the shared [terminology](/concepts/terminology), [architecture](/concepts/architecture), and how the three plugins fit together.
+
 ## Documentation
 
 | Package | What it is |
 |---------|------------|
 | **[cds-data-federation](/federation/)** | `@federation.delegate` and `@federation.replicate` on consumption views; composes the pipeline for replicate. |
-| **[cds-data-materialization](/materialization/)** | `@materialize.snapshot` on `group by` projections; composes the pipeline for query-shape snapshots. |
+| **[cds-data-materialization](/materialization/)** <Badge type="warning" text="Experimental" /> | `@materialize.snapshot` on `group by` projections; composes the pipeline for query-shape snapshots. **Not yet released.** |
 | **[cds-data-pipeline](/pipeline/)** | Application-layer `READ → MAP → WRITE` engine — tracker, retry, management API, event hooks. |
 
-Install from npm: `cds-data-federation`, `cds-data-pipeline`, `cds-data-materialization`.
+Install from npm: `cds-data-federation`, `cds-data-pipeline`. `cds-data-materialization` is experimental and not yet published.
+
+## CDS 10 & AI integration
+
+These plugins track CAP's June 2026 (**cds 10**) release. All three install on **both CDS 9 and CDS 10** (`@sap/cds >= 9`). Two new CAP capabilities compose naturally with them:
+
+- **HCQL** (CQL over HTTP) — for CAP-to-CAP integration, CAP's remote client auto-selects HCQL over OData. `@federation.delegate` and `@federation.replicate` benefit automatically, with no annotation change.
+- **MCP** (`@cap-js/mcp`) — expose federated entities to AI agents through the Model Context Protocol. Because federation handlers run on the application service, MCP `query` calls flow through the same delegate/replicate path as OData.
+
+See **[CDS 10, HCQL and MCP](/concepts/cds-10)** for the full picture, or the deep dives in [Service query execution](/federation/concepts/service-query-execution#cds-10-hcql-and-mcp) and [MCP integration](/federation/integration/mcp).

@@ -1,4 +1,4 @@
-# Event-driven pipeline runs (ADR 0009)
+# Event-driven pipeline runs
 
 **When to pick this recipe:** you already have (or plan) a **batch** pipeline for catch-up and initial load, and you also receive **change notifications** — CAP messaging, CloudEvents from SAP S/4HANA, SAP Event Mesh — that should upsert or delete individual rows **without** corrupting the batch delta watermark.
 

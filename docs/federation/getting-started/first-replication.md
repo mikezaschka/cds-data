@@ -64,10 +64,10 @@ This is a plain local SQL query. Join with other local tables, aggregate, filter
 
 ## Manual triggers and management
 
-The plugin exposes an OData management service at `/federation`:
+`@federation.replicate` entities are backed by the pipeline engine, which exposes an OData management service at `/pipeline` (enable it with `management.reuse.api`):
 
 ```http
-POST /pipeline/run
+POST /pipeline/execute
 Content-Type: application/json
 
 { "name": "ReplicatedPartners", "mode": "full" }

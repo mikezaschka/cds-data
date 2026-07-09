@@ -14,14 +14,18 @@ For AI coding assistants, the installed package also ships `node_modules/cds-dat
 
 | Package | Version | Required? |
 |---|---|---|
-| `@sap/cds` | `>= 8` | **Yes** |
+| `@sap/cds` | `>= 9` | **Yes** — CDS 9 and CDS 10 are both supported |
 | `@sap-cloud-sdk/http-client` | `^4` | Yes, for OData remote services |
 | `@sap-cloud-sdk/resilience` | `^4` | Yes, for OData remote services |
 | [`cds-caching`](https://github.com/mikezaschka/cds-caching) | `>= 1` | Optional — `cache.strategy: 'response'` (default) |
 | [`cds-data-pipeline`](/pipeline/) | peer | Required for `@federation.replicate` and `cache.strategy: 'entity'` |
-| `@cap-js/sqlite` | `>= 2` | Optional — SQLite target for replicate and entity cache |
+| `@cap-js/sqlite` | `>= 2` | Optional — SQLite target for replicate and entity cache (`2.x` on CDS 9, `3.x` on CDS 10) |
 
 The SAP Cloud SDK HTTP client and resilience packages are what CAP uses under the hood for OData remote service calls. If you already have CAP connected to a remote OData service, these are already installed.
+
+::: tip CDS 9 and CDS 10
+The plugin runs on **both** major CAP runtimes. Version-specific behaviour (write-result shapes, queued-schedule lifecycle, HCQL auto-selection) is feature-detected at runtime — no configuration flag is required when you upgrade from CDS 9 to CDS 10.
+:::
 
 ## Verifying the install
 
@@ -35,7 +39,7 @@ That confirms the plugin is active and found annotations. From there, head to [F
 
 ## Node.js version
 
-The plugin requires Node.js 24 or newer (aligned with `@sap/cds` >= 8 requirements).
+The plugin requires Node.js 22 or newer (the CDS 10 minimum; CDS 9 also runs on Node 22+).
 
 ## Project layout
 

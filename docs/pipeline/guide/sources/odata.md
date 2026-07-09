@@ -1,12 +1,12 @@
-# OData V2 / V4
+# Remote CQN sources (OData V2 / V4 & HCQL)
 
-The OData adapter reads entity-shape sources over OData V4, OData V2, or HCQL. It is selected automatically from the connected service's `kind`, or explicitly via `source.kind` on the pipeline config.
+The **RemoteCqnAdapter** reads entity-shape sources by dispatching CQN to a connected CAP remote service. CAP selects the wire protocol — OData V4, OData V2, or HCQL — from the provider's served protocols and the consumer's `cds.requires` binding. The adapter is selected automatically from the connected service's `kind`, or explicitly via `source.kind` on the pipeline config.
 
 | Source `cds.requires.<service>.kind` | Adapter | Notes |
 |---|---|---|
-| `odata` (OData V4) | `ODataAdapter` | CAP-native CQN translation. Default. All three delta modes supported. |
-| `odata-v2` | `ODataAdapter` | CAP-native; V2 returns decimals and `$count` as strings, which CAP converts. Provider apps exposing V2 typically use `@cap-js-community/odata-v2-adapter`. |
-| `hcql` | `ODataAdapter` | SAP's Cloud Query Language protocol (e.g., xtravels sample). No gaps versus OData V4 for pipeline purposes. |
+| `odata` (OData V4) | `RemoteCqnAdapter` | Default. CAP may auto-select HCQL when the provider also serves `@hcql`. All delta modes supported. |
+| `odata-v2` | `RemoteCqnAdapter` | V2 returns decimals and `$count` as strings, which CAP converts. Provider apps exposing V2 typically use `@cap-js-community/odata-v2-adapter`. |
+| `hcql` | `RemoteCqnAdapter` | CQL over HTTP (e.g., xflights / xtravels). Richer path expressions than OData-only remotes. |
 | `rest` | `RestAdapter` | Different adapter. See [REST adapter](rest.md). |
 
 ## Configuring an OData source
@@ -73,7 +73,7 @@ await pipelines.addPipeline({
 });
 ```
 
-The OData adapter honours `viewMapping.projectedColumns` on the `$select` it sends to the remote, so only the projected columns are pulled across the wire. The default `PIPELINE.MAP_BATCH` handler applies `viewMapping.remoteToLocal` to rename fields on each batch.
+The Remote CQN adapter honours `viewMapping.projectedColumns` on the SELECT it sends to the remote, so only the projected columns are pulled across the wire. Multi-segment path expressions (flattened associations, e.g. `customer.name as buyerName`) work when CAP selects HCQL; OData-only remotes cannot denormalize. The default `PIPELINE.MAP_BATCH` handler applies `viewMapping.remoteToLocal` to rename fields on each batch.
 
 See [Concepts → Consumption views](../concepts/consumption-views.md) and the capire [CAP-level Data Federation guide](https://cap.cloud.sap/docs/guides/integration/data-federation) for the broader pattern. Consumption views are optional — you can also pass a fully-matching target table and no `viewMapping` — but they are the recommended default because they keep the target schema, the column selection, and the rename map in a single place.
 

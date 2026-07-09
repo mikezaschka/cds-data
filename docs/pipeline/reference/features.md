@@ -41,12 +41,12 @@ An OData service for operating pipelines at runtime. See [Management Service](ma
 
 ## Pipeline Console UI
 
-Pre-built UI5 freestyle app shipped in the npm package (`app/pipeline-console/`). Mount at runtime with CAP [reuse & compose](https://cap.cloud.sap/docs/guides/integration/reuse-and-compose#reuse-uis) — `app.serve('/pipeline-console').from('cds-data-pipeline', 'app/pipeline-console')` — or run `cds add data-pipeline-monitor` to wire `server.js`. Full walkthrough: [Pipeline Console](../guide/pipeline-console.md).
+Pre-built UI5 freestyle app shipped in the npm package (`app/pipeline-console/`). Enable locally with `management.reuse.console` in `cds.requires.datapipeline`, or own the UI on BTP with `cds add pipeline-console`. Full walkthrough: [Pipeline Console](../guide/pipeline-console.md) and [Feature activation](../guide/feature-activation.md).
 
 | Capability | What it does |
 |---|---|
-| **Manual mount** | Serve static UI from `node_modules/cds-data-pipeline` via `cds.once('bootstrap', …)` — no local copy, no `cds-plugin-ui5`. |
-| **Scaffold command** | `cds add data-pipeline-monitor` adds the bootstrap hook to `server.js`. |
+| **Config reuse** | `management.reuse.console: true` serves static UI from the plugin package at `/pipeline-console/` — no local copy, no `server.js` changes. |
+| **BTP scaffold** | `cds add pipeline-console` copies UI into `app/pipeline-console/` with HTML5 deploy scaffolding. |
 | **Same-origin OData** | Console binds to `/pipeline/` on the CAP server that serves the UI. |
 | **Fiori annotations** | `srv/monitor-annotations.cds` supports a separate Fiori Elements list/object app in your project (not bundled). |
 
@@ -57,7 +57,7 @@ Pre-built UI5 freestyle app shipped in the npm package (`app/pipeline-console/`)
 | **Pipeline tracker** | `Pipelines` table persists name, source, target, mode, `lastSync`, `lastKey`, and status per pipeline. Behaviour is inferred from config shape at registration — no stored discriminator (see [Inference rules](../guide/concepts/inference.md)). |
 | **Run history** | Every run gets a `PipelineRuns` record with full context and timing. |
 | **Statistics** | `created` / `updated` / `deleted` / `skipped` counts per run and cumulative. |
-| **Request-level tracking** | Optional per-batch tracking with source and target data snapshots for debugging. |
+| **Data inspector** | On-demand paged preview of source and target rows per pipeline (`inspectData`), plus per-pipeline data-flow and landscape metadata. Powers the [Pipeline Console](../guide/pipeline-console.md). |
 
 ## Scheduling and triggers
 

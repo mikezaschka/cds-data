@@ -34,16 +34,99 @@ Requires:
 npm add cds-data-pipeline @cap-js/sqlite
 ```
 
-And **`cds.requires.FederationEntityCache`** (recommended for production) — separate `kind: sqlite` datastore so cache tables don't sit beside application tables:
+### Where the entity cache is stored
+
+The snapshot table needs a datastore. You do **not** pick it on the annotation — the storage is chosen **globally** and auto-detected at startup. There are two modes:
+
+| Mode | When | Storage |
+|---|---|---|
+| **Primary `db`** (default) | No dedicated datastore configured | Cache tables (`plugin.data_federation.entity_cache.*`) are created in your app's `db`. Under CAP MTX that `db` is already per-tenant. Typical in dev/tests. |
+| **Dedicated SQLite files** | A dedicated datastore is detected | One **SQLite file per tenant**, separate from application tables. Recommended for production. |
+
+The plugin switches to per-tenant files as soon as **any** of these is present in your config (existence is the trigger — there is no on/off flag):
+
+- `cds.requires.FederationEntityCache`, **or**
+- `cds.requires.<name>` where `<name>` is `cds-data-federation.entityCache.serviceName`, **or**
+- `cds-data-federation.entityCache.urlTemplate`.
+
+### Assigning the service
+
+**Option A — conventional name (simplest).** Declaring the service is all it takes:
 
 ```json
-"FederationEntityCache": {
-  "kind": "sqlite",
-  "credentials": { "url": "federation-entity-cache.sqlite" }
+"FederationEntityCache": { "kind": "sqlite" }
+```
+
+Files are named `federation-entity-cache-{tenant}.sqlite` in the project root.
+
+**Option B — your own service name.** Point the plugin at it with `entityCache.serviceName`:
+
+```json
+{
+  "MyEntityCache": { "kind": "sqlite" },
+  "cds-data-federation": {
+    "entityCache": { "serviceName": "MyEntityCache" }
+  }
 }
 ```
 
-Omit it to reuse the project's primary **`db`** service (typical in dev/tests; `@cap-js/sqlite` deploy picks up synthesized `plugin.data_federation.entity_cache.*` definitions).
+**Option C — control file naming / location** (keeps the default `FederationEntityCache` service name):
+
+```json
+"cds-data-federation": {
+  "entityCache": {
+    "urlTemplate": "caches/fed-{tenant}.sqlite",
+    "baseDir": ".",
+    "defaultTenant": "default"
+  }
+}
+```
+
+::: tip The file path is computed per tenant
+The plugin does not simply connect to a static `credentials.url`. For each tenant it substitutes `{tenant}` and connects with an explicit file path, deploying the cache schema into that file on first use. The template is resolved in this order: `entityCache.urlTemplate` → the service's `credentials.url` **if it contains `{tenant}`** → the default `federation-entity-cache-{tenant}.sqlite`. The `{tenant}` value comes from `cds.context.tenant`, or `entityCache.defaultTenant` (default `'default'`) in single-tenant dev.
+:::
+
+::: warning `cache.service` does not apply here
+The `cache.service` option is **`strategy: 'response'` only** — it names a [`cds-caching`](https://github.com/mikezaschka/cds-caching) instance. For `strategy: 'entity'` there is no per-annotation way to route one entity to a specific store; storage selection is global via `cds.requires` as described above.
+:::
+
+If the resolved datastore (or `cds-data-pipeline`) can't be reached at startup, entity caching is **disabled with a warning** and those entities fall back to live delegation.
+
+### Global entity-cache options
+
+Tune the entity cache globally under `cds.requires` → `cds-data-federation` → `entityCache`. These apply to every `strategy: 'entity'` delegate; the ones marked *overridable* can be set per annotation (see [Annotations → Cache option](../reference/annotations.md#cache-option)).
+
+| Option | Type / default | What it does |
+|---|---|---|
+| `size` | bytes — `10 MB` dev / `100 MB` prod | Max cached bytes **per tenant**. Snapshots are pruned once the total exceeds this. `0` disables the size cap. |
+| `ttl` | ms — `1_800_000` (30 min) | Default freshness window; a negative value means "never expire once loaded". *Overridable* via `cache.ttl`. |
+| `check` | ms — `60_000` | Interval of the background prune timer. `0` disables periodic pruning. |
+| `stats` | ms — `300_000` | Interval of the background stats-logging timer. `0` disables it. |
+| `prune` | boolean — `true` | Master switch for size-based pruning. |
+| `preload` | boolean — `false` | Warm every entity cache at startup instead of on first miss. *Overridable.* |
+| `wait` | boolean — `true` | On a cold miss, block the request until the snapshot loads. `false` = kick off a background reload and serve a live delegate read meanwhile. *Overridable.* |
+| `validate` | boolean — `true` | After a reload, validate the cached row count against the remote. *Overridable.* |
+| `search` | boolean — `true` | Answer `$search` queries from the cache. `false` = forward `$search` to the live remote. *Overridable.* |
+| `measure` | boolean — `false` | Emit per-query timing comparisons (cache vs. remote fallback) for diagnostics. |
+| `staticUrlTemplate` | string — `federation-entity-cache-static.sqlite` | File name for the shared, tenant-independent cache used by entities annotated `cache.static: true`. |
+
+Storage-location options (`serviceName`, `urlTemplate`, `baseDir`, `defaultTenant`) are covered under [Where the entity cache is stored](#where-the-entity-cache-is-stored).
+
+```json
+"cds": {
+  "requires": {
+    "FederationEntityCache": { "kind": "sqlite" },
+    "cds-data-federation": {
+      "entityCache": {
+        "ttl": 900000,
+        "size": 52428800,
+        "preload": true,
+        "wait": false
+      }
+    }
+  }
+}
+```
 
 ### Annotation example
 
@@ -67,7 +150,7 @@ entity Customers as projection on remote.Customers;
 | Initial cost | Remote call proportional to `$top`/params | Remote full-row read (projection columns) batches until drained |
 | Miss trigger | TTL or key eviction | TTL **or** failed SQLite READ (falls through to live delegate once) |
 
-**Tenant scope (ADR 0010):** When `cds.requires.FederationEntityCache` (or `cds-data-federation.entityCache.urlTemplate`) is configured, each CAP tenant gets its **own SQLite file** — default pattern `federation-entity-cache-{tenant}.sqlite`. There is no shared `tenantId` column. Single-tenant dev uses `entityCache.defaultTenant` (default `'default'`). See [Integration → Multi-Tenancy](./multitenancy.md).
+**Tenant scope:** When `cds.requires.FederationEntityCache` (or `cds-data-federation.entityCache.urlTemplate`) is configured, each CAP tenant gets its **own SQLite file** — default pattern `federation-entity-cache-{tenant}.sqlite`. There is no shared `tenantId` column. Single-tenant dev uses `entityCache.defaultTenant` (default `'default'`). See [Integration → Multi-Tenancy](./multitenancy.md).
 
 **Fallback:** Any SQLite or pipeline failure is logged at `warn`; the delegate handler falls back to the normal `remote.run` path.
 

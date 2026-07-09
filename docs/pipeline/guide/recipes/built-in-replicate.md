@@ -65,7 +65,7 @@ The source adapter is selected from the connected source service's kind (or an e
 
 | Source transport | Adapter | Notes |
 |---|---|---|
-| `kind: 'odata' \| 'odata-v2'` | `ODataAdapter` | All three delta modes supported. See [OData V2 / V4 adapter](../sources/odata.md). |
+| `kind: 'odata' \| 'odata-v2' \| 'hcql'` | `RemoteCqnAdapter` | All three delta modes supported. See [Remote CQN adapter](../sources/odata.md). |
 | `kind: 'rest'` | `RestAdapter` | Cursor / offset / page pagination, timestamp delta via URL params. See [REST adapter](../sources/rest.md). |
 | `kind: 'cqn' \| 'postgres' \| 'hana' \| 'sqlite' \| …` | `CqnAdapter` | In-process CAP services and CQN-native DB bindings. See [CQN adapter](../sources/cqn.md). |
 

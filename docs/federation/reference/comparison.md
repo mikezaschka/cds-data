@@ -32,7 +32,7 @@ CAP provides all the primitives (`cds.connect.to`, `srv.run`, projection chains,
 | Architectural layer | application | application | application | application | database |
 | Zero handler code (declarative) | yes, via annotation | handler per entity | handler plus cache wrap per entity | yes, via `@cds.replicate` | yes, via `.hdbsynonym` / virtual tables |
 | Live forwarding of reads | yes | yes | yes (with cached reads) | no — served from SQLite snapshot within TTL | yes, as native HANA joins |
-| Cross-service `$expand` | yes, all three scenarios | coded per scenario | coded per scenario | no — each entity cached independently | limited to same HANA DB |
+| Cross-service `$expand` | yes — four expand topologies + navigation | coded per scenario | coded per scenario | no — each entity cached independently | limited to same HANA DB |
 | Field / association renames | automatic from projection | CAP projection chain | CAP projection chain | no — data cached verbatim | via CDS view on top of synonym |
 | Write-back (CUD) | opt-in per entity | coded per entity | not cache-applicable | not supported (read-only) | depends on target schema grants; typically read-only |
 | Caching model | response-level (`cds-caching`) or entity-level (`cache.strategy: 'entity'`, SQLite + pipeline) | none | response-level | entity-level (full dataset into per-tenant SQLite, TTL + LRU) | DB-level only |

@@ -269,6 +269,39 @@ In contrast, `cds.connect.to('ProviderService')` with `kind: 'odata'` creates a 
 
 ---
 
+## CDS 10, HCQL and MCP
+
+CAP's June 2026 release (**cds 10**) adds two capabilities that compose with federation **without any change to `@federation.*` annotations**. Both build on the same principle as the rest of this page: queries reach the plugin only when they are dispatched through the application service.
+
+### HCQL — a faster wire protocol for delegate and replicate
+
+**HCQL** (CQL over HTTP) is a new CAP protocol adapter that carries a CQN `SELECT` as an HTTP request, rather than translating it to OData `$filter` / `$select`. For **CAP-to-CAP** integration, CAP's remote client **auto-selects HCQL** over OData when the provider serves `@hcql` (as xflights / xtravels do). CAP describes HCQL as *"best suited, and thus chosen automatically for data federation scenarios."*
+
+The plugin never serializes the wire protocol itself — it forwards CQN via `remote.run(query)`. So both strategies benefit transparently:
+
+| Strategy | Read path | HCQL benefit |
+|---|---|---|
+| `@federation.delegate` | `remote.run(req.query)` on the application service | Auto-selected when the remote serves `@hcql`; richer path expressions (flattened associations like `customer.name`) that OData-only remotes cannot express |
+| `@federation.replicate` | Pipeline READ phase via the engine's `RemoteCqnAdapter` | Same class handles OData V2/V4 and HCQL — CAP negotiates the wire protocol; delta paging is unchanged |
+
+There is **no `@federation.hcql` strategy** and no adapter to pick — HCQL is a CAP-runtime choice. To use it, annotate the CAP provider `@hcql @odata` and bind the consumer as usual (`kind: 'odata'`, V4). See the engine-side write-up in [Pipeline → Remote CQN sources (OData & HCQL)](/pipeline/guide/sources/odata) for the adapter details and the flattened-column behaviour.
+
+### MCP — exposing federated data to AI agents
+
+CAP's [`@cap-js/mcp`](https://cap.cloud.sap/docs/guides/protocols/mcp) protocol adapter exposes a service to AI agents over the **Model Context Protocol**. Annotate a service `@mcp: 'agent'` and its entities become MCP tools (`describe`, `query`, `call_action`).
+
+Because MCP `query` calls run **CQN on the application service** — exactly the center path in the [dispatch diagram](#the-dispatch-pipeline) above — they hit the same `@federation.delegate` / `@federation.replicate` handlers that OData and `srv.run` do. MCP does **not** call remote providers directly:
+
+```
+ AI agent ──tools/call query──▶ @mcp service ──srv.run(CQN)──▶ federation handler
+                                                              ├─ delegate → remote provider
+                                                              └─ replicate → local synced table
+```
+
+This means an MCP agent gets live-proxied remote data (delegate), locally synced data (replicate), or cached responses — with no MCP-specific federation code. A runnable end-to-end demo lives in [MCP integration](/federation/integration/mcp).
+
+---
+
 ## References
 
 - [CAP: Core Services — srv.run()](https://cap.cloud.sap/docs/node.js/core-services#srv-run-query) — dispatches queries through the service pipeline
@@ -278,3 +311,5 @@ In contrast, `cds.connect.to('ProviderService')` with `kind: 'odata'` creates a 
 - [CAP: Testing with cds.test](https://cap.cloud.sap/docs/node.js/cds-test) — how `cds.test()` boots a server and provides service APIs
 - [CDS expressions in CAP — notes on Part 5](https://qmacro.org/blog/posts/2026/04/07/cds-expressions-in-cap-notes-on-part-5/) — REPL query examples (local DB dispatch)
 - [CAP: Service Integration — Delegation](https://cap.cloud.sap/docs/guides/integration/calesi#delegation) — the `req => remote.run(req.query)` pattern
+- [CAP: June 2026 release — HCQL protocol adapter](https://cap.cloud.sap/docs/releases/2026/jun26#new-hcql-protocol-adapter) — CQL over HTTP, auto-selected for CAP-to-CAP federation
+- [CAP: MCP protocol adapter](https://cap.cloud.sap/docs/guides/protocols/mcp) — exposing CAP services to AI agents over the Model Context Protocol

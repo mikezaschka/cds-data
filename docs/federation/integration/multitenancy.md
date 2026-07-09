@@ -1,19 +1,16 @@
 # Multi-Tenancy (CAP MTX)
 
-`cds-data-federation` and `cds-data-pipeline` support SaaS multi-tenancy when CAP multitenancy is active ([`@sap/cds-mtxs`](https://www.npmjs.com/package/@sap/cds-mtxs)). See [ADR 0010](https://github.com/mikezaschka/cds-data-federation/blob/main/spec/internal/decisions/0010-multi-tenancy-entity-cache-and-pipeline-runs.md) for design rationale.
+`cds-data-federation` and `cds-data-pipeline` support SaaS multi-tenancy when CAP multitenancy is active ([`@sap/cds-mtxs`](https://www.npmjs.com/package/@sap/cds-mtxs)). Tenant isolation is enforced for the entity cache (one SQLite file per tenant), scheduled replication (fan-out per subscribed tenant), and pipeline run history.
 
 ## Entity cache — per-tenant SQLite files
 
-With `cache.strategy: 'entity'`, configure a dedicated SQLite service and URL template:
+With `cache.strategy: 'entity'`, declaring a dedicated SQLite datastore switches the entity cache from the primary `db` to **one SQLite file per tenant**. Declaring the service is the trigger; `entityCache` options only tune naming/location:
 
 ```json
 {
   "cds": {
     "requires": {
-      "FederationEntityCache": {
-        "kind": "sqlite",
-        "credentials": { "url": "federation-entity-cache.sqlite" }
-      },
+      "FederationEntityCache": { "kind": "sqlite" },
       "cds-data-federation": {
         "entityCache": {
           "urlTemplate": "federation-entity-cache-{tenant}.sqlite",
@@ -25,6 +22,8 @@ With `cache.strategy: 'entity'`, configure a dedicated SQLite service and URL te
   }
 }
 ```
+
+For the full storage-selection rules (default `db` vs dedicated files, custom service names, and why `cache.service` doesn't apply here), see [Caching → Where the entity cache is stored](./caching.md#where-the-entity-cache-is-stored).
 
 | Option | Default | Purpose |
 |---|---|---|

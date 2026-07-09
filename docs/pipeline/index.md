@@ -57,6 +57,11 @@ features:
     title: Feature catalog
     details: Adapters, observability, delta modes, and resilience in one place.
     link: /pipeline/reference/features
+  - icon: 🧩
+    title: Programmatic API
+    details: addPipeline options, execute, schedules, overrides, and event hooks.
+    link: /pipeline/reference/api
+    linkText: Open API reference
   - icon: 📡
     title: Management service
     details: Pipelines, runs, execute, flush, status, and the hook API — full reference.

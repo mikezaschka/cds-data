@@ -55,7 +55,7 @@ Two optional strategies on `@federation.delegate` (and a rarely useful response 
 | Capability | What it does |
 |---|---|
 | **Response cache** (`strategy: 'response'`, default) | Wraps the remote READ with [`cds-caching`](https://github.com/mikezaschka/cds-caching); cache key = full query signature. |
-| **Entity cache** (`strategy: 'entity'`) | On TTL miss, runs [`cds-data-pipeline`](/pipeline/) to fill a SQLite table with the full projected entity; any READ CQN hits SQLite until TTL. **One SQLite file per tenant** when `FederationEntityCache` is configured (ADR 0010). Falls back to live delegate on errors. |
+| **Entity cache** (`strategy: 'entity'`) | On TTL miss, runs [`cds-data-pipeline`](/pipeline/) to fill a SQLite table with the full projected entity; any READ CQN hits SQLite until TTL. **One SQLite file per tenant** when `FederationEntityCache` is configured. Falls back to live delegate on errors. |
 | **Per-entity TTL** | `cache: { ttl: 60000 }` on either strategy. |
 | **Tag-based invalidation** | `response` only — auto-tag `federation:<entityName>`, static/dynamic/template tags via `cds-caching`. |
 | **Backend flexibility** | `response`: in-memory, Redis, HANA, … via `cds-caching`. `entity`: primary `db` or optional `cds.requires.FederationEntityCache` SQLite. |

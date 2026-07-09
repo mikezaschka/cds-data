@@ -46,16 +46,13 @@ Use this when users drive many different filters and sort orders against the sam
 npm add cds-data-pipeline @cap-js/sqlite
 ```
 
-Register the pipeline service in `cds.requires` (same as [First Replication](first-replication.md)). For production, add a **secondary** SQLite datastore so cache tables stay out of your application `db`:
+Register the pipeline service in `cds.requires` (same as [First Replication](first-replication.md)). For production, declare a **secondary** SQLite datastore so cache tables stay out of your application `db`:
 
 ```json
-"FederationEntityCache": {
-  "kind": "sqlite",
-  "credentials": { "url": "federation-entity-cache.sqlite" }
-}
+"FederationEntityCache": { "kind": "sqlite" }
 ```
 
-Omit `FederationEntityCache` to attach cache tables to the primary **`db`** service (fine for local dev and tests).
+Declaring this service is all it takes — the plugin then stores the cache in **one SQLite file per tenant** (`federation-entity-cache-{tenant}.sqlite`). Omit it to attach cache tables to the primary **`db`** service (fine for local dev and tests). For custom service names, file naming, and why `cache.service` doesn't apply to the entity strategy, see [Caching → Where the entity cache is stored](../integration/caching.md#where-the-entity-cache-is-stored).
 
 ### Annotation
 
@@ -80,7 +77,7 @@ After boot:
 2. Subsequent READs with **any** `$filter` / `$orderby` / `$select` → served from SQLite until TTL expires.
 3. Pipeline or SQLite errors → logged and the handler falls back to live delegation.
 
-Rows are keyed by a synthetic `tenantId` column (`cds.context.tenant` / `cds.context.user.tenant`, else shared empty tenant).
+Under multitenancy, each CAP tenant gets its **own** entity-cache SQLite file (when `cds.requires.FederationEntityCache` is configured) — there is no shared `tenantId` column. Single-tenant dev uses `entityCache.defaultTenant`. See [Integration → Multi-Tenancy](../integration/multitenancy.md).
 
 ## Tag-based invalidation (response strategy)
 

@@ -9,21 +9,21 @@ One source adapter is resolved per pipeline at registration time.
 `addPipeline(...)` resolves the source adapter in this order:
 
 1. `config.source.adapter` — class reference extending `BaseSourceAdapter`. Full control; skips everything below.
-2. `config.source.kind` — explicit transport selector: `'cqn' | 'odata' | 'odata-v2' | 'rest'`.
-3. `cds.requires.<service>.kind` (or `remote.kind`) — auto-detected for annotation-wired pipelines. Unknown values fall back to `ODataAdapter`.
+2. `config.source.kind` — explicit transport selector: `'cqn' | 'odata' | 'odata-v2' | 'hcql' | 'rest'`.
+3. `cds.requires.<service>.kind` (or `remote.kind`) — auto-detected for annotation-wired pipelines. Unknown values fall back to `RemoteCqnAdapter`.
 
 ## Built-in source adapters
 
 | Source `cds.requires.<service>.kind` | Adapter | Page |
 |---|---|---|
-| `odata` (OData V4) | `ODataAdapter` | [OData V2 / V4](odata.md) |
-| `odata-v2` | `ODataAdapter` | [OData V2 / V4](odata.md) |
-| `hcql` | `ODataAdapter` | [OData V2 / V4](odata.md) |
+| `odata` (OData V4) | `RemoteCqnAdapter` | [Remote CQN (OData & HCQL)](odata.md) |
+| `odata-v2` | `RemoteCqnAdapter` | [Remote CQN (OData & HCQL)](odata.md) |
+| `hcql` | `RemoteCqnAdapter` | [Remote CQN (OData & HCQL)](odata.md) |
 | `rest` | `RestAdapter` | [REST](rest.md) |
 | `cqn` / `postgres` / `hana` / `sqlite` / `better-sqlite` / in-process CAP services | `CqnAdapter` | [CQN](cqn.md) |
 | Anything else | Register a [custom source adapter](custom.md) |  |
 
-- **[OData V2 / V4](odata.md)** — CAP-native CQN translation. All three delta modes (`timestamp`, `key`, `datetime-fields`), server-driven paging, consumption-view column restriction.
+- **[Remote CQN (OData & HCQL)](odata.md)** — CQN reads against remote CAP services. CAP selects OData or HCQL on the wire. Delta modes (`timestamp`, `key`, `datetime-fields`), server-driven paging, consumption-view column restriction including flattened associations when HCQL is available.
 
 - **[REST](rest.md)** — Plain JSON over HTTP — no CDS model. Cursor / offset / page pagination, configurable delta URL parameter, nested-response extraction via `dataPath`.
 

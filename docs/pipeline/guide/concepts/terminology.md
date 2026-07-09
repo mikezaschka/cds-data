@@ -1,6 +1,6 @@
 # Terminology
 
-The vocabulary `cds-data-pipeline` uses.
+The vocabulary `cds-data-pipeline` uses. For how these engine terms relate to the federation and materialization layers, see the [shared Terminology](/concepts/terminology).
 
 ---
 

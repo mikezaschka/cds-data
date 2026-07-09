@@ -1,5 +1,9 @@
 # Getting started
 
+::: warning Experimental — not yet released
+`cds-data-materialization` is **experimental** and **not yet published to npm**. Install it from the monorepo workspace for evaluation; the annotation surface may still change.
+:::
+
 Short path from a clean CAP app to a working `@materialize.snapshot` entity.
 
 | Page | What you'll do |

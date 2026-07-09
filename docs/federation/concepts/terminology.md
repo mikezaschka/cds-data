@@ -1,4 +1,8 @@
-# Terminology: Pipeline, Federation, Delegation, Replication & Caching
+# Terminology: Federation, Delegation, Replication & Caching
+
+::: tip Shared glossary
+The base vocabulary (pipeline, source/target, mode, delta, federation, delegation, replication, consumption view, caching) is defined once in the [shared Terminology](/concepts/terminology). This page adds the **federation-specific** depth: the industry and CAP alignment, the Calesi pattern, and the naming rationale.
+:::
 
 This document defines the key terms used by `cds-data-pipeline` and `cds-data-federation`, explains how they relate to SAP CAP's official definitions and to the broader industry, and provides the rationale for our naming choices.
 

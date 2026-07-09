@@ -41,7 +41,7 @@ Source adapters are resolved in this order:
 
 1. `config.source.adapter` — class reference extending `BaseSourceAdapter`. Full control; skips everything below.
 2. `config.source.kind` — explicit transport selector: `'cqn' | 'odata' | 'odata-v2' | 'rest'`.
-3. `cds.requires.<service>.kind` (or `remote.kind`) — auto-detected for annotation-wired pipelines. Unknown values fall back to `ODataAdapter`.
+3. `cds.requires.<service>.kind` (or `remote.kind`) — auto-detected for annotation-wired pipelines. Unknown values fall back to `RemoteCqnAdapter`.
 
 ## Worked example — a CSV-file source adapter
 

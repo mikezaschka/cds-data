@@ -57,13 +57,13 @@ Both annotations produce consumption views in the same CDS namespace; nothing in
 
 ### Triggering replication
 
-Replication runs on a schedule (if configured) or on demand via the management service:
+Replication runs on a schedule (if configured) or on demand via the pipeline management service at `/pipeline`:
 
 ```http
-POST /replication-management/run
+POST /pipeline/execute
 Content-Type: application/json
 
-{ "name": "ReplicatedCustomers" }
+{ "name": "ReplicatedCustomers", "mode": "full" }
 ```
 
 Or programmatically from your own code:

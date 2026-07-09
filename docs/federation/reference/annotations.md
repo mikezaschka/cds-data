@@ -64,6 +64,7 @@ entity Orders as projection on remote.Orders { ... };
 |---|---|---|
 | `mode` | `'full'` \| `'delta'` | Default `'delta'`. `'full'` truncates and re-reads everything each run. |
 | `schedule` | number (ms) | Interval for `cds.spawn`. Omit for manual-only mode. |
+| `preload` | boolean \| object | Run an initial sync at server startup. See [Initial load on startup](#initial-load-on-startup). |
 | `delta` | object | `{ field, mode }`. `field` defaults to `'modifiedAt'`; `mode` to `'timestamp'`. |
 | `batchSize` | number | Rows to request per remote page (OData adapter). Default `1000`. The adapter keeps paging via `$skip` until the remote returns empty, so if the remote enforces a smaller cap (e.g. Northwind's 20-row default) all rows are still captured — `batchSize` is a *requested* page size, not a hard upper bound. |
 | `rest` | object | REST adapter config. See [REST config](#rest-config). |
@@ -75,6 +76,33 @@ entity Orders as projection on remote.Orders { ... };
 | `'timestamp'` | Compare `field` value to last successful run's high-watermark. Default. |
 | `'key'` | Compare primary-key value (useful for monotonically-increasing IDs). |
 | `'datetime-fields'` | Treat `field` as a composite of separate date + time fields (OData V2 pattern). |
+
+### Initial load on startup
+
+By default a scheduled replicate does not run until the first `schedule` interval
+elapses, so the local table is empty between boot and that first tick. Set
+`preload` to run one sync right after registration on server startup:
+
+```cds
+// Boolean: initial load in the background (does not block boot).
+@federation.replicate: { schedule: 600000, preload: true }
+entity ReplicatedCustomers as projection on remote.Customers;
+
+// Object form: force a full initial load and block boot until it finishes.
+@federation.replicate: {
+    schedule: 600000,
+    preload: { mode: 'full', wait: true }
+}
+entity ReplicatedProducts as projection on remote.Products;
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `preload` | boolean | `true` runs a background initial load at startup using the replicate `mode`. |
+| `preload.mode` | `'full'` \| `'delta'` | Override the run mode for the initial load only. |
+| `preload.wait` | boolean | `true` blocks startup until the initial load completes; a failure then fails boot. Default `false` (background, non-blocking). |
+
+`preload` works with or without `schedule`. A disabled pipeline (paused) skips its preload run.
 
 ### REST config
 
@@ -130,6 +158,20 @@ Read caching on `@federation.delegate` (and optionally `@federation.replicate`).
 | `batchSize` | number | OData source batch page size when `strategy: 'entity'`. Defaults to pipeline default (1000). |
 | `service` | string | Name of the `cds-caching` instance when `strategy: 'response'`. Ignored for `entity`. |
 | `tags` | array | Static strings, dynamic data tags, value wrappers, or template tags (`response` only). |
+| `tenantScoped` | boolean | Under CAP multitenancy, a `tenant-<tenant>-entity-<entity>` tag is added to `response` caches automatically. Set `false` to opt out. See [Multi-Tenancy](../integration/multitenancy.md). |
+
+#### Entity-strategy options
+
+These apply only to `strategy: 'entity'` and override the matching global [`entityCache` option](../integration/caching.md#global-entity-cache-options).
+
+| Field | Type | Description |
+|---|---|---|
+| `preload` | boolean | Warm this entity's snapshot at server startup instead of on first miss. |
+| `static` | boolean | Store the snapshot in a single **tenant-independent** file (`entityCache.staticUrlTemplate`) instead of one per tenant — for reference data shared across tenants. |
+| `group` | string | Group name for coordinated invalidation of several entity caches together. |
+| `wait` | boolean | On a cold miss, block the request until the snapshot loads (`true`) or serve a live delegate read while it reloads in the background (`false`). |
+| `validate` | boolean | Validate the cached row count against the remote after each reload. |
+| `search` | boolean | Answer `$search` queries from the cache (`true`) or forward them to the live remote (`false`). |
 
 Auto-applied tag: `federation:<entityName>` — use for entity-wide invalidation via `cache.deleteByTag('federation:Customers')`.
 

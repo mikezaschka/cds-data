@@ -1,5 +1,9 @@
 # Annotations
 
+::: warning Experimental — not yet released
+`cds-data-materialization` is **experimental** and **not yet published to npm**. The `@materialize.snapshot` surface documented here may still change before the first release.
+:::
+
 ## `@materialize.snapshot`
 
 Marks an entity as a persisted snapshot rebuilt from an aggregation-shaped projection.
@@ -24,6 +28,7 @@ group by customerId;
 |---|---|---|
 | `schedule` | No | Cron or interval string for `addPipeline` (engine scheduling) |
 | `refresh` | No | Default `full` — rebuild entire snapshot each run |
+| `preload` | No | `true` (or `{ mode, wait }`) builds the first snapshot at server startup instead of waiting for the first scheduled tick. `wait: true` blocks boot until it finishes. |
 | `name` | No | Pipeline tracker name (default: entity name) |
 | `source.service` | Sometimes | `cds.requires` key that runs the aggregate query (`db`, in-process service, …) |
 

@@ -51,7 +51,9 @@ entity PipelineRuns : cuid {
 }
 ```
 
-The management OData service (`DataPipelineManagementService`, served at `/pipeline`) projects both tracker entities read-only. `Pipelines` also exposes **bound** actions: `start` (same semantics as `execute`, but keyed from the entity instance), `setSchedule` / `clearSchedule` for in-process `cds.spawn({ every })` intervals (not for `schedule.engine: 'queued'`), and the unbound actions `execute` and `flush`, plus the `status` function.
+The management OData service (`DataPipelineManagementService`, served at `/pipeline`) projects both tracker entities read-only. `Pipelines` also exposes **bound** actions: `start` (same semantics as `execute`, but keyed from the entity instance), `setSchedule` / `clearSchedule` for in-process `cds.spawn({ every })` intervals, and the unbound actions `execute` and `flush`, plus the `status` function.
+
+Live schedule changes for `schedule.engine: 'queued'` are supported on CDS 10+; on CDS 9 a queued schedule change takes effect on the next restart. Check `configView().meta.scheduleLiveChangeSupported` (or `isScheduleLiveChangeSupported(name)`) to see which applies on your runtime.
 
 ### Pipeline Console
 
@@ -87,9 +89,15 @@ GET /pipeline/Pipelines
 | Field | Description |
 |---|---|
 | `name` | Pipeline name (often the target entity name). |
-| `source` | JSON-serialized source config (`service`, `entity`, `kind`, pagination, delta). Function values (`source.query`) are serialized as the marker string `"[Function]"`. |
-| `target` | JSON-serialized target config (`service`, `entity`). |
-| `mode` | Effective run mode — `delta` or `full`. |
+| `description` | Optional human-readable label (effective — may be overridden). |
+| `source` | JSON-serialized **coded** source config (`service`, `entity`, `kind`, pagination, delta). Function values (`source.query`) are serialized as the marker string `"[Function]"`. |
+| `target` | JSON-serialized **coded** target config (`service`, `entity`). |
+| `mode` | Effective run mode — `delta` or `full` (reflects overrides when set). |
+| `enabled` | Whether scheduled ticks run (`true` by default). Manual `start` / `execute` still work when `false`. |
+| `baseConfig` | JSON snapshot of the serializable coded baseline written at registration. |
+| `overrides` | JSON delta layered on `baseConfig` (persists across restarts). See [Configuration overrides](../guide/concepts/overrides.md). |
+| `schedule` | Human-readable schedule label (for example `every 2 min (spawn)`). |
+| `origin` | Multi-source fan-in origin label. See [Multi-source fan-in](../guide/recipes/multi-source.md). |
 | `lastSync` | ISO timestamp of the last successful run (delta watermark for timestamp mode). |
 | `lastKey` | High-watermark key value for `key` delta mode. |
 | `status` | `idle` \| `running` \| `failed`. The concurrency guard flips this to `running`; parallel trigger attempts are rejected. |
@@ -137,16 +145,23 @@ Body properties are `mode`, `trigger`, and `async` (same meaning as in [`execute
 
 ### `setSchedule` / `clearSchedule` (bound to `Pipelines`)
 
-Control the **internal** interval registered with `addPipeline({ schedule: ... })` when using the default **spawn** engine (`cds.spawn({ every })`).
+Control the **internal** schedule via a **persisted override**. Spawn (`cds.spawn`) schedules always stop/restart live. Queued (CAP Event Queues / cron) schedules require CDS 10 named-task `unschedule` for live change; otherwise the action fails with guidance to upgrade, switch to `spawn`, or restart.
 
-- **`setSchedule`**: pass `every` in **milliseconds** between delta runs. Replaces the current spawn timer if one exists, or starts one if the pipeline had no internal schedule in memory (for example you registered without `schedule` and add it only here — note: in-memory; process restart re-applies `addPipeline` from code only).
-- **`clearSchedule`**: stops the spawn `setInterval` and clears the in-process schedule. **Not supported** for pipelines registered with `schedule.engine: 'queued'`; change those by adjusting config and restarting.
+- **`setSchedule`**: pass `every` in **milliseconds**, and/or `cron` (5-field expression), plus optional `engine` (`spawn` \| `queued`). Cron implies / requires `queued`. Survives process restart.
+- **`clearSchedule`**: stops the live timer and records `schedule: null` as an override so a coded schedule does not restart on the next boot until you clear that override.
 
 ```http
 POST /pipeline/Pipelines('ReplicatedPartners')/DataPipelineManagementService.setSchedule
 Content-Type: application/json
 
-{ "every": 600000 }
+{ "every": 600000, "engine": "spawn" }
+```
+
+```http
+POST /pipeline/Pipelines('ReplicatedPartners')/DataPipelineManagementService.setSchedule
+Content-Type: application/json
+
+{ "cron": "0 2 * * *", "engine": "queued" }
 ```
 
 ```http
@@ -156,7 +171,112 @@ Content-Type: application/json
 {}
 ```
 
-Fiori Elements: the plugin’s [`srv/monitor-annotations.cds`](https://github.com/mikezaschka/cds-data-pipeline/blob/main/srv/monitor-annotations.cds) adds **Set internal schedule** and **Clear internal schedule** to the `Pipelines` identification (list and object page).
+The tracker row’s human-readable **`schedule`** field (for example `every 60000 ms (spawn)`) stays in sync.
+
+### `setOverrides` / `clearOverrides` / `setEnabled` / `configView` (bound to `Pipelines`)
+
+Runtime configuration layering — see [Configuration overrides](../guide/concepts/overrides.md).
+
+```http
+POST /pipeline/Pipelines('ReplicatedPartners')/DataPipelineManagementService.setOverrides
+Content-Type: application/json
+
+{ "overrides": "{\"mode\":\"full\",\"source\":{\"batchSize\":100}}" }
+```
+
+```http
+POST /pipeline/Pipelines('ReplicatedPartners')/DataPipelineManagementService.clearOverrides
+Content-Type: application/json
+
+{ "keys": "mode,source.batchSize" }
+```
+
+```http
+POST /pipeline/Pipelines('ReplicatedPartners')/DataPipelineManagementService.setEnabled
+Content-Type: application/json
+
+{ "enabled": false }
+```
+
+```http
+GET /pipeline/Pipelines('ReplicatedPartners')/DataPipelineManagementService.configView()
+```
+
+`configView` returns JSON: `{ base, overrides, effective, fields[{ path, coded, override, effective, source, overridable }], meta:{ scheduleLiveChangeSupported, overridablePaths } }`.
+
+Fiori Elements: [`srv/monitor-annotations.cds`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-pipeline/srv/monitor-annotations.cds) adds **Enable / pause schedule**, **Set internal schedule**, **Clear internal schedule**, and **Reset overrides** to the `Pipelines` identification.
+
+### `inspectData` (bound to `Pipelines`)
+
+Preview live **source** or **target** rows for the Pipeline Console data inspector. Returns a JSON string:
+
+```json
+{
+  "columns": [{ "name": "ID", "type": "String" }],
+  "rows": [{ "ID": "C1", "name": "Acme" }],
+  "hasMore": true,
+  "limitedSupport": false
+}
+```
+
+| Parameter | Description |
+|---|---|
+| `side` | `'source'` or `'target'` |
+| `columnsJson` | Optional JSON array of column names to project |
+| `filters` | Optional JSON array of `{ field, op, value }` with `op` in `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `contains` |
+| `top` | Page size (default 50, max 200) |
+| `skip` | Offset for paging |
+
+```http
+GET /pipeline/Pipelines('ReplicatedCustomers')/DataPipelineManagementService.inspectData(side='target',top=50,skip=0)
+```
+
+Entity-shape sources and DB/OData targets query through CAP services. REST sources and query-shape pipelines apply filters in memory on the fetched page (`limitedSupport: true`).
+
+**Production safety**
+
+- **Authorization** — secure this function like read access to the underlying source and target entities. The plugin does not enforce XSUAA scopes on `/pipeline`; your app must.
+- **Opt-out** — `management.inspect: false` on the `cds-data-pipeline` requires entry rejects `inspectData` with HTTP 403 and makes `inspectCapabilities` return `{ "source": "none", "target": "none" }`.
+- **Exclusion** — modeled entity/target sides honor [`@HideFromDataInspector`](https://github.com/cap-js/data-inspector). Hidden elements are omitted from `SELECT` and response projection; entity-hidden sides behave as unsupported (`none` / empty preview).
+- **Audit** — when [`@cap-js/audit-logging`](https://github.com/cap-js/audit-logging) is present (`cds.requires['audit-log']`), modeled reads emit `SensitiveDataRead` for `@PersonalData.IsPotentiallySensitive` columns (best-effort; never blocks the preview).
+
+For general-purpose data browsing across your app, prefer [`@cap-js/data-inspector`](https://github.com/cap-js/data-inspector). The pipeline inspector is scoped to registered pipeline edges (including remote sources and secondary DB targets).
+
+### `inspectCapabilities` (bound to `Pipelines`)
+
+Reports whether the Pipeline Console can preview each side of a pipeline:
+
+| Value | Meaning |
+|---|---|
+| `full` | Modeled entity read (OData/DB source or target) |
+| `limited` | REST source, query-shape source, or custom adapter (metadata only / in-memory page) |
+| `none` | No preview, custom target adapter only, or entity hidden via `@HideFromDataInspector` |
+
+Returns JSON: `{ "source": "full"|"limited"|"none", "target": "full"|"limited"|"none" }`. When `management.inspect: false`, both sides are always `none`.
+
+```http
+GET /pipeline/Pipelines('ReplicatedCustomers')/DataPipelineManagementService.inspectCapabilities()
+```
+
+### `flowMetadata` (bound to `Pipelines`)
+
+Returns JSON for the Pipeline Console detail data-flow graph: lifecycle events (`PIPELINE.START` through `PIPELINE.DONE`), configuration deviations (query-shape, REST source, view mapping, schedule, fan-in, custom adapters, …), registered `before` / `on` / `after` hooks, and a `graph` payload with nodes and lines. Event nodes and edges use **Warning** status when a custom hook is registered for that phase.
+
+```http
+GET /pipeline/Pipelines('ReplicatedProducts')/DataPipelineManagementService.flowMetadata()
+```
+
+### `landscapeMetadata` (unbound)
+
+Returns JSON for the Pipeline Console master landscape graph: all registered pipelines with a deduplicated source → pipeline → target graph. Pipelines with custom configuration or hooks get **Warning** edges.
+
+```http
+GET /pipeline/landscapeMetadata()
+```
+
+Graph nodes are grouped by **service**; node titles are **entity** or **consumption-view** names. Pipeline connectors sit between source and target entity nodes.
+
+The Pipeline Console keeps these graphs current by polling `flowMetadata` and `landscapeMetadata` on a short interval (faster while a pipeline is `running`).
 
 ### `execute`
 

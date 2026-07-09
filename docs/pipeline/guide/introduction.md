@@ -1,7 +1,7 @@
 # Introduction
 
-::: warning Work in progress
-This plugin is under active development. APIs, schema, and documentation are still evolving and may change before a stable release.
+::: info Pre-1.0
+`cds-data-pipeline` is published and usable today, but still pre-1.0 — the programmatic API and tracker schema may see refinements before a stable release. It runs on both CDS 9 and CDS 10.
 :::
 
 ## What it is

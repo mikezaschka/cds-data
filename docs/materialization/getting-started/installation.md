@@ -1,5 +1,9 @@
 # Installation
 
+::: warning Experimental — not yet released
+`cds-data-materialization` is **experimental** and **not yet published to npm**. Until the first release, install it from the monorepo workspace rather than from the registry — the `npm add` command below documents the eventual package name.
+:::
+
 ## Install the plugin
 
 ```bash
@@ -14,7 +18,7 @@ For AI coding assistants, the installed package also ships `node_modules/cds-dat
 
 | Package | Version | Required? |
 |---|---|---|
-| `@sap/cds` | `>= 8` | **Yes** |
+| `@sap/cds` | `>= 9` | **Yes** — CDS 9 and CDS 10 are both supported |
 | `cds-data-pipeline` | `>= 0.1.0` | **Yes** — loud error at `served` if missing |
 | [`cds-caching`](https://github.com/mikezaschka/cds-caching) | `>= 1` | Optional — not used by this plugin in v1 |
 

@@ -1,6 +1,10 @@
 # Features
 
-What `cds-data-materialization` provides in the current release. Annotation syntax is in [Annotations](annotations.md).
+::: warning Experimental — not yet released
+`cds-data-materialization` is **experimental** and **not yet published to npm**. Everything below is subject to change until the first release. The pipeline engine it composes (`cds-data-pipeline`) is released independently.
+:::
+
+What `cds-data-materialization` provides today. Annotation syntax is in [Annotations](annotations.md).
 
 ## Annotation plugin
 

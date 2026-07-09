@@ -5,7 +5,7 @@ Set up a single replicate pipeline using the public **[Northwind OData V4](https
 ## Prerequisites
 
 - **Node.js** >= 22
-- **`@sap/cds`** >= 9.2
+- **`@sap/cds`** >= 9 (CDS 9 and CDS 10 both supported)
 - Network access to `https://services.odata.org`
 
 ## 1. Install the plugin
@@ -14,23 +14,43 @@ Set up a single replicate pipeline using the public **[Northwind OData V4](https
 npm add cds-data-pipeline
 ```
 
-The plugin auto-registers `DataPipelineService` — no extra config needed.
+The plugin auto-registers the pipeline engine — no extra config needed for `addPipeline`. Connect with `cds.connect.to('datapipeline')` or the `DataPipelineService` alias.
 
 For AI coding assistants, the installed package also ships `node_modules/cds-data-pipeline/AGENTS.md` and task skills under `skills/` — see the package README § AI assistants.
 
-Include the **tracker** schema so the `Pipelines` / `PipelineRuns` tables exist (e.g. in `db/schema.cds`):
+**Option A — reuse management API from the plugin** (no project CDS files):
+
+```json
+{
+  "cds": {
+    "requires": {
+      "datapipeline": {
+        "impl": "cds-data-pipeline",
+        "management": { "reuse": { "api": true } }
+      }
+    }
+  }
+}
+```
+
+**Option B — manual CDS imports** (explicit control):
+
+Tracker schema in `db/schema.cds`:
 
 ```cds
 using from 'cds-data-pipeline/db';
-
-namespace my.app;
-
-// … your entities and consumption views …
 ```
 
-Expose the **management OData** surface (e.g. in `srv/pipeline-mgmt.cds`):
+Management OData in `srv/pipeline-mgmt.cds`:
 
 ```cds
+using from 'cds-data-pipeline/index.cds';
+```
+
+Or import tracker and service separately:
+
+```cds
+using from 'cds-data-pipeline/db';
 using from 'cds-data-pipeline/srv/DataPipelineManagementService';
 ```
 
@@ -92,7 +112,7 @@ In `server.js`, connect after CAP has served and call `addPipeline`. The engine 
 const cds = require('@sap/cds');
 
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('datapipeline');
 
     await pipelines.addPipeline({
         name: 'NorthwindProducts',
@@ -124,15 +144,33 @@ module.exports = cds.server;
 
 ## 6. Open the Pipeline Console
 
-Scaffold or mount the pre-built console from the npm package:
+Enable reuse in `package.json`:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "datapipeline": {
+        "impl": "cds-data-pipeline",
+        "management": {
+          "reuse": {
+            "api": true,
+            "console": true
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ```bash
-cds add data-pipeline-monitor
+cds deploy
 cds watch
 # → http://localhost:4004/pipeline-console/index.html
 ```
 
-Mount options, composite mashups, and security notes: **[Pipeline Console](pipeline-console.md)**.
+BTP and project-owned UI: `cds add pipeline-console`. Full decision tree: **[Feature activation](feature-activation.md)** and **[Pipeline Console](pipeline-console.md)**.
 
 **Without a UI**, use the management OData API directly (`GET /pipeline/Pipelines`, `GET /pipeline/PipelineRuns`). See [Management Service](../reference/management-service.md).
 
