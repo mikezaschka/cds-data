@@ -19,7 +19,7 @@ using { API_BUSINESS_PARTNER as remote } from './external/API_BUSINESS_PARTNER';
 
 service ExternalService {
 
-    @federation.replicate: { schedule: 600000, delta: { field: 'LastChangeDateTime' } }
+    @federation.replicate: { schedule: 600000, preload: true, delta: { field: 'LastChangeDateTime' } }
     entity ReplicatedPartners as projection on remote.A_BusinessPartner {
         BusinessPartner         as ID,
         BusinessPartnerFullName as name,
@@ -31,6 +31,7 @@ service ExternalService {
 ```
 
 - `schedule: 600000` — re-sync every 10 minutes via `cds.spawn`. Omit for manual-only mode.
+- `preload: true` — run one initial sync at server startup so the local table has data immediately, instead of staying empty until the first `schedule` tick. Use `preload: { wait: true }` to block boot until that first load finishes. See [Initial load on startup](/federation/reference/annotations#initial-load-on-startup).
 - `delta: { field: 'LastChangeDateTime' }` — only fetch records modified since the last successful run.
 - The plugin turns this projection into a **local table** (`@cds.persistence.skip: false`, `@cds.persistence.table`).
 
