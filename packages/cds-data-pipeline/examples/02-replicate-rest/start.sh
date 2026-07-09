@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 EXAMPLE_PORT=4102
 FX_PORT=4456
 
-# Pipeline UIs: examples/_ui-pipeline/ + cds-plugin-ui5 (see package.json).
+# Pipeline Console is served by the plugin via management.reuse.console (see package.json).
 
 if [ ! -d "$SCRIPT_DIR/node_modules" ]; then
     echo "[example-02] Installing dependencies..."
@@ -45,8 +45,8 @@ pids+=($!)
 echo ""
 echo "[example-02] Ready."
 echo "  OData:            http://localhost:$EXAMPLE_PORT/odata/v4/example/ExchangeRates"
-echo "  Launchpad:        http://localhost:$EXAMPLE_PORT/launchpage.html"
-echo "  (tiles: /pipeline-monitor, /pipeline-console via cds-plugin-ui5)"
+echo "  Pipeline Console: http://localhost:$EXAMPLE_PORT/pipeline-console/"
+echo "  Management API:   http://localhost:$EXAMPLE_PORT/pipeline/Pipelines"
 echo "  FXService direct: http://localhost:$FX_PORT/api/rates"
 echo ""
 

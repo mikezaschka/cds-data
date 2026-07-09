@@ -17,7 +17,7 @@ bash examples/07-event-driven-runs/start.sh
 Provider and consumer use CAP **file-based messaging** (default outbox `~/.cds-msg-box`) so emit actions on `:4455` reach the bridge on `:4107`.
 
 - Local replica: <http://localhost:4107/odata/v4/example/Shipments>
-- Launchpad: <http://localhost:4107/launchpage.html>
+- Pipeline Console: <http://localhost:4107/pipeline-console/>
 - Management API: <http://localhost:4107/pipeline/Pipelines>
 
 Stop with `Ctrl+C`.

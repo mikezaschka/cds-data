@@ -18,7 +18,7 @@ Watch the server output for `[START]`, `[MAP]`, `[WRITE]`, `[DONE]` lines — on
 
 - OData of the local replica: <http://localhost:4106/odata/v4/example/Shipments>
 - Per-batch metrics: <http://localhost:4106/odata/v4/example/BatchMetrics>
-- Pipeline Monitor: <http://localhost:4106/launchpage.html>
+- Pipeline Console: <http://localhost:4106/pipeline-console/>
 
 Stop with Ctrl+C.
 

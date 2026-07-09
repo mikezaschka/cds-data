@@ -2,14 +2,11 @@
 
 Seven small, self-contained examples — one per plugin entry point — built on top of two shared backend services. Each example is a runnable CAP app: its own `package.json`, `db/`, `srv/`, `http/` scenarios, `start.sh`, and a README that walks through one feature of `cds-data-pipeline`.
 
-Each example is meant to include the two monitor UIs (Fiori Elements **Pipeline Monitor** and the freestyle **Pipeline Console** with `sap.f.FlexibleColumnLayout`) so you can watch runs, error counts, and statistics in a browser at `http://localhost:<port>/launchpage.html` (the launchpad has a tile for each app).
-
-**One shared implementation** lives in [`_ui-pipeline/`](_ui-pipeline/): two UI5 Tooling 3 projects (`pipeline-monitor`, `pipeline-console`, TypeScript + `ui5 build`). Every example’s `package.json` links them with **`file:`** devDependencies; **[cds-plugin-ui5](https://github.com/ui5-community/ui5-ecosystem-showcase/tree/main/packages/cds-plugin-ui5)** serves them at `/pipeline-monitor` and `/pipeline-console` on the same origin as the CAP server. The sandbox `launchpage.html` is a single file in `_ui-pipeline/`; each example’s `app/launchpage.html` is a **symlink** to it. After changing the UIs, run `npm run ui:build` in any example (or `cd examples/_ui-pipeline && npm install && npm run build`).
+Each example enables the **plugin-provided Pipeline Console** and management OData API via `management.reuse.*` in `package.json` — no local UI5 projects, launchpad, or `cds-plugin-ui5` wiring. Open `http://localhost:<port>/pipeline-console/` to watch runs, error counts, and statistics in the browser.
 
 ## Shared substrate
 
 - `_providers/` — two reusable backends (LogisticsService CAP V4, FXService REST) plus a `start-providers.sh` script. See [_providers/README.md](_providers/README.md).
-- `_ui-pipeline/` — Fiori monitor + FCL console + launchpad (TypeScript, **cds-plugin-ui5**). See [_ui-pipeline/README.md](_ui-pipeline/README.md). Fiori list/object **annotations** for the management service live in the plugin at [`srv/monitor-annotations.cds`](../srv/monitor-annotations.cds) (not under `_ui-pipeline/`).
 
 ## Example catalogue
 
@@ -26,6 +23,7 @@ Each example is meant to include the two monitor UIs (Fiori Elements **Pipeline 
 ## Port allocation
 
 ```
+4100  pipeline-console dev backend (contributors only — see _dev/)
 4101  example 01 consumer
 4102  example 02 consumer
 4103  example 03 consumer
@@ -47,14 +45,36 @@ Each example has a self-contained `start.sh` that launches its required provider
 # Pick any example; its README is the walkthrough
 bash examples/01-replicate-odata/start.sh
 
-# Visit http://localhost:4101/launchpage.html for the Pipeline Monitor and Pipeline Console,
+# Visit http://localhost:4101/pipeline-console/ for the Pipeline Console,
 # and http://localhost:4101/odata/v4/... for the example's own OData service.
 # Run the .http scenarios in examples/01-replicate-odata/http/ via the
 # VS Code REST Client extension.
 ```
 
+## Pipeline Console UI development
+
+Contributors editing the TypeScript UI use the dedicated dev backend at [`_dev/pipeline-console/`](_dev/pipeline-console/) (port **4100**, multiple pipelines). See [Pipeline Console guide](../docs/guide/pipeline-console.md#developing-the-ui-typescript).
+
+## Management UI configuration
+
+Every example's `package.json` includes:
+
+```json
+"datapipeline": {
+  "impl": "cds-data-pipeline",
+  "management": {
+    "reuse": {
+      "api": true,
+      "console": true
+    }
+  }
+}
+```
+
+See [feature activation](../docs/guide/feature-activation.md) for reuse vs. own (`cds add pipeline-console`) trade-offs.
+
 ## Relationship to the docs
 
-Each example README opens with a one-line anchor to the doc page it expands on. The docs are the reference; the examples show one end-to-end configuration plus its observable output. Code snippets in the docs are intentionally self-contained — the examples add the runnable wiring (CAP service file, HTTP scenarios, Pipeline Monitor setup) around them.
+Each example README opens with a one-line anchor to the doc page it expands on. The docs are the reference; the examples show one end-to-end configuration plus its observable output. Code snippets in the docs are intentionally self-contained — the examples add the runnable wiring (CAP service file, HTTP scenarios, pipeline registration) around them.
 
 A custom source / target adapter is intentionally not included here — the code lives in [Custom source](../docs/guide/sources/custom.md) and [Custom target](../docs/guide/targets/custom.md) and adds little that the seven above don't already cover.

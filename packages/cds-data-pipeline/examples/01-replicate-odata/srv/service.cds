@@ -1,5 +1,4 @@
 using { example01 } from '../db/schema';
-using from 'cds-data-pipeline/srv/monitor-annotations';
 
 // Public OData service over the replicated local table so you can query
 // the copied rows at `/odata/v4/example/Shipments`. The `@cds.persistence.skip: false`

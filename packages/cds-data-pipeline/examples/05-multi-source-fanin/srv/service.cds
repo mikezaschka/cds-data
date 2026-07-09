@@ -1,5 +1,4 @@
 using { example05 } from '../db/schema';
-using from 'cds-data-pipeline/srv/monitor-annotations';
 
 service ExampleService @(path: '/odata/v4/example') {
     @readonly

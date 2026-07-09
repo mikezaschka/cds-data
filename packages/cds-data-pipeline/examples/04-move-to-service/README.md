@@ -14,7 +14,7 @@ bash examples/04-move-to-service/start.sh
 
 - Source entity: <http://localhost:4455/odata/v4/logistics/Shipments>
 - Target entity: <http://localhost:4455/odata/v4/logistics/ShipmentArchive>
-- Pipeline Monitor: <http://localhost:4104/launchpage.html>
+- Pipeline Console: <http://localhost:4104/pipeline-console/>
 - Management service: <http://localhost:4104/pipeline/Pipelines>
 
 Stop with Ctrl+C.

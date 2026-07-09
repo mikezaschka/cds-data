@@ -17,7 +17,7 @@ bash examples/03-materialize-cqn/start.sh
 
 - Orders (source): <http://localhost:4103/odata/v4/sales/Orders>
 - Reporting (targets): <http://localhost:4103/odata/v4/reporting/DailyCustomerRevenue>, <http://localhost:4103/odata/v4/reporting/RecentCustomerRevenue>
-- Pipeline Monitor: <http://localhost:4103/launchpage.html>
+- Pipeline Console: <http://localhost:4103/pipeline-console/>
 
 Stop with Ctrl+C.
 
@@ -50,7 +50,7 @@ Key points:
 
 ## Tracker mode vs refresh mode
 
-The persisted tracker enum is `{ delta, full }`. `refresh: 'partial'` is accepted by validation but stored as `mode = 'full'` on the tracker — the Pipeline Monitor shows both pipelines in this example with `mode=full`. The difference between them is the slice each rebuilds, not a separate stored mode.
+The persisted tracker enum is `{ delta, full }`. `refresh: 'partial'` is accepted by validation but stored as `mode = 'full'` on the tracker — the Pipeline Console shows both pipelines in this example with `mode=full`. The difference between them is the slice each rebuilds, not a separate stored mode.
 
 ## Scenarios
 

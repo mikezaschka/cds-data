@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 EXAMPLE_PORT=4106
 LOGISTICS_PORT=4455
 
-# Pipeline UIs: examples/_ui-pipeline/ + cds-plugin-ui5 (see package.json).
+# Pipeline Console is served by the plugin via management.reuse.console (see package.json).
 
 if [ ! -d "$SCRIPT_DIR/node_modules" ]; then
     echo "[example-06] Installing dependencies..."
@@ -46,7 +46,8 @@ echo ""
 echo "[example-06] Ready."
 echo "  OData:    http://localhost:$EXAMPLE_PORT/odata/v4/example/Shipments"
 echo "  Metrics:  http://localhost:$EXAMPLE_PORT/odata/v4/example/BatchMetrics"
-echo "  Launchpad: http://localhost:$EXAMPLE_PORT/launchpage.html  (cds-plugin-ui5: /pipeline-monitor, /pipeline-console)"
+echo "  Pipeline Console: http://localhost:$EXAMPLE_PORT/pipeline-console/"
+echo "  Management API:   http://localhost:$EXAMPLE_PORT/pipeline/Pipelines"
 echo ""
 
 wait

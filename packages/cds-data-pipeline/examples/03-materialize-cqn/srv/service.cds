@@ -1,5 +1,4 @@
 using { example03 } from '../db/schema';
-using from 'cds-data-pipeline/srv/monitor-annotations';
 
 // Transactional OData service — source of the aggregate pipeline.
 service SalesService @(path: '/odata/v4/sales') {

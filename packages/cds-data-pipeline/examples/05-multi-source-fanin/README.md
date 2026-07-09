@@ -17,7 +17,7 @@ bash examples/05-multi-source-fanin/start.sh
 - Consolidated local: <http://localhost:4105/odata/v4/example/Shipments>
 - DEV source: <http://localhost:4455/odata/v4/logistics/Shipments>
 - PROD source: <http://localhost:4465/odata/v4/logistics/Shipments>
-- Pipeline Monitor: <http://localhost:4105/launchpage.html>
+- Pipeline Console: <http://localhost:4105/pipeline-console/>
 
 Stop with Ctrl+C.
 

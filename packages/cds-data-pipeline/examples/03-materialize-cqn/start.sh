@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 EXAMPLE_PORT=4103
 
-# Pipeline UIs: examples/_ui-pipeline/ + cds-plugin-ui5 (see package.json).
+# Pipeline Console is served by the plugin via management.reuse.console (see package.json).
 
 if [ ! -d "$SCRIPT_DIR/node_modules" ]; then
     echo "[example-03] Installing dependencies..."
@@ -20,7 +20,8 @@ pid=$(lsof -ti:$EXAMPLE_PORT 2>/dev/null || true)
 echo "[example-03] Starting on :$EXAMPLE_PORT ..."
 echo "  SalesService:     http://localhost:$EXAMPLE_PORT/odata/v4/sales/Orders"
 echo "  ReportingService: http://localhost:$EXAMPLE_PORT/odata/v4/reporting/DailyCustomerRevenue"
-echo "  Launchpad:        http://localhost:$EXAMPLE_PORT/launchpage.html  (cds-plugin-ui5: /pipeline-monitor, /pipeline-console)"
+echo "  Pipeline Console: http://localhost:$EXAMPLE_PORT/pipeline-console/"
+echo "  Management API:   http://localhost:$EXAMPLE_PORT/pipeline/Pipelines"
 echo ""
 
 cd "$SCRIPT_DIR"

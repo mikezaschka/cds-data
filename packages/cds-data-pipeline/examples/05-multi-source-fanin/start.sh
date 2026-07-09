@@ -9,7 +9,7 @@ EXAMPLE_PORT=4105
 LOGISTICS_DEV_PORT=4455
 LOGISTICS_PROD_PORT=4465
 
-# Pipeline UIs: examples/_ui-pipeline/ + cds-plugin-ui5 (see package.json).
+# Pipeline Console is served by the plugin via management.reuse.console (see package.json).
 
 if [ ! -d "$SCRIPT_DIR/node_modules" ]; then
     echo "[example-05] Installing dependencies..."
@@ -52,7 +52,8 @@ echo "[example-05] Ready."
 echo "  Local (consolidated): http://localhost:$EXAMPLE_PORT/odata/v4/example/Shipments"
 echo "  DEV source direct:    http://localhost:$LOGISTICS_DEV_PORT/odata/v4/logistics/Shipments"
 echo "  PROD source direct:   http://localhost:$LOGISTICS_PROD_PORT/odata/v4/logistics/Shipments"
-echo "  Launchpad:            http://localhost:$EXAMPLE_PORT/launchpage.html  (cds-plugin-ui5: /pipeline-monitor, /pipeline-console)"
+echo "  Pipeline Console: http://localhost:$EXAMPLE_PORT/pipeline-console/"
+echo "  Management API:   http://localhost:$EXAMPLE_PORT/pipeline/Pipelines"
 echo ""
 
 wait

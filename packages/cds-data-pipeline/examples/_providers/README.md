@@ -18,6 +18,8 @@ A minimal CAP V4 service exposing `Carriers`, `Shipments`, `TrackingEvents`, and
 
 An optional `LOGISTICS_CARRIERS_DELAY_MS` env var injects an artificial delay on `Carriers` reads; defaults to 0. Useful only as a retry / resilience demo.
 
+`LOGISTICS_SHIPMENT_COUNT` replaces the default CSV seed with programmatically generated shipments on startup. Used by `examples/_dev/pipeline-console/` (`1000` rows). Ignored when `LOGISTICS_ORIGIN` is set so example 05 keeps its small origin-specific datasets.
+
 ## FXService
 
 A plain Express app serving `GET /api/rates` with offset pagination (`limit`, `offset`), a `modifiedSince` filter, and a `{ results, total }` envelope — matching what the built-in `RestAdapter` expects with `pagination: { type: 'offset' }`, `deltaParam: 'modifiedSince'`, and `dataPath: 'results'`. Example 02 replicates from this endpoint.

@@ -1,14 +1,14 @@
 {
-    "name": "cds-data-pipeline-example-05-multi-source-fanin",
+    "name": "cds-data-pipeline-dev-pipeline-console",
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "start": "cds-serve --port 4105"
+        "start": "cds-serve --port 4100"
     },
     "dependencies": {
         "@sap/cds": "^9.2",
-        "express": "^4",
-        "cds-data-pipeline": "file:../.."
+        "cds-data-pipeline": "file:../../..",
+        "express": "^4"
     },
     "devDependencies": {
         "@cap-js/sqlite": "^2"
@@ -20,7 +20,7 @@
                 "management": {
                     "reuse": {
                         "api": true,
-                        "console": true
+                        "console": false
                     }
                 }
             },
@@ -30,18 +30,24 @@
                     "url": ":memory:"
                 }
             },
-            "LogisticsDev": {
+            "ArchiveDb": {
+                "kind": "sqlite",
+                "schema_evolution": "auto",
+                "credentials": {
+                    "url": "archive.sqlite"
+                }
+            },
+            "LogisticsService": {
                 "kind": "odata",
-                "model": "srv/external/LogisticsDev",
+                "model": "srv/external/LogisticsService",
                 "credentials": {
                     "url": "http://localhost:4455/odata/v4/logistics"
                 }
             },
-            "LogisticsProd": {
-                "kind": "odata",
-                "model": "srv/external/LogisticsProd",
+            "FXService": {
+                "kind": "rest",
                 "credentials": {
-                    "url": "http://localhost:4465/odata/v4/logistics"
+                    "url": "http://localhost:4456"
                 }
             }
         }

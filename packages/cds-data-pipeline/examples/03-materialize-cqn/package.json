@@ -3,8 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "start": "cds-serve --port 4103",
-        "ui:build": "npm run build --prefix ../_ui-pipeline"
+        "start": "cds-serve --port 4103"
     },
     "dependencies": {
         "@sap/cds": "^9.2",
@@ -12,27 +11,23 @@
         "cds-data-pipeline": "file:../.."
     },
     "devDependencies": {
-        "@cap-js/sqlite": "^2",
-        "cds-plugin-ui5": "^0.9",
-        "pipeline-console": "file:../_ui-pipeline/pipeline-console",
-        "pipeline-monitor": "file:../_ui-pipeline/pipeline-monitor"
+        "@cap-js/sqlite": "^2"
     },
     "cds": {
         "requires": {
+            "datapipeline": {
+                "impl": "cds-data-pipeline",
+                "management": {
+                    "reuse": {
+                        "api": true,
+                        "console": true
+                    }
+                }
+            },
             "db": {
                 "kind": "sqlite",
                 "credentials": {
                     "url": ":memory:"
-                }
-            }
-        },
-        "cds-plugin-ui5": {
-            "modules": {
-                "pipeline-monitor": {
-                    "mountPath": "/pipeline-monitor"
-                },
-                "pipeline-console": {
-                    "mountPath": "/pipeline-console"
                 }
             }
         }

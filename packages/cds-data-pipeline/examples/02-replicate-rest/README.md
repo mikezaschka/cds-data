@@ -13,7 +13,7 @@ bash examples/02-replicate-rest/start.sh
 ```
 
 - OData of the local replica: <http://localhost:4102/odata/v4/example/ExchangeRates>
-- Pipeline Monitor: <http://localhost:4102/launchpage.html>
+- Pipeline Console: <http://localhost:4102/pipeline-console/>
 - FXService direct: <http://localhost:4456/api/rates>
 
 Stop with Ctrl+C.

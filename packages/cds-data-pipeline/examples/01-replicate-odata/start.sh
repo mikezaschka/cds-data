@@ -9,9 +9,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 EXAMPLE_PORT=4101
 LOGISTICS_PORT=4455
 
-# Shared UI5 apps live in examples/_ui-pipeline/ and are linked via package.json (file: deps);
-# cds-plugin-ui5 mounts them at /pipeline-monitor and /pipeline-console. app/launchpage.html
-# points at the shared sandbox (symlink).
+# Pipeline Console is served by the plugin via management.reuse.console (see package.json).
 
 # Ensure dependencies are present.
 if [ ! -d "$SCRIPT_DIR/node_modules" ]; then
@@ -51,8 +49,7 @@ pids+=($!)
 echo ""
 echo "[example-01] Ready."
 echo "  OData:            http://localhost:$EXAMPLE_PORT/odata/v4/example/Shipments"
-echo "  Launchpad:        http://localhost:$EXAMPLE_PORT/launchpage.html"
-echo "  (tiles: /pipeline-monitor, /pipeline-console via cds-plugin-ui5)"
+echo "  Pipeline Console: http://localhost:$EXAMPLE_PORT/pipeline-console/"
 echo "  Management API:   http://localhost:$EXAMPLE_PORT/pipeline/Pipelines"
 echo ""
 echo "[example-01] Scenarios in examples/01-replicate-odata/http/ — Ctrl+C to stop."
