@@ -12,6 +12,7 @@ See [`spec/reference/requirements.md`](./requirements.md) for the requirement de
 
 | Requirement | Status | Tagged tests |
 |---|---|---|
+| 4.1.3 | Implemented (HCQL remote; OData-only limitation remains) | 1 |
 | 4.2.5 | Implemented | 25 |
 | 4.2.6 | Implemented | 10 |
 | 4.2.12 | Implemented | 5 |
@@ -21,7 +22,7 @@ See [`spec/reference/requirements.md`](./requirements.md) for the requirement de
 | 4.3.7 | Implemented | 2 |
 | 4.3.8 | Implemented | 2 |
 | 4.4.1 | Implemented | 4 |
-| 4.4.2 | Implemented (timestamp, key, datetime-fields via adapter) | 1 |
+| 4.4.2 | Implemented (timestamp, key, datetime-fields via adapter) | 2 |
 | 4.5.1 | Implemented | 1 |
 | 4.6.1 | Implemented | 3 |
 | 4.6.1a | Implemented | 1 |
@@ -29,10 +30,19 @@ See [`spec/reference/requirements.md`](./requirements.md) for the requirement de
 | 4.6.3 | Implemented | 6 |
 | 4.7.1 | Implemented | 2 |
 | 4.8.2 | Implemented | 1 |
+| 4.13.7 | Implemented | 5 |
+| 4.13.8 | Implemented | 3 |
+| 4.13.9 | Implemented | 6 |
 | 4.15.1 | Implemented | 2 |
 | 4.15.2 | Implemented | 1 |
 
 ## Details
+
+### 4.1.3
+
+Status: **Implemented (HCQL remote; OData-only limitation remains)**
+
+- `packages/cds-data-federation/test/integration/hcql/hcql-flatten.test.js` — [4.1.3] delegate OrderFlat returns flattened association fields via HCQL
 
 ### 4.2.5
 
@@ -145,6 +155,7 @@ Status: **Implemented**
 Status: **Implemented (timestamp, key, datetime-fields via adapter)**
 
 - `packages/cds-data-pipeline/test/integration/full-vs-delta.test.js` — [4.4.2] R5: getStatus reports lastSync after successful run
+- `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js` — [4.4.2] binding: derived read models query as views over replicated tables
 
 ### 4.5.1
 
@@ -156,15 +167,15 @@ Status: **Implemented**
 
 Status: **Implemented**
 
-- `packages/cds-data-pipeline/test/integration/odata-adapter.test.js` — [4.6.1] R22: full sync replicates all customers (V4)
-- `packages/cds-data-pipeline/test/integration/odata-adapter.test.js` — [4.6.1] R24: OData adapter uses viewMapping for column restriction
-- `packages/cds-data-pipeline/test/integration/odata-adapter.test.js` — [4.6.1] V2 protocol replicates customers
+- `packages/cds-data-pipeline/test/integration/remote-cqn-adapter.test.js` — [4.6.1] R22: full sync replicates all customers (V4)
+- `packages/cds-data-pipeline/test/integration/remote-cqn-adapter.test.js` — [4.6.1] R24: remote CQN adapter uses viewMapping for column restriction
+- `packages/cds-data-pipeline/test/integration/remote-cqn-adapter.test.js` — [4.6.1] V2 protocol replicates customers
 
 ### 4.6.1a
 
 Status: **Implemented**
 
-- `packages/cds-data-pipeline/test/integration/odata-adapter.test.js` — [4.6.1a] R30: server-driven page cap still loads all paged customers
+- `packages/cds-data-pipeline/test/integration/remote-cqn-adapter.test.js` — [4.6.1a] R30: server-driven page cap still loads all paged customers
 
 ### 4.6.2
 
@@ -196,6 +207,35 @@ Status: **Implemented**
 Status: **Implemented**
 
 - `packages/cds-data-pipeline/test/integration/management-service.test.js` — [4.8.2] R16: POST /pipeline/execute executes synchronously
+
+### 4.13.7
+
+Status: **Implemented**
+
+- `packages/cds-data-pipeline/test/integration/inspect-data.test.js` — [4.13.7] inspectData omits @HideFromDataInspector columns from target preview
+- `packages/cds-data-pipeline/test/integration/inspect-data.test.js` — [4.13.7] inspectCapabilities reports none for @HideFromDataInspector target entity
+- `packages/cds-data-pipeline/test/integration/inspect-data.test.js` — [4.13.7] inspectData returns no rows for @HideFromDataInspector target entity
+- `packages/cds-data-pipeline/test/integration/inspect-data.test.js` — [4.13.7] inspectData succeeds without audit-log configured (audit no-op)
+- `packages/cds-data-pipeline/test/unit/config-normalizer.test.js` — [4.13.7] isManagementInspectEnabled respects inspect opt-out
+
+### 4.13.8
+
+Status: **Implemented**
+
+- `packages/cds-data-pipeline/test/integration/overrides.test.js` — [4.13.8] persists overrides and re-applies after simulated restart
+- `packages/cds-data-pipeline/test/integration/overrides.test.js` — [4.13.8] setEnabled(false) stops scheduling; manual execute still runs
+- `packages/cds-data-pipeline/test/integration/overrides.test.js` — [4.13.8] configView returns base / overrides / effective / meta
+
+### 4.13.9
+
+Status: **Implemented**
+
+- `packages/cds-data-pipeline/test/integration/housekeeping.test.js` — [4.13.9] retentionDays deletes only finished runs older than the cutoff
+- `packages/cds-data-pipeline/test/integration/housekeeping.test.js` — [4.13.9] maxRuns keeps only the newest finished runs
+- `packages/cds-data-pipeline/test/integration/housekeeping.test.js` — [4.13.9] per-pipeline retention overrides global maxRuns
+- `packages/cds-data-pipeline/test/integration/housekeeping.test.js` — [4.13.9] disabled policy deletes nothing
+- `packages/cds-data-pipeline/test/integration/housekeeping.test.js` — [4.13.9] rejects invalid retention config at registration
+- `packages/cds-data-pipeline/test/unit/config-normalizer.test.js` — [4.13.9] normalizes housekeeping retention defaults
 
 ### 4.15.1
 
@@ -241,6 +281,7 @@ These rows are marked `Implemented` but no test carries the `[<id>]` prefix. Eit
 - 4.7.3 — Implemented (via hooks)
 - 4.7.4 — Implemented
 - 4.8.1 — Implemented
+- 4.8.4 — Implemented
 - 4.9.1 — Implemented
 - 4.10.1 — Implemented
 - 4.10.3 — Implemented
@@ -248,13 +289,13 @@ These rows are marked `Implemented` but no test carries the `[<id>]` prefix. Eit
 - 4.11.1 — Implemented
 - 4.11.2 — Implemented
 - 4.11.3 — Implemented
-- 4.11.6 — Implemented
 - 4.11.8 — Implemented
 - 4.12.1 — Implemented
 - 4.13.1 — Implemented
 - 4.13.2 — Implemented
 - 4.13.3 — Implemented
 - 4.13.4 — Implemented
+- 4.13.6 — Implemented
 - 4.14.1 — Implemented
 - 4.14.3 — Implemented
 - 4.14.4 — Implemented

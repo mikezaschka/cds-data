@@ -58,10 +58,12 @@ CAP's [Services & Platform Integration](https://cap.cloud.sap/docs/guides/integr
 | CAP Guide | Relationship to this plugin |
 |---|---|
 | [Reuse & Compose — Service Integration](https://cap.cloud.sap/docs/guides/integration/reuse-and-compose#service-integration) | Documents the "embed vs. integrate" decision for reused packages. When an imported service (e.g. `@capire/reviews`) is configured in `cds.requires` with `kind: odata, model: '@capire/reviews'`, it runs as a separate microservice — **this is the precondition our plugin operates on**. The guide's `CatalogService.prepend('READ', 'Books/reviews', ...)` example is exactly what the plugin's [cross-service expand: local → remote](../concepts/cross-service-scenarios.md#cross-service-expand-local--remote) and [cross-service navigation](../concepts/cross-service-scenarios.md#cross-service-navigation-local--remote) resolve automatically for any consumption view. |
-| [CAP-level Data Federation](https://cap.cloud.sap/docs/guides/integration/data-federation) | Introduces the sample-level `@federated` annotation and ships a ~20-line reference [`data-federation.js`](https://github.com/capire/xtravels/blob/main/srv/data-federation.js) (polling-based delta using `modifiedAt`). This is the **MVP** of what `@federation.replicate` does. Our plugin supersedes it with: multiple delta modes (timestamp/key/datetime-fields), REST adapter with pagination, concurrency guard, retry with exponential backoff, pipeline events (`PIPELINE.READ/MAP/WRITE`) + user hooks, management API (`Pipelines`, `PipelineRuns`), view-mapping-aware MAP phase, status tracking, and per-run statistics. |
+| [CAP-level Data Federation](https://cap.cloud.sap/docs/guides/integration/data-federation) | Introduces the sample-level `@federated` annotation and ships a reference [`data-federation.js`](https://github.com/capire/xtravels/blob/main/srv/data-federation.js) (polling-based delta using `modifiedAt`, scheduled via CAP Event Queues `schedule().every()` as of the cds 10 integration guides). This is the **MVP** of what `@federation.replicate` does. Our plugin supersedes it with: multiple delta modes (timestamp/key/datetime-fields), REST adapter with pagination, concurrency guard, retry with exponential backoff, pipeline events (`PIPELINE.READ/MAP/WRITE`) + user hooks, management API (`Pipelines`, `PipelineRuns`), view-mapping-aware MAP phase, status tracking, and per-run statistics. |
 | [Inner-Loop Development](https://cap.cloud.sap/docs/guides/integration/inner-loops) | Orthogonal. `cds mock`, `cds watch` auto-bindings via `~/.cds-services.json`, `cds repl`, npm workspaces, and proxy packages all work alongside the plugin unchanged. Application developers can mock remote services during development and the plugin transparently switches between mocked and real remote services based on the active `cds.requires` bindings. |
 
-**Annotation naming:** The CAP sample uses `@federated` (no dot, no strategy). We use `@federation.delegate` / `@federation.replicate` — separate identifiers in different namespaces, so there is no technical collision. The dotted form makes the strategy choice explicit at the annotation site and leaves room for additional options (`cache`, `writable`, `schedule`, `mode`). If CAP promotes `@federated` from a sample pattern to a built-in in a future release, we will reassess alignment at that point.
+**cds 10 additions (June 2026):** The integration guides now document [**HCQL**](https://cap.cloud.sap/docs/releases/2026/jun26#new-hcql-protocol-adapter) as CAP's native protocol — auto-selected over OData for CAP-to-CAP remote reads when the provider serves `@hcql`. Federation delegate forwarding (`remote.run(req.query)`) and pipeline remote reads through connected CAP services benefit without plugin changes. Flattened consumption-view projections that fail on OData may work on HCQL remotes; see [HCQL evaluation](../internal/research/hcql-evaluation.md). Event Queues scheduling matured (cron, named tasks, `unschedule`); the pipeline engine's queued schedule uses these APIs when present ([ADR 0011](../internal/decisions/0011-cds-9-10-dual-compatibility.md)). Write results on cds 10 use a uniform `{ affected }` shape; the engine normalizes via `rowsAffected()` for dual CDS 9/10 support.
+
+**Annotation naming:** The CAP sample uses `@federated` (no dot, no strategy). We use `@federation.delegate` / `@federation.replicate` — separate identifiers in different namespaces, so there is no technical collision. The dotted form makes the strategy choice explicit at the annotation site and leaves room for additional options (`cache`, `writable`, `schedule`, `mode`). CAP's `@federated` remains a **sample-level** tag in xtravels (not a built-in annotation as of cds 10); if SAP promotes it to a framework annotation in a future release, we will reassess alignment at that point.
 
 **Scope constraint:** `@federation.*` annotations apply only to **consumption views** — CDS projections of the form `entity X as projection on remote.Y`. The projection is the federation contract (what data, what shape, what renames). Annotating an imported entity directly (`annotate ReviewsService.Reviews with @federation.delegate`) is not supported because the annotation scanner resolves the source via the projection chain. Use `options.source` only as the escape hatch for REST services that lack a CDS model.
 
@@ -172,24 +174,24 @@ From this single CDS definition, the plugin infers everything:
 
 | Section | Total | Done | In Progress | Not Started | N/A |
 |---|---|---|---|---|---|
-| 4.1 Consumption Views | 7 | 6 | 0 | 0 | 1 |
+| 4.1 Consumption Views | 7 | 7 | 0 | 0 | 0 |
 | 4.2 Delegate Strategy | 13 | 11 | 0 | 1 | 1 |
 | 4.3 Caching | 8 | 7 | 0 | 1 | 0 |
 | 4.4 Replicate Strategy | 7 | 4 | 0 | 3 | 0 |
 | 4.5 Annotation Config | 5 | 4 | 0 | 1 | 0 |
 | 4.6 Source Adapters | 7 | 6 | 0 | 1 | 0 |
 | 4.7 Data Transformation | 4 | 4 | 0 | 0 | 0 |
-| 4.8 Scheduling & Triggers | 6 | 2 | 0 | 4 | 0 |
+| 4.8 Scheduling & Triggers | 6 | 3 | 0 | 3 | 0 |
 | 4.9 CQL Safety | 1 | 1 | 0 | 0 | 0 |
 | 4.10 Resilience | 11 | 3 | 1 | 7 | 0 |
-| 4.11 Observability | 8 | 5 | 1 | 2 | 0 |
+| 4.11 Observability | 8 | 4 | 1 | 3 | 0 |
 | 4.12 Security | 3 | 1 | 0 | 2 | 0 |
-| 4.13 Management API | 5 | 4 | 0 | 1 | 0 |
+| 4.13 Management API | 9 | 8 | 0 | 1 | 0 |
 | 4.14 Configuration | 5 | 4 | 1 | 0 | 0 |
 | 4.15 Multi-Tenancy | 2 | 2 | 0 | 0 | 0 |
 | 4.16 Example Apps | 5 | 4 | 0 | 1 | 0 |
 | 4.17 Target Adapters (Pipeline WRITE Phase) | 8 | 1 | 0 | 7 | 0 |
-| **Total** | **105** | **69** | **3** | **31** | **2** |
+| **Total** | **109** | **74** | **3** | **31** | **1** |
 
 ### 4.1 Consumption View Processing
 
@@ -199,7 +201,7 @@ From this single CDS definition, the plugin infers everything:
 |---|---|---|---|
 | 4.1.1 | **Column extraction** -- extract projected columns from the consumption view. For delegate: CAP handles this natively. For replicate: used in MAP phase. For Scenario B: used in batch-fetch. | P0 | Implemented |
 | 4.1.2 | **Field rename mapping** -- extract `as` renames and build bidirectional mapping table (local ↔ remote). For delegate: CAP handles this natively. For Scenario B and replicate: used for manual mapping. | P0 | Implemented |
-| 4.1.3 | **Flatten associations** -- support `customer.name as buyerName` style flattening in projections. The CDS compiler produces multi-segment `ref` arrays (e.g., `["customer", "name"]`) which the plugin's `extractViewMapping()` does not currently handle (it only reads `ref[0]`). At runtime, this is blocked by an **OData protocol limitation**: OData cannot express denormalized/flattened fields in `$select` or `$expand`. Service Integration docs: "OData doesn't support denormalization." Works only with HCQL (CAP's native protocol). Tested via `OrderFlat` entity; test skipped with documented limitation. | P1 | Not supported (OData limitation) |
+| 4.1.3 | **Flatten associations** -- support `customer.name as buyerName` style flattening in projections. Multi-segment `ref` arrays are compiled into CQN path expressions in `extractViewMapping()` / `projectedColumns`. Works when CAP selects **HCQL** on CAP-to-CAP hops (provider serves `@hcql`); OData-only remotes still cannot denormalize. Tested via `OrderFlat` delegate + `ReplicatedOrderFlat` replicate against HCQL provider fixture. | P1 | Implemented (HCQL remote; OData-only limitation remains) |
 | 4.1.4 | **Wildcard projection** -- when the projection uses `{ * }`, fetch all fields (no column restriction). For delegate: CAP handles this natively. | P0 | Implemented |
 | 4.1.5 | **Exclude columns** -- support `excluding { field1, field2 }` in projections to explicitly exclude fields from remote fetch. For delegate: CAP handles this natively via the projection chain. For Scenario B: `extractViewMapping()` now records `excludedColumns` from `projection.excluding` in the CSN. `resolveFederatedExpand()` uses this to build an explicit `$select` that omits excluded fields from the remote batch-fetch. Tested via `LightBookmarks` → `CustomersLight` (excluding `email`, `modifiedAt`). | P1 | Implemented |
 | 4.1.6 | **Static where clause** -- support `where condition` in consumption view projections to apply a permanent filter to all queries. The annotation scanner extracts `projection.where` from the CSN and stores it as `staticWhere` in the view mapping. The delegate handler detects `staticWhere` and routes through `runDirectRemoteQuery()`, which injects the static filter (already in remote field names) into the remote CQN after local→remote field translation. This correctly handles both wildcard projections (`ActiveCustomers where blocked = false`) and restricted projections with non-projected filter fields (`ElectronicsProducts where category = 'Electronics'`). Tested with: basic filtering, $count, $orderby, combined client $filter + static where, renames + static where. **Note:** CAP's [old "Consuming Services" docs](https://cap.cloud.sap/docs/guides/services/consuming-services#supported-projection-features) explicitly list `where` conditions in projections as "not supported" for remote services. This is a plugin value-add beyond CAP's native capabilities. | P1 | Implemented |
@@ -377,7 +379,7 @@ For **delegation**, no adapters are needed -- CAP's `remote.run(req.query)` hand
 | 4.6.2 | **REST adapter** -- cursor/offset/page pagination via `srv.send()`, configurable delta URL parameter, `dataPath` extraction from nested responses, `withRetry`. Explicit `source` in annotation. **Replication only** -- delegation not possible because CAP does not translate CQN to REST. | P0 | Implemented |
 | 4.6.3 | **CQN adapter** -- single adapter serving both read shapes: *entity-shape* reads (row-preserving copy from CQN-native `cds.requires` services — secondary DB, CAP-wrapped legacy DB) and *query-shape* reads (derived/aggregated snapshot built from a user-supplied `source.query` closure). Read shape is inferred from the config (see [ADR 0007](../internal/decisions/0007-infer-pipeline-intent-from-config-shape.md)); transport is routed via `source.kind: 'cqn'` on the adapter factory. See [ADR 0004](../internal/decisions/0004-scope-cqn-adapter-to-cds-data-replication.md), [ADR 0005](../internal/decisions/0005-reposition-engine-as-cds-data-pipeline.md), and [`docs/pipeline/guide/sources/cqn.md`](../../docs/pipeline/guide/sources/cqn.md). | P1 | Implemented |
 | 4.6.4 | **Custom adapter base class** -- documented interface for user-defined adapters (`readStream(tracker)` async generator contract) | P1 | Implemented (BaseAdapter) |
-| 4.6.5 | **Adapter factory** -- auto-selects ODataAdapter or RestAdapter based on remote service `kind` (`odata`/`odata-v2` vs `rest`). Wired into `DataReplication._defaultReadHandler`. | P0 | Implemented |
+| 4.6.5 | **Adapter factory** -- auto-selects `RemoteCqnAdapter`, `RestAdapter`, or `CqnAdapter` based on `source.kind` / remote service `kind` (`odata`/`odata-v2`/`hcql` vs `rest` vs `cqn`). | P0 | Implemented |
 | 4.6.6 | **OData delta tokens** -- support `$deltatoken` / `$deltalink` for OData-native change tracking | P2 | Not started |
 
 ### 4.7 Data Transformation (MAP Phase, Replicate Strategy)
@@ -396,7 +398,7 @@ For **delegation**, no adapters are needed -- CAP's `remote.run(req.query)` hand
 | 4.8.1 | **Cron scheduling** -- periodic replication via `cds.spawn` with cron expressions. Currently uses millisecond intervals. | P0 | Implemented |
 | 4.8.2 | **Manual trigger** -- programmatic `run()` API and OData action with configurable `blockSize`/`maxCount` params | P0 | Implemented |
 | 4.8.3 | **Event-driven single-record sync** -- subscribe to SAP Business Events / CloudEvents (e.g., `sap.s4.beh.businesspartner.v1.BusinessPartner.Changed.v1`) to trigger per-record replication. Use `cds.outboxed()` transactional outbox pattern for reliable event delivery with automatic retry ([Service Integration guide: Transactional Outbox](https://cap.cloud.sap/docs/guides/integration/calesi)). | P1 | Not started |
-| 4.8.4 | **Initial load on startup** -- option to run full sync when the application starts | P1 | Not started |
+| 4.8.4 | **Initial load on startup** -- `preload` option on `addPipeline` / `@federation.replicate` / `@materialize.snapshot` runs an initial sync when the application starts (background by default, `wait: true` blocks boot). | P1 | Implemented |
 | 4.8.5 | **On-read trigger** -- lazy replication on first access (with TTL-based staleness check) | P2 | Not started |
 | 4.8.6 | **Dynamic destination override** -- allow runtime specification of source system destination (enables same replication config against different S/4 instances) | P1 | Not started |
 
@@ -431,7 +433,7 @@ For **delegation**, no adapters are needed -- CAP's `remote.run(req.query)` hand
 | 4.11.3 | **Statistics** -- created/updated/deleted/skipped counts per run and cumulative | P0 | Implemented |
 | 4.11.4 | **Structured logging** -- use `cds.log` with levels and structured context | P0 | In progress (basic logging exists, structured context incomplete) |
 | 4.11.5 | **CAP telemetry integration** -- emit OpenTelemetry spans for replication runs | P2 | Not started |
-| 4.11.6 | **Request-level tracking** -- optional per-batch tracking with source/target data snapshots | P1 | Implemented |
+| 4.11.6 | **Request-level tracking** -- optional per-batch tracking with source/target data snapshots persisted per run | P1 | Not started (the on-demand data inspector in 4.13.6/4.13.7 provides live source/target previews via `inspectData`; persisted per-batch snapshots are not built) |
 | 4.11.7 | **Anomaly detection** -- detect unexpected volume changes or error spikes; emit warning | P2 | Not started |
 | 4.11.8 | **Cache hit/miss metrics** -- leverage `cds-caching`'s built-in statistics for cache monitoring. Implemented via cds-caching peer dependency. | P1 | Implemented |
 
@@ -452,6 +454,10 @@ For **delegation**, no adapters are needed -- CAP's `remote.run(req.query)` hand
 | 4.13.3 | **`flush` action** -- clear replicated/cached data for a specific federation | P0 | Implemented |
 | 4.13.4 | **`status` function** -- get current status of a federation | P0 | Implemented |
 | 4.13.5 | **Fiori Elements UI** -- optional monitoring dashboard (annotations-driven) | P2 | Not started |
+| 4.13.6 | **Pipeline Console** -- SAPUI5 flexible-column monitor: run history, source/target data inspection (`inspectData`), network graph, adaptive status polling, configuration override diff | P1 | Implemented |
+| 4.13.7 | **Data inspector hardening** -- `@HideFromDataInspector` exclusion, optional `SensitiveDataRead` audit for `@PersonalData.IsPotentiallySensitive`, `management.inspect: false` opt-out | P1 | Implemented |
+| 4.13.8 | **Persisted configuration overrides** -- coded `addPipeline` baseline + runtime override layer (`enabled`, `mode`, `schedule` incl. cron/engine, `delta.*`, source tuning knobs, `flags`, `description`); `setOverrides` / `clearOverrides` / `setEnabled` / `configView`; survive restart via tracker `baseConfig`/`overrides`; Pipeline Console coded-vs-effective UI. Live schedule change for spawn always; queued needs CDS 10 named tasks. | P1 | Implemented |
+| 4.13.9 | **Run housekeeping / retention** — opt-in pruning of `PipelineRuns` via global `cds.requires.*.housekeeping` (`retentionDays`, `maxRuns`, `schedule`) with per-pipeline `retention` override; global scheduled sweep (spawn/queued); never deletes `running` runs; MT fan-out when enabled. Tests: `[4.13.9]`. | P1 | Implemented |
 
 ### 4.14 Configuration
 
@@ -657,7 +663,7 @@ return result
 | Event-driven | Yes (messaging) | Manual | No | No | Webhooks | Real-time |
 | **Caching** | | | | | | |
 | TTL-based invalidation | Yes (`response` + `entity`) | No | Yes (entity cache) | Yes | N/A | N/A |
-| Cache size limits / LRU | No | No | Yes | Depends on backend | N/A | N/A |
+| Cache size limits / LRU | Yes (`entityCache.size`, periodic `check`) | No | Yes | Depends on backend | N/A | N/A |
 | Per-tenant cache isolation | Tenant column on SQLite + CAP context tenant; separate SQLite service supported | No | Yes (per-tenant SQLite) | Depends on backend | N/A | N/A |
 | **Configuration** | | | | | | |
 | CDS annotations | `@federation.*` | Manual | `@cds.replicate` | `@cache` | N/A | N/A |
