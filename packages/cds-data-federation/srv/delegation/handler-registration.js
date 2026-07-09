@@ -7,8 +7,15 @@ const { resolveLocalToRemoteNavigation } = require('./cross-service-navigation')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
 
 const { rewriteQueryForEntityCacheStorage } = require('../entity-cache/query-rewrite')
-const { getEntityCacheManager } = require('../entity-cache/EntityCacheManager')
+const { getEntityCacheRegistry } = require('../entity-cache/EntityCacheRegistry')
 const { getEntityCacheDbResolver } = require('../entity-cache/EntityCacheDbResolver')
+const { getEntityCacheCoordinator } = require('../entity-cache/entity-cache-coordinator')
+const {
+    resolveEntityCacheOptions,
+    effectiveTtlMs,
+    cacheTenantKey,
+    globalEntityCacheOptions,
+} = require('../entity-cache/entity-cache-options')
 const { resolveRequestTenant } = require('../multitenancy/resolve-request-tenant')
 
 const LOG = cds.log('cds-data-federation')
@@ -203,10 +210,14 @@ function registerEntityCachedDelegateHandler(
         return
     }
 
-    const ttl = typeof cacheOptions.ttl === 'number' && Number.isFinite(cacheOptions.ttl) ? cacheOptions.ttl : 60000
-    const mgr = getEntityCacheManager()
+    const resolved = resolveEntityCacheOptions(cacheOptions)
+    const ttl = effectiveTtlMs(resolved)
+    const registry = getEntityCacheRegistry()
+    const coordinator = getEntityCacheCoordinator()
     const dbResolver = getEntityCacheDbResolver()
     const perTenantFiles = !!entityCacheMeta.perTenantFiles
+    const globalOpts = globalEntityCacheOptions()
+    const isStatic = entityCacheMeta.static === true || resolved.static
 
     const localAssocsByName = new Map(localAssocs.map(a => [a.name, a]))
 
@@ -214,6 +225,9 @@ function registerEntityCachedDelegateHandler(
         service.on('READ', entityName, async (req) => {
             const remote = await cds.connect.to(sourceServiceName)
             const tenantString = resolveRequestTenant(req)
+            const tenantKey = cacheTenantKey(tenantString, isStatic)
+
+            registry.recordHit()
 
             async function fallbackRemote(innerQuery, expandItems = []) {
                 try {
@@ -228,6 +242,23 @@ function registerEntityCachedDelegateHandler(
                 } catch (e) {
                     throw propagateRemoteError(e, sourceServiceName)
                 }
+            }
+
+            async function readFromSqlite(effectiveQuery) {
+                let db
+                if (perTenantFiles) {
+                    db = isStatic
+                        ? await dbResolver.connectStatic()
+                        : await dbResolver.connectForCurrentTenant(tenantString || undefined)
+                } else {
+                    db = await cds.connect.to(entityCacheMeta.dbServiceName || 'db')
+                }
+                const q = rewriteQueryForEntityCacheStorage(effectiveQuery, entityCacheMeta.storageFqn)
+                const run = () => db.run(q)
+                if (globalOpts.measure) {
+                    return coordinator.measureQuery(run, () => fallbackRemote(effectiveQuery, []))
+                }
+                return run()
             }
 
             const fromRef = req.query?.SELECT?.from?.ref
@@ -255,44 +286,71 @@ function registerEntityCachedDelegateHandler(
                 return fallbackRemote(q, localExpandItems)
             }
 
-            // Use tenant from request auth — never cds.context.id (correlation id).
-            async function runPipelineReload() {
-                const ps = await cds.connect.to('DataPipelineService')
-                const execOpts = { mode: 'delta' }
-                if (tenantString) execOpts.tenant = tenantString
-                await ps.execute(entityCacheMeta.pipelineName, execOpts)
-                mgr.markFresh(entityFullName, tenantString)
+            if (!resolved.search && effectiveQuery?.SELECT?.search?.length > 0) {
+                return fallbackRemote(effectiveQuery, [])
             }
 
-            if (!mgr.isFresh(entityFullName, tenantString, ttl)) {
+            async function runPipelineReload() {
+                await coordinator.ensureCapacity(tenantKey, entityFullName)
+                const ps = await cds.connect.to('DataPipelineService')
+                const execOpts = { mode: 'delta' }
+                if (tenantString && !isStatic) execOpts.tenant = tenantString
+                await ps.execute(entityCacheMeta.pipelineName, execOpts)
+                const meta = registry.getConfig(entityFullName)
+                if (meta) {
+                    if (resolved.validate !== false) {
+                        const ok = await coordinator.validateCounts(meta, tenantKey)
+                        if (!ok) throw new Error(`Entity-cache count validation failed for ${entityFullName}`)
+                    }
+                    const bytes = await coordinator.estimateTableBytes(meta, tenantKey)
+                    registry.markFresh(entityFullName, tenantKey, bytes)
+                } else {
+                    registry.markFresh(entityFullName, tenantKey)
+                }
+            }
+
+            const fresh = registry.isFresh(entityFullName, tenantKey, ttl)
+            if (!fresh) {
+                registry.recordMiss()
+                if (resolved.wait === false) {
+                    runPipelineReload().catch((e) => {
+                        LOG.warn(`Entity-cache background reload failed for ${entityFullName}: ${e.message}`)
+                        registry.recordError()
+                    })
+                    return fallbackRemote(effectiveQuery, [])
+                }
                 try {
                     await runPipelineReload()
                 } catch (e) {
                     LOG.warn(`Entity-cache reload failed for ${entityFullName}: ${e.message}`)
+                    registry.recordError()
                     return fallbackRemote(effectiveQuery, [])
                 }
             }
 
             try {
-                let db
-                if (perTenantFiles) {
-                    db = await dbResolver.connectForCurrentTenant(tenantString || undefined)
-                } else {
-                    db = await cds.connect.to(entityCacheMeta.dbServiceName || 'db')
+                registry.touch(entityFullName, tenantKey)
+                registry.recordUsed()
+                const result = await readFromSqlite(effectiveQuery)
+                if (globalOpts.prune) {
+                    coordinator.ensureCapacity(tenantKey, entityFullName).catch((e) => {
+                        LOG.warn(`Entity-cache capacity check failed: ${e.message}`)
+                    })
                 }
-                const q = rewriteQueryForEntityCacheStorage(effectiveQuery, entityCacheMeta.storageFqn)
-                return await db.run(q)
+                return result
             } catch (e) {
                 LOG.warn(`Entity-cache SQLite read failed for ${entityFullName}: ${e.message}`)
-                mgr.invalidate(entityFullName, tenantString)
+                registry.recordError()
+                registry.invalidate(entityFullName, tenantKey)
                 return fallbackRemote(effectiveQuery, [])
             }
         })
 
         registerWriteHandlers(service, entityName, sourceServiceName, writeFlags)
     })
+    const ttlLabel = ttl === Infinity ? 'never' : `${ttl}ms`
     LOG.info(
-        `Registered entity-cached delegate handler for ${entityName} -> ${sourceServiceName} (TTL ${ttl}ms, storage: ${entityCacheMeta.storageFqn})`,
+        `Registered entity-cached delegate handler for ${entityName} -> ${sourceServiceName} (TTL ${ttlLabel}, storage: ${entityCacheMeta.storageFqn}${isStatic ? ', static' : ''}${resolved.group ? `, group: ${resolved.group}` : ''})`,
     )
 }
 

@@ -1,0 +1,15 @@
+@consumer = http://localhost:4136/odata/v4/shop
+@providerV2 = http://localhost:4146/odata/v2/provider
+
+### Delegate over OData V2 — the consumer surface is still OData V4
+GET {{consumer}}/Customers
+
+### Renames via V2 (remote price → unitPrice); CAP handles V2 translation
+GET {{consumer}}/Products?$filter=unitPrice gt 100
+
+### Entity-level rename via V2
+GET {{consumer}}/Suppliers
+
+### The raw upstream V2 service (note the V2 response envelope)
+GET {{providerV2}}/Customers
+Accept: application/json

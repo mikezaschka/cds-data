@@ -1,0 +1,21 @@
+@consumer = http://localhost:4134/odata/v4/shop
+
+### Response cache — run this twice.
+### 1st call: cache miss → upstream request (see provider terminal).
+### 2nd identical call within 30s: cache hit → NO upstream request.
+GET {{consumer}}/CachedCustomers
+
+### Same query signature → served from response cache
+GET {{consumer}}/CachedCustomers
+
+### A DIFFERENT query signature is a separate cache entry (response strategy)
+GET {{consumer}}/CachedCustomers?$filter=country eq 'DE'
+
+### Entity cache — first call warms a full SQLite snapshot...
+GET {{consumer}}/EntityCachedCustomers
+
+### ...then ANY filter/orderby is answered from SQLite until TTL (no upstream call)
+GET {{consumer}}/EntityCachedCustomers?$filter=country eq 'DE'&$orderby=name desc
+
+### Product response cache with a custom tag ('product-cache')
+GET {{consumer}}/CachedProducts

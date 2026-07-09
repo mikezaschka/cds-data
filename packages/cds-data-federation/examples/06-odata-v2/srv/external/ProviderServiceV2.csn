@@ -1,0 +1,160 @@
+{
+  "definitions": {
+    "ProviderServiceV2": {
+      "kind": "service"
+    },
+    "ProviderServiceV2.Customers": {
+      "kind": "entity",
+      "@readonly": true,
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "city": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "country": {
+          "type": "cds.String",
+          "length": 3
+        },
+        "email": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "blocked": {
+          "type": "cds.Boolean",
+          "default": {
+            "val": false
+          }
+        },
+        "modifiedAt": {
+          "type": "cds.Timestamp"
+        },
+        "orders": {
+          "type": "cds.Association",
+          "cardinality": {
+            "max": "*"
+          },
+          "target": "ProviderServiceV2.Orders",
+          "on": [
+            {
+              "ref": [
+                "orders",
+                "customer"
+              ]
+            },
+            "=",
+            {
+              "ref": [
+                "$self"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "ProviderServiceV2.Products": {
+      "kind": "entity",
+      "@readonly": true,
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 10
+        },
+        "name": {
+          "type": "cds.String",
+          "length": 100
+        },
+        "category": {
+          "type": "cds.String",
+          "length": 50
+        },
+        "price": {
+          "type": "cds.Decimal",
+          "precision": 10,
+          "scale": 2
+        },
+        "currency": {
+          "type": "cds.String",
+          "length": 3,
+          "default": {
+            "val": "EUR"
+          }
+        },
+        "stock": {
+          "type": "cds.Integer"
+        },
+        "modifiedAt": {
+          "type": "cds.Timestamp"
+        }
+      }
+    },
+    "ProviderServiceV2.Orders": {
+      "kind": "entity",
+      "@readonly": true,
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 36
+        },
+        "customer": {
+          "type": "cds.Association",
+          "target": "ProviderServiceV2.Customers",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "product": {
+          "type": "cds.Association",
+          "target": "ProviderServiceV2.Products",
+          "keys": [
+            {
+              "ref": [
+                "ID"
+              ]
+            }
+          ]
+        },
+        "quantity": {
+          "type": "cds.Integer"
+        },
+        "total": {
+          "type": "cds.Decimal",
+          "precision": 10,
+          "scale": 2
+        },
+        "status": {
+          "type": "cds.String",
+          "length": 20,
+          "default": {
+            "val": "open"
+          }
+        },
+        "orderDate": {
+          "type": "cds.Date"
+        },
+        "modifiedAt": {
+          "type": "cds.Timestamp"
+        }
+      }
+    }
+  },
+  "meta": {
+    "creator": "CDS Compiler v5.6.0",
+    "flavor": "inferred"
+  },
+  "$version": "2.0"
+}

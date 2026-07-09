@@ -3,6 +3,7 @@ const { registerEntityCacheTargetDb } = require('cds-data-pipeline/srv/lib/entit
 
 const LOG = cds.log('cds-data-federation')
 const { pipelineDisplayName, usesEntityCacheAnnotation } = require('./cache-schema')
+const { resolveEntityCacheOptions } = require('./entity-cache-options')
 const { getEntityCacheDbResolver, usesPerTenantSqliteFiles, DEFAULT_SERVICE } = require('./EntityCacheDbResolver')
 
 /** Build allowed payload keys per storage entity definition (omit associations). */
@@ -142,7 +143,9 @@ async function registerOneEntityCachePipeline(dataPipelineSrv, cfg, svcName, per
     })
 
     if (perTenantFiles) {
+        const useStatic = cfg.entityCache.static === true
         registerEntityCacheTargetDb(pip, () => {
+            if (useStatic) return resolver.connectStatic()
             const { currentEntityCacheTenant } = require('cds-data-pipeline/srv/lib/entity-cache-tenant')
             const tid =
                 currentEntityCacheTenant() ??
@@ -156,7 +159,12 @@ async function registerOneEntityCachePipeline(dataPipelineSrv, cfg, svcName, per
     registerSanitizeWrites(dataPipelineSrv, pip, cfg.entityCache.storageFqn)
 
     if (perTenantFiles) {
+        const useStatic = cfg.entityCache.static === true
         dataPipelineSrv.before('PIPELINE.READ', pip, async () => {
+            if (useStatic) {
+                await resolver.connectStatic()
+                return
+            }
             const { currentEntityCacheTenant } = require('cds-data-pipeline/srv/lib/entity-cache-tenant')
             const tid =
                 currentEntityCacheTenant() ??
@@ -170,6 +178,7 @@ async function registerOneEntityCachePipeline(dataPipelineSrv, cfg, svcName, per
     cfg.entityCache.pipelineName = pip
     cfg.entityCache.dbServiceName = svcName
     cfg.entityCache.perTenantFiles = perTenantFiles
+    cfg.entityCache.resolved = resolveEntityCacheOptions(cacheOpts)
 }
 
 module.exports = { bindEntityCachePipelines, registerSanitizeWrites }

@@ -109,24 +109,20 @@ describe('Delegate Strategy', () => {
             it('should support $orderby with static where + renames', async () => {
                 const { data } = await GET`/odata/v4/consumer/ElectronicsProducts?$orderby=unitPrice desc`
                 expect(data.value.length).to.equal(3)
-                const prices = data.value.map(p => p.unitPrice)
+                // cds 10 returns Decimal as a string (ieee754compatible=true); coerce for numeric comparison.
+                const prices = data.value.map(p => Number(p.unitPrice))
                 expect(prices[0]).to.be.greaterThanOrEqual(prices[1])
                 expect(prices[1]).to.be.greaterThanOrEqual(prices[2])
             })
         })
 
-        describe('Flatten association (OrderFlat — OData limitation)', () => {
-            // Service Integration docs: "OData doesn't support denormalization like we used for
-            // the Flights view. This works here because xflights also serves the
-            // HCQL protocol, which is CAP's native protocol."
-            //
-            // Path expressions like `customer.name as buyerName` work with HCQL
-            // but OData cannot express flattened associations in $select/$expand.
+        describe('Flatten association (OrderFlat — HCQL remote)', () => {
+            // Covered by test/integration/hcql/hcql-flatten.test.js (HCQL requires provider
+            // @hcql binding before consumer boot; OData-only returns customer_name not buyerName).
 
-            it.skip('should return flattened fields from associations (blocked by OData protocol limitation)', async () => {
+            it.skip('should return flattened fields from associations (see hcql/hcql-flatten.test.js)', async () => {
                 const { data } = await GET`/odata/v4/consumer/OrderFlat`
                 expect(data.value[0]).to.have.property('buyerName')
-                expect(data.value[0]).to.have.property('itemName')
             })
         })
 

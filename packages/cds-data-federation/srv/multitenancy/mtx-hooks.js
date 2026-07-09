@@ -2,6 +2,7 @@ const cds = require('@sap/cds')
 const { setTenantListProvider } = require('cds-data-pipeline/srv/lib/TenantRunCoordinator')
 const { listSubscribedTenants } = require('./tenant-provider')
 const { getEntityCacheDbResolver } = require('../entity-cache/EntityCacheDbResolver')
+const { getEntityCacheCoordinator } = require('../entity-cache/entity-cache-coordinator')
 const fs = require('fs')
 
 const LOG = cds.log('cds-data-federation')
@@ -38,10 +39,14 @@ function registerMtxDeploymentHooks() {
         const cfg = _multitenancyConfig()
 
         ds.after('subscribe', async (result, req) => {
-            if (cfg.syncOnSubscribe !== true) return
             const tenant = req?.data?.tenant
             if (!tenant) return
-            await _syncReplicatePipelinesForTenant(tenant)
+            if (cfg.syncOnSubscribe === true) {
+                await _syncReplicatePipelinesForTenant(tenant)
+            }
+            if (cfg.preloadEntityCacheOnSubscribe === true) {
+                await getEntityCacheCoordinator().preloadForTenant(tenant)
+            }
         })
 
         ds.after('unsubscribe', async (result, req) => {

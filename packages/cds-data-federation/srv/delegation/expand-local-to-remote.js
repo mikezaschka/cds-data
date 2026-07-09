@@ -1,4 +1,5 @@
 const cds = require('@sap/cds')
+const { projectedColumnToRemoteSelectRef } = require('cds-data-pipeline/srv/lib/columnRefPath')
 const { resolveRemoteNavigationFilters } = require('./remote-navigation-filters')
 const { rewriteRemoteToLocalNavigation } = require('./cross-service-navigation')
 
@@ -648,8 +649,8 @@ function buildInnerColumns(expandItem, localToRemote, viewMapping, keyDefs) {
     }
 
     if (innerColumns.length === 0 && !viewMapping?.isWildcard && viewMapping?.projectedColumns?.length > 0) {
-        for (const name of viewMapping.projectedColumns) {
-            innerColumns.push({ ref: [name] })
+        for (const col of viewMapping.projectedColumns) {
+            innerColumns.push(projectedColumnToRemoteSelectRef(col))
         }
     }
     if (innerColumns.length > 0 && !hasWildcardWithExpand && keyDefs) {

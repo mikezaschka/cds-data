@@ -263,7 +263,8 @@ describe('Delegate Strategy', () => {
                 )
                 expect(products).to.have.length(2)
                 expect(products[0]).to.not.have.property('category')
-                expect(products[0].unitPrice).to.be.greaterThanOrEqual(products[1].unitPrice)
+                // cds 10 returns Decimal as a string (ieee754compatible=true); coerce for numeric comparison.
+                expect(Number(products[0].unitPrice)).to.be.greaterThanOrEqual(Number(products[1].unitPrice))
                 expect(products.every(p => p.productId !== undefined)).to.be.true
             })
 
@@ -275,8 +276,9 @@ describe('Delegate Strategy', () => {
                         .orderBy('unitPrice desc')
                 )
                 expect(products.length).to.equal(3)
-                expect(products[0].unitPrice).to.be.greaterThanOrEqual(products[1].unitPrice)
-                expect(products[1].unitPrice).to.be.greaterThanOrEqual(products[2].unitPrice)
+                // cds 10 returns Decimal as a string (ieee754compatible=true); coerce for numeric comparison.
+                expect(Number(products[0].unitPrice)).to.be.greaterThanOrEqual(Number(products[1].unitPrice))
+                expect(Number(products[1].unitPrice)).to.be.greaterThanOrEqual(Number(products[2].unitPrice))
                 expect(products.every(p => p.unitPrice >= 100)).to.be.true
             })
         })
@@ -512,7 +514,8 @@ describe('Delegate Strategy', () => {
                 const products = await cs.run(q)
                 expect(products.length).to.equal(3)
                 expect(products.every(p => p.unitPrice >= 100)).to.be.true
-                expect(products[0].unitPrice).to.be.greaterThanOrEqual(products[1].unitPrice)
+                // cds 10 returns Decimal as a string (ieee754compatible=true); coerce for numeric comparison.
+                expect(Number(products[0].unitPrice)).to.be.greaterThanOrEqual(Number(products[1].unitPrice))
             })
         })
 

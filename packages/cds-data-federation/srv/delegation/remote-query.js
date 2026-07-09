@@ -10,6 +10,7 @@
 // and map results back.
 
 const { runPagedRemoteQuery } = require('./paged-remote-query')
+const { projectedColumnToSelectArg } = require('cds-data-pipeline/srv/lib/columnRefPath')
 
 /**
  * Returns true if a CQN WHERE array contains `exists` or `not exists` expressions.
@@ -93,7 +94,7 @@ async function runDirectRemoteQuery(remote, sourceServiceName, originalQuery, vi
     if (sel.columns) {
         const hasWildcard = sel.columns.some(c => c === '*' || c['*'])
         if (hasWildcard && !isWildcard && projectedColumns?.length) {
-            const remoteCols = projectedColumns.map(c => ({ ref: [c] }))
+            const remoteCols = projectedColumns.map(c => projectedColumnToSelectArg(c))
             const expandCols = sel.columns.filter(c => c.expand)
             for (const col of expandCols) {
                 const translatedRef = localToRemote
@@ -124,8 +125,7 @@ async function runDirectRemoteQuery(remote, sourceServiceName, originalQuery, vi
             if (remoteCols.length > 0) q.SELECT.columns = remoteCols
         }
     } else if (projectedColumns?.length) {
-        const remoteCols = projectedColumns.map(c => localToRemote?.[c] || c)
-        q.SELECT.columns = remoteCols.map(c => ({ ref: [c] }))
+        q.SELECT.columns = projectedColumns.map(c => projectedColumnToSelectArg(c))
     }
 
     if (sel.limit) q.SELECT.limit = sel.limit

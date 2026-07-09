@@ -1,0 +1,40 @@
+{
+  "name": "federation-example-04-caching",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runnable example: response cache (cds-caching) and entity cache (SQLite) on @federation.delegate",
+  "scripts": {
+    "start": "cds-serve --port 4134"
+  },
+  "dependencies": {
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4",
+    "@sap/cds": ">=9",
+    "cds-caching": "^1.3.0",
+    "cds-data-federation": "*",
+    "cds-data-pipeline": "*",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": ">=2"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": { "url": ":memory:" }
+      },
+      "caching": {
+        "impl": "cds-caching"
+      },
+      "datapipeline": {
+        "impl": "cds-data-pipeline"
+      },
+      "ProviderService": {
+        "kind": "odata",
+        "model": "srv/external/ProviderService",
+        "credentials": { "url": "http://localhost:4144/odata/v4/provider" }
+      }
+    }
+  }
+}

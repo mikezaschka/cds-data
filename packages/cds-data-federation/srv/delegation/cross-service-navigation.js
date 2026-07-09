@@ -1,4 +1,5 @@
 const cds = require('@sap/cds')
+const { projectedColumnToSelectArg } = require('cds-data-pipeline/srv/lib/columnRefPath')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -83,7 +84,7 @@ async function resolveLocalToRemoteNavigation(req, remote, service, sourceServic
         }
         if (remoteCols.length > 0) q.columns(remoteCols)
     } else if (!isWildcard && projectedColumns?.length > 0) {
-        q.columns(projectedColumns.map(c => ({ ref: [c] })))
+        q.columns(projectedColumns.map(c => projectedColumnToSelectArg(c)))
     }
 
     const result = await remote.run(q)

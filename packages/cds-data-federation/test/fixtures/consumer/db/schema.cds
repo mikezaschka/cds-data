@@ -193,6 +193,17 @@ entity OrderFlat as projection on remote.Orders {
     status
 };
 
+@federation.replicate
+entity ReplicatedOrderFlat as projection on remote.Orders {
+    ID            as orderId,
+    customer.name as buyerName,
+    product.name  as itemName,
+    quantity,
+    total         as amount,
+    status,
+    modifiedAt
+};
+
 // PATTERN: local view navigating to remote association
 // A projection on a LOCAL entity (Reviews) that navigates through an association
 // to a REMOTE entity (Products) and flattens the result.
@@ -292,6 +303,23 @@ entity ReplicatedProducts as projection on remote.Products {
     price as unitPrice,
     currency
 };
+
+// Read models over the replicated table — must compile/deploy as SQL views, not sibling tables.
+@readonly
+entity AvailableProducts as projection on ReplicatedProducts {
+    productId,
+    productName,
+    category,
+    unitPrice,
+    currency
+} where unitPrice > 100;
+
+@readonly
+entity CategoryStats as select from ReplicatedProducts {
+    category,
+    count(*)       as productCount : Integer,
+    avg(unitPrice) as avgPrice     : Decimal(9, 4)
+} group by category;
 
 // Server-paged replicate: remote caps every response at 2 rows (via @cds.query.limit).
 // Requesting batchSize=100 per page still produces only 2 rows per request — the adapter

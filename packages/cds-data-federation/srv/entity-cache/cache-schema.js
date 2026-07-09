@@ -1,4 +1,5 @@
 const cds = require('@sap/cds')
+const { projectedColumnToRemoteKey } = require('cds-data-pipeline/srv/lib/columnRefPath')
 const LOG = cds.log('cds-data-federation')
 
 const ENTITY_CACHE_NS = 'plugin.data_federation.entity_cache'
@@ -43,7 +44,8 @@ function copyPersistableElements(srcElements, viewMapping, isWildcard, excludedC
         return elements
     }
 
-    for (const rn of viewMapping.projectedColumns || []) {
+    for (const col of viewMapping.projectedColumns || []) {
+        const rn = projectedColumnToRemoteKey(col)
         if (!rn) continue
         const srcEl = srcElements[rn]
         if (!srcEl || !isPersistable(srcEl)) continue
@@ -107,8 +109,12 @@ function applyEntityStorageModel(defs, cfg) {
         elements,
     }
 
+    const cacheOpts = cfg.options?.cache || {}
     cfg.entityCache = {
         storageFqn: fq,
+        group: cacheOpts.group || null,
+        static: cacheOpts.static === true,
+        preload: cacheOpts.preload === true,
     }
 }
 

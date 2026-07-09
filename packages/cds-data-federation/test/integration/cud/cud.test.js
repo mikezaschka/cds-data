@@ -78,7 +78,8 @@ describe('Delegate Strategy', () => {
 
             const { data: readBack } = await GET(`${base}/Products('P099')`)
             expect(readBack.productName).to.equal('Test Widget')
-            expect(readBack.unitPrice).to.equal(9.99)
+            // cds 10 serializes Decimal as a string (ieee754compatible=true); coerce.
+            expect(Number(readBack.unitPrice)).to.equal(9.99)
         })
 
         it('should UPDATE a product with renamed fields on the remote service', async () => {
@@ -90,7 +91,8 @@ describe('Delegate Strategy', () => {
 
             const { data: readBack } = await GET(`${base}/Products('P099')`)
             expect(readBack.productName).to.equal('Updated Widget')
-            expect(readBack.unitPrice).to.equal(19.99)
+            // cds 10 serializes Decimal as a string (ieee754compatible=true); coerce.
+            expect(Number(readBack.unitPrice)).to.equal(19.99)
         })
 
         it('should DELETE a product from the remote service', async () => {

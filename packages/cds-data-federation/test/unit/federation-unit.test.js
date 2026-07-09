@@ -51,6 +51,65 @@ describe('Unit Tests', () => {
             expect(def['@cds.persistence.table']).to.equal(true)
         })
 
+        it('should keep derived read models as views over replicated tables', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const derived = {
+                '@readonly': true,
+                '@federation.replicate': true,
+                '@cds.persistence.table': true,
+                '@cds.persistence.skip': false,
+                projection: {
+                    from: { ref: ['travel.ReplicatedFlights'] },
+                    columns: [{ ref: ['ID'] }, { ref: ['date'] }],
+                    where: [{ ref: ['free_seats'] }, '>', { val: 0 }]
+                }
+            }
+            const replicated = {
+                '@federation.replicate': true,
+                projection: { from: { ref: ['Remote', 'Flights'] } }
+            }
+            const { configs } = scanAnnotations({
+                definitions: {
+                    Remote: { kind: 'service' },
+                    'travel.ReplicatedFlights': replicated,
+                    'travel.AvailableFlights': derived
+                }
+            })
+            expect(configs).to.have.length(1)
+            expect(configs[0].entityFullName).to.equal('travel.ReplicatedFlights')
+            expect(replicated['@cds.persistence.table']).to.equal(true)
+            expect(derived['@cds.persistence.table']).to.equal(false)
+            expect(derived).to.not.have.property('@cds.persistence.skip')
+        })
+
+        it('should resolve unqualified same-service refs for derived read models', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const derived = {
+                '@readonly': true,
+                '@federation.replicate.mode': 'full',
+                '@cds.persistence.table': true,
+                projection: {
+                    from: { ref: ['ReplicatedFlights'] },
+                    columns: [{ ref: ['ID'] }],
+                    where: [{ ref: ['free_seats'] }, '>', { val: 0 }]
+                }
+            }
+            const replicated = {
+                '@federation.replicate': { mode: 'full' },
+                projection: { from: { ref: ['Remote', 'Flights'] } }
+            }
+            const { configs } = scanAnnotations({
+                definitions: {
+                    Remote: { kind: 'service' },
+                    'travel.TravelService.ReplicatedFlights': replicated,
+                    'travel.TravelService.AvailableFlights': derived
+                }
+            })
+            expect(configs).to.have.length(1)
+            expect(configs[0].entityFullName).to.equal('travel.TravelService.ReplicatedFlights')
+            expect(derived['@cds.persistence.table']).to.equal(false)
+        })
+
         it('should extract options from @federation.delegate annotation value', () => {
             const { scanAnnotations } = require('../../srv/annotation-scanner')
             const { configs } = scanAnnotations({
@@ -170,6 +229,38 @@ describe('Unit Tests', () => {
             expect(configs[0].strategy).to.equal('replicate')
             expect(configs[0].options.mode).to.equal('delta')
             expect(configs[0].options.schedule).to.equal('*/10 * * * *')
+        })
+
+        it('should carry inline preload: true through to options', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const { configs } = scanAnnotations({
+                definitions: {
+                    'Remote': { kind: 'service' },
+                    'Svc.Ent': {
+                        '@federation.replicate': { schedule: 600000, preload: true },
+                        projection: { from: { ref: ['Remote', 'Ent'] } }
+                    }
+                }
+            })
+            expect(configs[0].strategy).to.equal('replicate')
+            expect(configs[0].options.preload).to.equal(true)
+        })
+
+        it('should reconstruct flattened @federation.replicate.preload.* options', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const { configs } = scanAnnotations({
+                definitions: {
+                    'Remote': { kind: 'service' },
+                    'Svc.Ent': {
+                        '@federation.replicate.schedule': 600000,
+                        '@federation.replicate.preload.mode': 'full',
+                        '@federation.replicate.preload.wait': true,
+                        projection: { from: { ref: ['Remote', 'Ent'] } }
+                    }
+                }
+            })
+            expect(configs[0].strategy).to.equal('replicate')
+            expect(configs[0].options.preload).to.deep.equal({ mode: 'full', wait: true })
         })
 
         it('should prefer non-flattened annotation over flattened', () => {
@@ -386,6 +477,78 @@ describe('Unit Tests', () => {
             const resolver = getEntityCacheDbResolver()
             expect(resolver.resolveUrl('t1')).to.equal('/tmp/fed-cache/cache-t1.sqlite')
             expect(resolver.resolveUrl('t2')).to.equal('/tmp/fed-cache/cache-t2.sqlite')
+            cds.env.requires = prior
+        })
+
+        it('should resolve static sqlite path', () => {
+            const cds = require('@sap/cds')
+            const prior = cds.env.requires
+            cds.env.requires = {
+                ...prior,
+                'cds-data-federation': {
+                    entityCache: {
+                        staticUrlTemplate: 'shared-static.sqlite',
+                        baseDir: '/tmp/fed-cache',
+                    },
+                },
+            }
+            const { getEntityCacheDbResolver } = require('../../srv/entity-cache/EntityCacheDbResolver')
+            const resolver = getEntityCacheDbResolver()
+            expect(resolver.resolveStaticUrl()).to.equal('/tmp/fed-cache/shared-static.sqlite')
+            cds.env.requires = prior
+        })
+    })
+
+    describe('EntityCacheRegistry', () => {
+        it('should honour negative TTL as never-expiring once loaded', () => {
+            const { getEntityCacheRegistry } = require('../../srv/entity-cache/EntityCacheRegistry')
+            const { effectiveTtlMs } = require('../../srv/entity-cache/entity-cache-options')
+            const registry = getEntityCacheRegistry()
+            const tenant = '__ttl_test__'
+            registry.invalidate('consumer.Products', tenant)
+            expect(registry.isFresh('consumer.Products', tenant, effectiveTtlMs({ ttl: -1 }))).to.equal(false)
+            registry.markFresh('consumer.Products', tenant, 100)
+            expect(registry.isFresh('consumer.Products', tenant, effectiveTtlMs({ ttl: -1 }))).to.equal(true)
+        })
+
+        it('should pick LRU victim by touched timestamp', () => {
+            const { getEntityCacheRegistry } = require('../../srv/entity-cache/EntityCacheRegistry')
+            const registry = getEntityCacheRegistry()
+            const tenant = '__lru_test__'
+            registry.invalidate('consumer.A', tenant)
+            registry.invalidate('consumer.B', tenant)
+            registry.markFresh('consumer.A', tenant, 500)
+            registry.markFresh('consumer.B', tenant, 500)
+            registry.touch('consumer.B', tenant)
+            expect(registry.leastRecentlyUsed(tenant)).to.equal('consumer.A')
+        })
+
+        it('should register group members', () => {
+            const { getEntityCacheRegistry } = require('../../srv/entity-cache/EntityCacheRegistry')
+            const registry = getEntityCacheRegistry()
+            registry.registerConfig('consumer.Customers', { group: 'desk' })
+            registry.registerConfig('consumer.Products', { group: 'desk' })
+            expect(registry.groupMembers('desk').sort()).to.deep.equal(['consumer.Customers', 'consumer.Products'])
+        })
+    })
+
+    describe('entity-cache-options', () => {
+        it('should merge global and per-entity cache options', () => {
+            const cds = require('@sap/cds')
+            const prior = cds.env.requires
+            cds.env.requires = {
+                ...prior,
+                'cds-data-federation': {
+                    entityCache: { wait: true, validate: true, size: 999 },
+                },
+            }
+            const { resolveEntityCacheOptions, cacheTenantKey } = require('../../srv/entity-cache/entity-cache-options')
+            const resolved = resolveEntityCacheOptions({ ttl: 5000, wait: false, static: true })
+            expect(resolved.ttl).to.equal(5000)
+            expect(resolved.wait).to.equal(false)
+            expect(resolved.static).to.equal(true)
+            expect(resolved.size).to.equal(999)
+            expect(cacheTenantKey('t1', true)).to.equal('__static__')
             cds.env.requires = prior
         })
     })

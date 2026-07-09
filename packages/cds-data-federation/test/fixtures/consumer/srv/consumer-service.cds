@@ -63,6 +63,8 @@ service ConsumerService {
     // Replicated entities (local tables fed by replication)
     entity ReplicatedCustomers as projection on consumer.ReplicatedCustomers;
     entity ReplicatedProducts  as projection on consumer.ReplicatedProducts;
+    entity AvailableProducts   as projection on consumer.AvailableProducts;
+    entity CategoryStats       as projection on consumer.CategoryStats;
 
     // CQN adapter test entities (local source + replicate / materialize targets)
     entity SourceOrders            as projection on consumer.SourceOrders;

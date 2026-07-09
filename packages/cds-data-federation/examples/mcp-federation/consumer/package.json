@@ -1,0 +1,45 @@
+{
+  "name": "federation-mcp-example-consumer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runnable example: @cap-js/mcp on cds-data-federation delegate + replicate entities",
+  "scripts": {
+    "start": "cds-serve --port 4120"
+  },
+  "dependencies": {
+    "@cap-js/mcp": "^1.1.0",
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4",
+    "@sap/cds": "^10",
+    "cds-data-federation": "*",
+    "cds-data-pipeline": "*",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^3"
+  },
+  "cds": {
+    "mcp": {
+      "autowire": false,
+      "toon_format": false
+    },
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": {
+          "url": ":memory:"
+        }
+      },
+      "DataPipelineService": {
+        "impl": "cds-data-pipeline/srv/DataPipelineService.js"
+      },
+      "ProviderService": {
+        "kind": "odata",
+        "model": "srv/external/ProviderService",
+        "credentials": {
+          "url": "http://localhost:4121/odata/v4/provider"
+        }
+      }
+    }
+  }
+}

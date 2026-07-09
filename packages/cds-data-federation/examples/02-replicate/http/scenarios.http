@@ -1,0 +1,26 @@
+@consumer = http://localhost:4132/odata/v4/shop
+@mgmt = http://localhost:4132/pipeline
+
+### List registered pipelines (one per @federation.replicate entity)
+GET {{mgmt}}/Pipelines
+
+### Trigger a full replicate of ReplicatedProducts
+POST {{mgmt}}/Pipelines(name='ReplicatedProducts')/start
+Content-Type: application/json
+
+{ "mode": "full" }
+
+### Inspect the runs
+GET {{mgmt}}/PipelineRuns?$orderby=startedAt desc&$top=5
+
+### Query the locally replicated products (served from SQLite, no remote call)
+GET {{consumer}}/ReplicatedProducts
+
+### Local SQL view — only possible because data is now local
+GET {{consumer}}/ExpensiveProducts
+
+### Aggregate rollup computed locally with GROUP BY
+GET {{consumer}}/CategoryStats
+
+### ReplicatedCustomers was preloaded at startup
+GET {{consumer}}/ReplicatedCustomers

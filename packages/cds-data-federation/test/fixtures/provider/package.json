@@ -6,18 +6,20 @@
     "start": "cds-serve"
   },
   "dependencies": {
-    "@sap/cds": "^9",
+    "@sap/cds": ">=9",
     "@cap-js-community/odata-v2-adapter": "^1",
     "express": "^4"
   },
   "devDependencies": {
-    "@cap-js/sqlite": "^2"
+    "@cap-js/sqlite": ">=2"
   },
   "cds": {
     "requires": {
       "db": {
         "kind": "sqlite",
-        "credentials": { "url": ":memory:" }
+        "credentials": {
+          "url": ":memory:"
+        }
       }
     }
   }

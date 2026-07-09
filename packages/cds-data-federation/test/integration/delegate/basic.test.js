@@ -22,7 +22,10 @@ describe('Delegate Strategy', () => {
 
     function describeQueryCapabilities(protocol, entities) {
         const { Customers, Products, Orders, Suppliers, isV2 } = entities
-        const num = isV2 ? Number : v => v
+        // cds 10 defaults `ieee754compatible: true` (and `count_as_string: true`),
+        // so Decimal/Int64 and `@odata.count` arrive as JSON strings on V4 too —
+        // not just V2. Coerce unconditionally to stay compatible with cds 9 and 10.
+        const num = v => Number(v)
         const base = '/odata/v4/consumer'
 
         describe(protocol, () => {

@@ -1,0 +1,32 @@
+{
+  "name": "federation-example-06-odata-v2",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runnable example: @federation.delegate against a legacy OData V2 source with renames",
+  "scripts": {
+    "start": "cds-serve --port 4136"
+  },
+  "dependencies": {
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4",
+    "@sap/cds": ">=9",
+    "cds-data-federation": "*",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": ">=2"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": { "url": ":memory:" }
+      },
+      "ProviderServiceV2": {
+        "kind": "odata-v2",
+        "model": "srv/external/ProviderServiceV2",
+        "credentials": { "url": "http://localhost:4146/odata/v2/provider" }
+      }
+    }
+  }
+}

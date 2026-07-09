@@ -1,0 +1,16 @@
+### Bootstrap replicate (optional manual trigger)
+POST http://localhost:4120/pipeline/Pipelines(name='ReplicatedCustomers')/start
+Content-Type: application/json
+
+{
+  "mode": "full"
+}
+
+### OData sanity — delegated Customers
+GET http://localhost:4120/odata/v4/federation-agent/Customers?$top=3&$select=ID,name
+
+### OData sanity — renamed Products
+GET http://localhost:4120/odata/v4/federation-agent/Products?$top=2&$select=productId,productName,unitPrice
+
+### OData sanity — replicated Customers
+GET http://localhost:4120/odata/v4/federation-agent/ReplicatedCustomers?$top=3

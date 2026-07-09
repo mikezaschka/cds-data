@@ -26,7 +26,8 @@ async function bindReplicateConfigs(configs) {
     } catch (err) {
         throw new Error(
             `@federation.replicate requires 'cds-data-pipeline' to be installed. ` +
-            `Run: npm install cds-data-pipeline. Original error: ${err.message}`
+            `Run: npm install cds-data-pipeline. Original error: ${err.message}`,
+            { cause: err }
         )
     }
 
@@ -49,6 +50,7 @@ async function bindReplicateConfigs(configs) {
             },
             rest: config.options.rest,
             schedule: config.options.schedule,
+            preload: config.options.preload,
             viewMapping: config.viewMapping,
         })
     }

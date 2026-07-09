@@ -1,7 +1,78 @@
 const cds = require('@sap/cds')
+const { buildColumnMappingsFromProjection, projectedColumnToSelectArg, projectedColumnToRemoteKey } = require('cds-data-pipeline/srv/lib/columnRefPath')
 
 const LOG = cds.log('cds-data-federation')
 const { injectEntityCacheDefinitions } = require('./entity-cache/cache-schema')
+
+function sourceHasFederationAnnotation(sourceDef) {
+    if (!sourceDef) return false
+    return sourceDef['@federation.delegate'] !== undefined ||
+        sourceDef['@federation.replicate'] !== undefined ||
+        Object.keys(sourceDef).some(
+            k => k.startsWith('@federation.delegate.') || k.startsWith('@federation.replicate.')
+        )
+}
+
+function sourceIsDelegateStrategy(sourceDef) {
+    if (!sourceDef) return false
+    return sourceDef['@federation.delegate'] !== undefined ||
+        Object.keys(sourceDef).some(k => k.startsWith('@federation.delegate.'))
+}
+
+function resolveProjectionSource(csn, entityName, ref) {
+    if (!ref?.length) return null
+    const joined = ref.join('.')
+    if (csn.definitions?.[joined]) return csn.definitions[joined]
+
+    // Fallbacks only apply to *unqualified*, single-segment refs (e.g. a derived
+    // read model projecting on `ReplicatedFlights` within the same service). A
+    // multi-segment ref (e.g. `['Remote','Ent']`) is already service-qualified;
+    // guessing a same-service target there would wrongly resolve to the entity
+    // itself and mis-classify a genuine federated entity as a derived projection.
+    if (ref.length !== 1) return null
+
+    const lastSegment = ref[ref.length - 1]
+    const entityParts = entityName.split('.')
+    if (entityParts.length >= 2) {
+        const serviceQualified = [...entityParts.slice(0, -1), lastSegment].join('.')
+        if (serviceQualified !== entityName && csn.definitions?.[serviceQualified]) {
+            return csn.definitions[serviceQualified]
+        }
+    }
+
+    const lastDot = entityName.lastIndexOf('.')
+    if (lastDot > 0) {
+        const nsQualified = `${entityName.substring(0, lastDot + 1)}${lastSegment}`
+        if (nsQualified !== entityName && csn.definitions?.[nsQualified]) {
+            return csn.definitions[nsQualified]
+        }
+    }
+
+    return null
+}
+
+/**
+ * A projection whose source already carries a `@federation.*` annotation is a
+ * *derived* model — the underlying entity is the real federation target, not this
+ * surface. How it must persist depends on the source strategy:
+ *
+ * - **replicate** source (real local table): keep this as a SQL **view** over the
+ *   replicated table (`table:false`, no `skip`), so filtered/aggregate read models
+ *   read live from the replicated data.
+ * - **delegate** source (`@cds.persistence.skip`, live proxy, no table): this
+ *   projection is itself a live proxy and must stay **non-persisted** (`skip:true`).
+ *   Turning it into a view over a skip entity is invalid — cds 10's compiler (v7)
+ *   rejects navigation to a `@cds.persistence.skip` target during SQL generation.
+ */
+function markDerivedReadModel(def, sourceIsDelegate) {
+    if (sourceIsDelegate) {
+        def['@cds.persistence.skip'] = true
+        delete def['@cds.persistence.table']
+        return
+    }
+    def['@cds.persistence.table'] = false
+    delete def['@cds.persistence.skip']
+}
 
 /**
  * Scans the loaded CSN model for @federation.delegate / @federation.replicate
@@ -26,16 +97,10 @@ function scanAnnotations(csn) {
         const directSourceRef = def.projection?.from?.ref || def.query?.SELECT?.from?.ref
         if (directSourceRef && directSourceRef.length > 0) {
             const directSourceName = directSourceRef.join('.')
-            const directSourceDef = csn.definitions?.[directSourceName]
-            const directSourceHasFederation =
-                directSourceDef &&
-                (directSourceDef['@federation.delegate'] !== undefined ||
-                    directSourceDef['@federation.replicate'] !== undefined ||
-                    Object.keys(directSourceDef).some(
-                        k => k.startsWith('@federation.delegate.') || k.startsWith('@federation.replicate.')
-                    ))
-            if (directSourceHasFederation) {
+            const directSourceDef = resolveProjectionSource(csn, name, directSourceRef)
+            if (sourceHasFederationAnnotation(directSourceDef)) {
                 LOG.debug(`Skipping '${name}': inherits @federation.* from '${directSourceName}' (derived projection)`)
+                markDerivedReadModel(def, sourceIsDelegateStrategy(directSourceDef))
                 continue
             }
         }
@@ -49,6 +114,7 @@ function scanAnnotations(csn) {
             const sourceDef = csn.definitions?.[config.sourceService]
             if (!sourceDef || sourceDef.kind !== 'service') {
                 LOG.debug(`Skipping '${name}': source '${config.sourceService}' is not a service`)
+                markDerivedReadModel(def)
                 continue
             }
         }
@@ -229,17 +295,10 @@ function extractViewMapping(entityDef) {
     const localToRemote = {}
     const remoteToLocal = {}
 
-    for (const col of columns) {
-        const remoteName = col.ref?.[0]
-        if (!remoteName) continue
-
-        const localName = col.as || remoteName
-        projectedColumns.push(remoteName)
-        if (col.as) {
-            localToRemote[localName] = remoteName
-            remoteToLocal[remoteName] = localName
-        }
-    }
+    const mapped = buildColumnMappingsFromProjection(columns)
+    projectedColumns.push(...mapped.projectedColumns)
+    Object.assign(localToRemote, mapped.localToRemote)
+    Object.assign(remoteToLocal, mapped.remoteToLocal)
 
     return { isWildcard: false, projectedColumns, localToRemote, remoteToLocal, staticWhere }
 }

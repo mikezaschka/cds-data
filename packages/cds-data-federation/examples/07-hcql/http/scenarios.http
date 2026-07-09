@@ -1,0 +1,11 @@
+@consumer = http://localhost:4137/odata/v4/shop
+
+### Flattened associations — buyerName / itemName come from associated entities.
+### This projection works because CAP selects HCQL for the CAP-to-CAP hop.
+GET {{consumer}}/OrderFlat
+
+### Plain delegate (HCQL chosen automatically on the wire)
+GET {{consumer}}/Customers
+
+### Renamed product catalog
+GET {{consumer}}/Products?$filter=unitPrice gt 100

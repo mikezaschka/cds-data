@@ -1,0 +1,14 @@
+@consumer = http://localhost:4135/odata/v4/shop
+
+### Cross-provider expand: one local row, two remote providers
+### `product` resolves against provider A, `warehouse` against provider B —
+### one batched remote read per provider, then stitched.
+GET {{consumer}}/InventoryReports?$expand=product,warehouse
+
+### Expand only the product side (provider A)
+GET {{consumer}}/InventoryReports?$expand=product
+
+### Each remote entity is also directly queryable
+GET {{consumer}}/Products
+GET {{consumer}}/Warehouses
+GET {{consumer}}/StockLevels

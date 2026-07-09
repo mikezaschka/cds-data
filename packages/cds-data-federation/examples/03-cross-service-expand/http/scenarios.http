@@ -1,0 +1,19 @@
+@consumer = http://localhost:4133/odata/v4/shop
+
+### Cross-service expand: local → remote
+### Local Reviews, each expanded with its remote Product (batch-fetch + stitch)
+GET {{consumer}}/Reviews?$expand=product
+
+### Cross-service expand: remote → local
+### Remote Customers, each expanded with local Bookmarks (reverse fetch)
+GET {{consumer}}/Customers?$expand=bookmarks
+
+### Cross-service navigation: filter a local entity by a remote field
+### Reviews whose remote product is in the Electronics category
+GET {{consumer}}/Reviews?$filter=product/category eq 'Electronics'&$expand=product
+
+### Deep: remote customer → local bookmarks, selecting a few fields
+GET {{consumer}}/Customers?$select=ID,name&$expand=bookmarks($select=label)
+
+### Plain remote read (no expand) for comparison
+GET {{consumer}}/Customers

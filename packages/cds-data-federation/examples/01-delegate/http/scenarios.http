@@ -1,0 +1,29 @@
+@consumer = http://localhost:4131/odata/v4/shop
+@provider = http://localhost:4141/odata/v4/provider
+
+### Live proxy — reads are forwarded to the remote provider
+GET {{consumer}}/Customers
+
+### Column restriction + renames — only 5 fields, remote price → unitPrice
+GET {{consumer}}/Products
+
+### Rename translation flows through $filter (unitPrice → remote price)
+GET {{consumer}}/Products?$filter=unitPrice gt 100&$orderby=unitPrice desc
+
+### Entity-level rename — same remote data, Supplier domain
+GET {{consumer}}/Suppliers
+
+### Static where — $filter=blocked eq false is injected automatically
+GET {{consumer}}/ActiveCustomers
+
+### Compare: the upstream provider directly
+GET {{provider}}/Customers
+
+### CUD opt-in — create is forwarded to the remote (writable: true)
+POST {{consumer}}/WritableCustomers
+Content-Type: application/json
+
+{ "ID": "C999", "name": "Example Co", "city": "Berlin", "country": "DE", "email": "hello@example.co" }
+
+### Selective writes — delete is rejected with 405 (create+update only)
+DELETE {{consumer}}/WritableCustomersNoDelete('C999')

@@ -1,0 +1,32 @@
+{
+  "name": "federation-example-03-cross-service-expand",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Runnable example: cross-service $expand + navigation between local and remote entities",
+  "scripts": {
+    "start": "cds-serve --port 4133"
+  },
+  "dependencies": {
+    "@sap-cloud-sdk/http-client": "^4",
+    "@sap-cloud-sdk/resilience": "^4",
+    "@sap/cds": ">=9",
+    "cds-data-federation": "*",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": ">=2"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "sqlite",
+        "credentials": { "url": ":memory:" }
+      },
+      "ProviderService": {
+        "kind": "odata",
+        "model": "srv/external/ProviderService",
+        "credentials": { "url": "http://localhost:4143/odata/v4/provider" }
+      }
+    }
+  }
+}

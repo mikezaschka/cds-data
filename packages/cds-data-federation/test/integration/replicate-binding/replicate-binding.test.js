@@ -27,6 +27,7 @@ describe('Replicate binding (@federation.replicate → pipeline)', () => {
             'ReplicatedCustomers',
             'ReplicatedProducts',
             'ReplicatedPagedCustomers',
+            'ReplicatedOrderFlat',
             'ReplicatedRestCustomers',
         ])
     })
@@ -43,5 +44,22 @@ describe('Replicate binding (@federation.replicate → pipeline)', () => {
         expect(entity.elements.productId).to.exist
         expect(entity.elements.productName).to.exist
         expect(entity.elements.name).to.be.undefined
+    })
+
+    it('[4.4.2] binding: derived read models query as views over replicated tables', async () => {
+        const available = cds.model.definitions['consumer.AvailableProducts']
+        const stats = cds.model.definitions['consumer.CategoryStats']
+        expect(available['@cds.persistence.table']).to.equal(false)
+        expect(stats['@cds.persistence.table']).to.equal(false)
+
+        const { status: availableStatus } = await GET('/odata/v4/consumer/AvailableProducts?$top=1')
+        expect(availableStatus).to.equal(200)
+        const { data: availableData } = await GET('/odata/v4/consumer/AvailableProducts?$top=1')
+        expect(availableData.value).to.be.an('array')
+
+        const { status: statsStatus } = await GET('/odata/v4/consumer/CategoryStats?$top=1')
+        expect(statsStatus).to.equal(200)
+        const { data: statsData } = await GET('/odata/v4/consumer/CategoryStats?$top=1')
+        expect(statsData.value).to.be.an('array')
     })
 })

@@ -37,6 +37,11 @@ class EntityCacheDbResolver {
         return DEFAULT_TEMPLATE
     }
 
+    _staticUrlTemplate() {
+        const ec = this._entityCacheConfig()
+        return ec.staticUrlTemplate || 'federation-entity-cache-static.sqlite'
+    }
+
     _defaultTenant() {
         return this._entityCacheConfig().defaultTenant || DEFAULT_TENANT
     }
@@ -62,11 +67,16 @@ class EntityCacheDbResolver {
     /**
      * Build absolute sqlite file path for a tenant id.
      */
-    resolveUrl(tenantId) {
-        const tid = tenantId == null ? this._defaultTenant() : String(tenantId)
-        const fileName = this._urlTemplate().replace(/\{tenant\}/g, tid)
+    resolveUrl(tenantId, { static: staticCache } = {}) {
+        const fileName = staticCache
+            ? this._staticUrlTemplate()
+            : this._urlTemplate().replace(/\{tenant\}/g, tenantId == null ? this._defaultTenant() : String(tenantId))
         if (path.isAbsolute(fileName)) return fileName
         return path.join(this._baseDir(), fileName)
+    }
+
+    resolveStaticUrl() {
+        return this.resolveUrl(null, { static: true })
     }
 
     /**
@@ -98,8 +108,32 @@ class EntityCacheDbResolver {
         }
     }
 
-    async connectForCurrentTenant(explicitTenant) {
+    async connectForCurrentTenant(explicitTenant, { static: staticCache } = {}) {
+        if (staticCache) return this.connectStatic()
         return this.connect(this.resolveTenantId(explicitTenant))
+    }
+
+    async connectStatic() {
+        const url = this.resolveStaticUrl()
+        const cacheKey = `${this._serviceName()}::static::${url}`
+        if (this._connections.has(cacheKey)) return this._connections.get(cacheKey)
+
+        const prior = cds.context
+        let db
+        try {
+            if (prior && (prior.tenant || prior.user?.tenant)) {
+                cds.context = Object.assign(Object.create(Object.getPrototypeOf(prior) || null), prior, {
+                    tenant: undefined,
+                    user: Object.assign({}, prior.user || {}, { tenant: undefined }),
+                })
+            }
+            db = await cds.connect.to(this._serviceName(), { credentials: { url } })
+            await this._ensureDeployed(db, url)
+            this._connections.set(cacheKey, db)
+            return db
+        } finally {
+            cds.context = prior
+        }
     }
 
     async _ensureDeployed(db, url) {

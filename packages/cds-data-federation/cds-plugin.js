@@ -7,6 +7,7 @@ const {
     initTenantRunCoordinator,
     registerReplicatePipelineNames,
 } = require('./srv/multitenancy/mtx-hooks')
+const { getEntityCacheCoordinator } = require('./srv/entity-cache/entity-cache-coordinator')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -30,6 +31,10 @@ cds.once('served', async () => {
     const delegateConfigs = _federationConfigs.filter(c => c.strategy !== 'replicate')
     if (delegateConfigs.length > 0) {
         await bindEntityCachePipelines(delegateConfigs)
+        const coordinator = getEntityCacheCoordinator()
+        coordinator.registerFromConfigs(delegateConfigs)
+        coordinator.startIntervals()
+        await coordinator.preloadOnBoot()
         await registerFederationHandlers(delegateConfigs, _viewMappingRegistry)
     }
 
