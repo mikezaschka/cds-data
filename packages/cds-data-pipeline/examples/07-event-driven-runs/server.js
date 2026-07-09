@@ -9,7 +9,7 @@ cds.on('served', async () => {
     // delta watermark; event micro-runs reuse MAP/WRITE without advancing lastSync.
     await pipelines.addPipeline({
         name: 'Shipments',
-        description: 'Batch delta replicate + CAP messaging micro-runs (ADR 0009).',
+        description: 'Batch delta replicate + CAP messaging micro-runs.',
         source: { service: 'LogisticsService', entity: 'LogisticsService.Shipments' },
         target: { entity: 'example07.Shipments' },
 

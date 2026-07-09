@@ -1,4 +1,4 @@
-### Example 07 — event-driven pipeline runs (ADR 0009)
+### Example 07 — event-driven pipeline runs
 ### Health checks against the provider and the consumer.
 
 ### LogisticsService — direct ping

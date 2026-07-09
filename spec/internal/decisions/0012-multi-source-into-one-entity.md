@@ -1,4 +1,4 @@
-# ADR 0008 — Multi-source replication into a single entity
+# ADR 0012 — Multi-source replication into a single entity
 
 Status: Proposed
 Date: 2026-04-21
@@ -7,11 +7,11 @@ Extends: ADR 0007 — Infer pipeline intent from config shape
 
 ## Context
 
-`cds-data-pipeline` currently states a hard 1:1 rule in [README.md](../README.md):
+`cds-data-pipeline` currently states a hard 1:1 rule in [README.md](../../../packages/cds-data-pipeline/README.md):
 
 > **Not a DAG runner.** One source, one target, per pipeline. No fan-in, fan-out, chaining, or composition.
 
-The rule is load-bearing for ADR 0007 — the whole inference machine in [docs/guide/concepts/inference.md](../docs/guide/concepts/inference.md) presumes a single `source.{entity,query}` shape produces a single tracker row and a single WRITE target. `addPipeline` in [srv/DataPipelineService.js](../srv/DataPipelineService.js) encodes this: one pipeline name, one `cds.requires.<service>` key, one target entity.
+The rule is load-bearing for ADR 0007 — the whole inference machine in [docs/guide/concepts/inference.md](../../../docs/pipeline/guide/concepts/inference.md) presumes a single `source.{entity,query}` shape produces a single tracker row and a single WRITE target. `addPipeline` in [srv/DataPipelineService.js](../../../packages/cds-data-pipeline/srv/DataPipelineService.js) encodes this: one pipeline name, one `cds.requires.<service>` key, one target entity.
 
 Real-world CAP replication deployments — exemplified by [gregorwolf/cap-replication-demo](https://github.com/gregorwolf/cap-replication-demo) — routinely need to ingest the same logical entity (`A_BusinessPartner`, `Product`, …) from **multiple instances of the same backend** (e.g. `S4HANA_DEV` + `S4HANA` + `S4HANA_QA`) and materialize all rows into **one local table**. The demo solves this outside the framework with four coordinated pieces:
 
@@ -36,8 +36,8 @@ This ADR decides how `cds-data-pipeline` absorbs the multi-source scenario witho
 |---|---|---|---|
 | G1 | **Source discriminator aspect** | No shipped aspect analogous to `replication.source`. Consumers rebuild the pattern every time, usually getting the association-`source` extension wrong. | v1 |
 | G2 | **Origin label on registration** | `addPipeline` has no way to stamp a source label into the target when multiple pipelines share a target entity. Consumers build the pattern manually in MAP hooks and get per-source flush wrong. | v1 |
-| G3 | **Per-source scoped flush / delta** | `POST /pipeline/flush` in [srv/DataPipelineManagementService.js](../srv/DataPipelineManagementService.js) wipes the whole target entity. `lastSync` / `lastKey` are already per-pipeline, so the read path is fine; the write/clear path is not. | v1 |
-| G4 | **Messaging / event-driven runs** | [srv/adapters/factory.js](../srv/adapters/factory.js) knows only `odata`, `odata-v2`, `rest`, `cqn`. No first-class event ingestion that shares the same `PipelineRuns` / MAP path as batch. See **[ADR 0009 — Event-driven pipeline runs](0009-event-driven-pipeline-runs.md)** (proposed API: `handleEvent` + two payload strategies; supersedes the earlier “`MessagingAdapter` + `source.kind: 'messaging'`” sketch for the first shippable increment). | v2 |
+| G3 | **Per-source scoped flush / delta** | `POST /pipeline/flush` in [srv/DataPipelineManagementService.js](../../../packages/cds-data-pipeline/srv/DataPipelineManagementService.js) wipes the whole target entity. `lastSync` / `lastKey` are already per-pipeline, so the read path is fine; the write/clear path is not. | v1 |
+| G4 | **Messaging / event-driven runs** | [srv/adapters/factory.js](../../../packages/cds-data-pipeline/srv/adapters/factory.js) knows only `odata`, `odata-v2`, `rest`, `cqn`. No first-class event ingestion that shares the same `PipelineRuns` / MAP path as batch. See **[ADR 0013 — Event-driven pipeline runs](0013-event-driven-pipeline-runs.md)** (proposed API: `handleEvent` + two payload strategies; supersedes the earlier “`MessagingAdapter` + `source.kind: 'messaging'`” sketch for the first shippable increment). | v2 |
 | G5 | **Multi-entity-per-API registration sugar** | Consumers call `addPipeline` N times per API family, duplicating `source.service`, shared filter, schedule, delta config. | v3 |
 | G6 | **Reverse-merge / cross-source consolidation recipe** | The demo's `UpsertService.entitiesInS4` pattern (pick source X, push its rows into destination Y, concatenating `LargeString` fields) has no documented equivalent. | v4 |
 | G7 | **Outbound CloudEvents emission after WRITE** | Doable today with `srv.after('PIPELINE.WRITE', …)`, but no recipe, no `emit: { channel, event }` sugar, no outbox wiring. | v5 |
@@ -79,7 +79,7 @@ flowchart LR
 ```
 
 - `addPipeline({ sources: [{ service, origin }, ...], target, ... })`. Engine loops sources (sequential or bounded-parallel) and treats each source iteration as a sub-run.
-- Requires: a new kind `fan-in` in the inference table ([docs/guide/concepts/inference.md](../docs/guide/concepts/inference.md)); per-source tracker rows (`PipelineRuns.origin`); per-source retry; and relaxing the "single-winner `on` handler" assumption called out in [README.md](../README.md) L12 because MAP/WRITE hooks must now receive `req.data.origin` to route correctly.
+- Requires: a new kind `fan-in` in the inference table ([docs/guide/concepts/inference.md](../../../docs/pipeline/guide/concepts/inference.md)); per-source tracker rows (`PipelineRuns.origin`); per-source retry; and relaxing the "single-winner `on` handler" assumption called out in [README.md](../../../packages/cds-data-pipeline/README.md) L12 because MAP/WRITE hooks must now receive `req.data.origin` to route correctly.
 
 Trade-offs:
 
@@ -94,7 +94,7 @@ Option A ships in a focused PR (one new aspect, one tracker column, origin-aware
 
 ## Data model — the `plugin.data_pipeline.sourced` aspect
 
-Ship this aspect in [db/index.cds](../db/index.cds) alongside the existing `Pipelines` / `PipelineRuns` definitions. The aspect name is an adjective (`sourced` — "this entity is sourced from some backend") and the key field it contributes is the noun `source`, so consumer usage reads naturally as `entity BusinessPartners : bp.A_BusinessPartner, sourced { ... }`:
+Ship this aspect in [db/index.cds](../../../packages/cds-data-pipeline/db/index.cds) alongside the existing `Pipelines` / `PipelineRuns` definitions. The aspect name is an adjective (`sourced` — "this entity is sourced from some backend") and the key field it contributes is the noun `source`, so consumer usage reads naturally as `entity BusinessPartners : bp.A_BusinessPartner, sourced { ... }`:
 
 ```cds
 namespace plugin.data_pipeline;
@@ -181,18 +181,18 @@ Engine behavior when `source.origin` is set:
 
 | File | Change |
 |---|---|
-| [db/index.cds](../db/index.cds) | Add `aspect sourced { key source : String(100); }` in namespace `plugin.data_pipeline`. Add `origin : String` to `Pipelines`. Add `origin : String` (run-scoped echo) to `PipelineRuns` for observability. |
-| [srv/DataPipelineService.js](../srv/DataPipelineService.js) | `_validateConfig`: require target-aspect when `source.origin` is set; mutual exclusion with `source.query` (materialize pipelines are origin-agnostic). `_normalizeConfig`: populate `origin`. Default MAP: stamp `source = origin` on every row. Add `DOC_REF_FAN_IN` constant mirroring `DOC_REF` (pointing at the public multi-source recipe). |
-| [srv/lib/Pipeline.js](../srv/lib/Pipeline.js) | WRITE path: echo `source = origin` on every record (belt-and-braces for consumer-overridden MAP). `flush()`: add `WHERE source = <origin>` predicate when aspect is present; log the scoped delete count. |
-| [srv/DataPipelineManagementService.js](../srv/DataPipelineManagementService.js) | `flush` action honors per-origin scope. `status(name)` surfaces `origin`. `Pipelines` projection exposes `origin`. |
-| [srv/adapters/factory.js](../srv/adapters/factory.js) | v2: route `kind: 'messaging'` to `MessagingAdapter`. |
+| [db/index.cds](../../../packages/cds-data-pipeline/db/index.cds) | Add `aspect sourced { key source : String(100); }` in namespace `plugin.data_pipeline`. Add `origin : String` to `Pipelines`. Add `origin : String` (run-scoped echo) to `PipelineRuns` for observability. |
+| [srv/DataPipelineService.js](../../../packages/cds-data-pipeline/srv/DataPipelineService.js) | `_validateConfig`: require target-aspect when `source.origin` is set; mutual exclusion with `source.query` (materialize pipelines are origin-agnostic). `_normalizeConfig`: populate `origin`. Default MAP: stamp `source = origin` on every row. Add `DOC_REF_FAN_IN` constant mirroring `DOC_REF` (pointing at the public multi-source recipe). |
+| [srv/lib/Pipeline.js](../../../packages/cds-data-pipeline/srv/lib/Pipeline.js) | WRITE path: echo `source = origin` on every record (belt-and-braces for consumer-overridden MAP). `flush()`: add `WHERE source = <origin>` predicate when aspect is present; log the scoped delete count. |
+| [srv/DataPipelineManagementService.js](../../../packages/cds-data-pipeline/srv/DataPipelineManagementService.js) | `flush` action honors per-origin scope. `status(name)` surfaces `origin`. `Pipelines` projection exposes `origin`. |
+| [srv/adapters/factory.js](../../../packages/cds-data-pipeline/srv/adapters/factory.js) | v2: route `kind: 'messaging'` to `MessagingAdapter`. |
 | New: `srv/adapters/MessagingAdapter.js` | v2. Subscribes via `cds.connect.to('messaging')`, surfaces an async iterable of single-row batches to `PIPELINE.READ`, maps CloudEvents `subject` → primary key via a configurable `keyFromEvent(msg)` function. |
-| [docs/guide/concepts/inference.md](../docs/guide/concepts/inference.md) | Add a "Multi-source (origin stamp)" sub-section to the derived-kind table noting that `source.origin` is orthogonal to `kind` — it composes with `replicate` and `move`, never with `materialize`. |
-| [docs/reference/features.md](../docs/reference/features.md) | Add a "Multi-source fan-in" row under Source adapters. |
+| [docs/guide/concepts/inference.md](../../../docs/pipeline/guide/concepts/inference.md) | Add a "Multi-source (origin stamp)" sub-section to the derived-kind table noting that `source.origin` is orthogonal to `kind` — it composes with `replicate` and `move`, never with `materialize`. |
+| [docs/reference/features.md](../../../docs/pipeline/reference/features.md) | Add a "Multi-source fan-in" row under Source adapters. |
 | New: `docs/guide/recipes/multi-source.md` | End-to-end worked example — BP from `API_BP_DEV` + `API_BP_PROD` into one local table, including per-origin flush assertion. |
 | New: `docs/guide/recipes/merge-sources.md` | v4. Reverse-merge pattern (`UpsertService.entitiesInS4` analogue) expressed as a WRITE-hook recipe. |
 | New: `docs/integration/messaging.md` | v2. CDC adapter reference. |
-| [README.md](../README.md) | Re-word the "Not a DAG runner" bullet to clarify that "fan-in" there means *engine-internal* composition — multi-source-to-one via sibling pipelines + origin stamp is supported. |
+| [README.md](../../../packages/cds-data-pipeline/README.md) | Re-word the "Not a DAG runner" bullet to clarify that "fan-in" there means *engine-internal* composition — multi-source-to-one via sibling pipelines + origin stamp is supported. |
 
 Explicit non-change: the engine never calls `cds.connect.to(service, { credentials: { destination } })`. Destination resolution stays in `cds.requires`.
 
@@ -212,7 +212,7 @@ Deliverables:
 
 ### v2 — Event-driven runs + messaging (G4)
 
-**Normative design:** [ADR 0009 — Event-driven pipeline runs](0009-event-driven-pipeline-runs.md) — `DataPipelineService` API to run micro-runs (key vs payload), shared MAP/WRITE, default watermark separation from batch, optional `PipelineRuns` event metadata. Application registers `messaging.on` (v1) or optional declarative topic wiring later.
+**Normative design:** [ADR 0013 — Event-driven pipeline runs](0013-event-driven-pipeline-runs.md) — `DataPipelineService` API to run micro-runs (key vs payload), shared MAP/WRITE, default watermark separation from batch, optional `PipelineRuns` event metadata. Application registers `messaging.on` (v1) or optional declarative topic wiring later.
 
 Earlier sketch (`MessagingAdapter` + `source.kind: 'messaging'`) is **not** the first deliverable; a dedicated `handleEvent` path is preferred. A factory `kind: 'messaging'` may still wrap the same internals in a follow-up.
 
@@ -250,7 +250,7 @@ Deliverables:
 - Back-compat: existing pipelines without `source.origin` keep working unchanged; `Pipelines.origin` defaults to `null`. No data migration required.
 - Flushing pipeline `BP_DEV` leaves `source = 'PROD'` rows untouched — asserted in `docs/guide/recipes/multi-source.md` with a SQL snippet: `SELECT COUNT(*) FROM db.BusinessPartners WHERE source = 'PROD'` before and after `POST /pipeline/flush { name: 'BP_DEV' }`.
 - The `cds w` startup log extends the ADR-0007 shape line with an `origin=DEV` suffix when present.
-- `DOC_REF` in [srv/DataPipelineService.js](../srv/DataPipelineService.js) gains a sibling `DOC_REF_FAN_IN` pointing at the public multi-source recipe URL, used in the new validation messages (target-aspect-missing and `origin + query` rejection).
+- `DOC_REF` in [srv/DataPipelineService.js](../../../packages/cds-data-pipeline/srv/DataPipelineService.js) gains a sibling `DOC_REF_FAN_IN` pointing at the public multi-source recipe URL, used in the new validation messages (target-aspect-missing and `origin + query` rejection).
 - `_validateConfig` rejects: (a) `source.origin` + `source.query` (materialize is origin-agnostic); (b) `source.origin` set on a target entity that does not include the `plugin.data_pipeline.sourced` aspect, with an error message naming the aspect import path.
 
 ## Non-goals
@@ -281,5 +281,5 @@ The service key itself carries the backend identity (one `cds.requires` entry pe
 
 - ADR 0007 — Infer pipeline intent from config shape.
 - [gregorwolf/cap-replication-demo](https://github.com/gregorwolf/cap-replication-demo) — specifically `db/schema.cds`, `srv/replication-service.js`, `srv/upsert-service.js`, `srv/map.js`, `srv/event-service.js`.
-- [docs/guide/concepts/inference.md](../docs/guide/concepts/inference.md) — the inference table this ADR composes with.
-- [README.md](../README.md) L19 — the "Not a DAG runner" non-goal this ADR refines.
+- [docs/guide/concepts/inference.md](../../../docs/pipeline/guide/concepts/inference.md) — the inference table this ADR composes with.
+- [README.md](../../../packages/cds-data-pipeline/README.md) L19 — the "Not a DAG runner" non-goal this ADR refines.

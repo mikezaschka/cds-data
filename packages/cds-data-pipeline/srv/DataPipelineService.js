@@ -280,7 +280,7 @@ class DataPipelineService extends cds.Service {
      *   @param {'manual'|'scheduled'|'external'|'event'} [opts.trigger='manual']
      *   @param {boolean} [opts.async=false]   true = fire-and-forget, false = block
      *   @param {'spawn'|'queued'} [opts.engine='spawn']  only honored when async=true
-     *   @param {object} [opts.event]  ADR 0009: structured event micro-run
+     *   @param {object} [opts.event]  ADR 0013: structured event micro-run
      *     (`read`, `action`, `keys` / `payload`); requires `trigger: 'event'`
      *     semantics (trigger is set automatically when `event` is set).
      *   @returns {Promise<{ runId: string, name: string, done?: Promise }>}
@@ -316,7 +316,7 @@ class DataPipelineService extends cds.Service {
 
         if (eventBlock != null && isAsync && engine === 'queued') {
             throw new Error(
-                `execute: event micro-runs (opts.event) do not support async with engine='queued' in v1 (ADR 0009). ` +
+                `execute: event micro-runs (opts.event) do not support async with engine='queued' in v1 (ADR 0013). ` +
                 `Use async: false, or async: true with engine: 'spawn'.`
             )
         }
@@ -502,7 +502,7 @@ class DataPipelineService extends cds.Service {
     }
 
     /**
-     * ADR 0009 — thin alias: defaults `trigger: 'event'`, `event.action: 'upsert'`
+     * ADR 0013 — thin alias: defaults `trigger: 'event'`, `event.action: 'upsert'`
      * when omitted, forwards `async` / `engine` to {@link #execute}.
      */
     async executeEvent(name, opts = {}) {
@@ -511,14 +511,14 @@ class DataPipelineService extends cds.Service {
         }
         const { event, ...rest } = opts
         if (!event || typeof event.read !== 'string') {
-            throw new Error("executeEvent: options.event with string property 'read' is required (ADR 0009)")
+            throw new Error("executeEvent: options.event with string property 'read' is required (ADR 0013)")
         }
         const mergedEvent = { action: 'upsert', ...event }
         return this.execute(name, { ...rest, trigger: 'event', event: mergedEvent })
     }
 
     /**
-     * Validates ADR 0009 `event` block before `execute` runs.
+     * Validates ADR 0013 `event` block before `execute` runs.
      * @param {object} config - normalized pipeline config
      * @param {object} event
      * @param {string} name - pipeline name (for error messages)
@@ -526,12 +526,12 @@ class DataPipelineService extends cds.Service {
     _validateEventExecute(config, event, name) {
         if (config.source && config.source.query) {
             throw new Error(
-                `execute: event path is not supported for query-shape pipelines (source.query) in v1: '${name}' (ADR 0009)`
+                `execute: event path is not supported for query-shape pipelines (source.query) in v1: '${name}' (ADR 0013)`
             )
         }
         if (event.read !== 'key' && event.read !== 'payload') {
             throw new Error(
-                `execute: event.read must be 'key' or 'payload' for pipeline '${name}' (ADR 0009)`
+                `execute: event.read must be 'key' or 'payload' for pipeline '${name}' (ADR 0013)`
             )
         }
         const action = event.action == null ? 'upsert' : event.action
@@ -542,20 +542,20 @@ class DataPipelineService extends cds.Service {
         }
         if (action === 'delete' && event.read === 'payload') {
             throw new Error(
-                `execute: event action delete with read:payload is not supported in v1 for pipeline '${name}' (ADR 0009)`
+                `execute: event action delete with read:payload is not supported in v1 for pipeline '${name}' (ADR 0013)`
             )
         }
         if (event.read === 'key') {
             if (!event.keys || typeof event.keys !== 'object' || Object.keys(event.keys).length === 0) {
                 throw new Error(
-                    `execute: event read:key requires a non-empty event.keys object for pipeline '${name}' (ADR 0009)`
+                    `execute: event read:key requires a non-empty event.keys object for pipeline '${name}' (ADR 0013)`
                 )
             }
         }
         if (action === 'upsert' && event.read === 'payload') {
             if (event.payload === undefined) {
                 throw new Error(
-                    `execute: event read:payload with action upsert requires event.payload for pipeline '${name}' (ADR 0009)`
+                    `execute: event read:payload with action upsert requires event.payload for pipeline '${name}' (ADR 0013)`
                 )
             }
         }
@@ -1261,7 +1261,7 @@ class DataPipelineService extends cds.Service {
     }
 
     /**
-     * ADR 0008 §"Engine behavior when `source.origin` is set".
+     * ADR 0012 §"Engine behavior when `source.origin` is set".
      *
      * The `source.origin` label stamps an origin string into the target's
      * `source` key column so N sibling pipelines can consolidate into one

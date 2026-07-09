@@ -11,8 +11,9 @@ The rules below apply to:
 - Everything under [`docs/`](../) **except** [`spec/internal/**`](./), [`spec/concepts/**`](../concepts/), [`spec/reference/requirements.md`](../reference/requirements.md), and [`spec/reference/test-mapping.md`](../reference/test-mapping.md).
 - Per-package documentation trees: every `docs/pipeline/** and docs/federation/**/*.md`.
 - Per-package READMEs shipped to npm: every `packages/*/README.md`.
-- The repository [`README.md`](../../README.md) — **except** its `## For contributors` section, which is the single permitted home for internal references (see R5).
+- The repository [`README.md`](../../README.md).
 - Consumer-facing READMEs in [`examples/`](../../examples/) — every `examples/**/README.md`.
+- Package example READMEs under `packages/*/examples/**/README.md`.
 
 [`spec/concepts/`](../concepts/) is out of scope because it is the **contributor canonical source of truth** for concept pages per [ADR 0006 §3](./decisions/0006-per-plugin-published-surface.md). Consumer-facing concept pages live under `docs/pipeline/guide/concepts/` and `docs/federation/concepts/`, scoped to each package's audience; those published copies are in scope.
 
@@ -74,12 +75,12 @@ Treat the following as internal references on any in-scope file:
 - References to the contributor entry points [`CLAUDE.md`](../../CLAUDE.md) and [`AGENTS.md`](../../AGENTS.md).
 - References to the contributor feature tracker [`spec/reference/requirements.md`](../reference/requirements.md) or the generated mapping [`spec/reference/test-mapping.md`](../reference/test-mapping.md).
 
-The single permitted home is the repository `README.md`'s `## For contributors` section. That section is out of scope for R5, because its whole purpose is to hand contributors off to the internal surface.
+The single permitted home for contributor pointers is [`spec/README.md`](../README.md) (`## For contributors`). That file is out of scope for R5, because its whole purpose is to hand contributors off to the internal surface.
 
 - **Good (in a package README):** *"omitting `kind` throws a descriptive error explaining the required values."*
 - **Avoid (in a package README):** *"omitting it throws a descriptive error pointing at ADR 0005."*
-- **Good (in the root README `## For contributors` section):** *"Full feature tracker: [`spec/reference/requirements.md`](./spec/reference/requirements.md). Deep architecture notes: [`CLAUDE.md`](./CLAUDE.md)."*
-- **Avoid (anywhere else):** the same bullet list.
+- **Good (in `spec/README.md`):** *"Full feature tracker: [`reference/requirements.md`](reference/requirements.md). Deep architecture notes: [`../CLAUDE.md`](../CLAUDE.md)."*
+- **Avoid (anywhere else on published surfaces):** the same bullet list.
 
 If a published page needs to reference the rationale behind a capability and the rationale legitimately lives only in an ADR, link to the ADR via an **absolute GitHub URL** (matching the pattern for research links from R2). This keeps the site self-contained even when rendered outside the repo context.
 
@@ -106,11 +107,11 @@ The grep-lint for R5:
 
 ```bash
 grep -rnE 'spec/internal/|ADR 00[0-9]+|ADR-00[0-9]+|\[ADR [0-9]+\]|CLAUDE\.md|AGENTS\.md|reference/requirements\.md|reference/test-mapping\.md' \
-  README.md packages/*/README.md packages/*/docs/ examples/ \
+  README.md packages/*/README.md packages/*/docs/ packages/*/examples/ examples/ \
   --include='*.md' 2>/dev/null
 ```
 
-R4 must return nothing. R5 must return only lines inside the root `README.md` `## For contributors` section — hits anywhere else are a FAIL. R1–R3 are reviewer judgment; the rules above are the reference.
+R4 must return nothing. R5 must return only lines inside `spec/README.md` — hits anywhere else on published surfaces are a FAIL. R1–R3 are reviewer judgment; the rules above are the reference.
 
 ## Where opinion goes
 

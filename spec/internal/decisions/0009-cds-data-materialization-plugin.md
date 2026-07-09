@@ -73,4 +73,4 @@ Installing `cds-data-federation` without `cds-data-materialization` leaves `@mat
 
 - M-11: `refresh: { mode: 'partial', slice }` from annotation
 - M-14: cache option on served materialized entities
-- Event-triggered materialize (blocked by engine ADR 0009 for query-shape)
+- Event-triggered materialize (blocked by engine ADR 0013 for query-shape)

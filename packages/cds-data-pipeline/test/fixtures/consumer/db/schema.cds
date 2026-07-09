@@ -88,7 +88,7 @@ entity DailyCustomerRevenue {
         lastActivity : Timestamp;
 }
 
-/** ADR 0008 — compound key (source, ID) for multi-origin fan-in tests */
+/** ADR 0012 — compound key (source, ID) for multi-origin fan-in tests */
 entity FanInCustomers : sourced {
     key ID         : String(10);
         name       : String(100);

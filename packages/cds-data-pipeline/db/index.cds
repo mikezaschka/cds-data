@@ -27,7 +27,7 @@ type RunTrigger : String enum {
 
 /**
  * Extends a consumer target entity with a `source` primary-key column that
- * records the origin backend a row was replicated from (per ADR 0008).
+ * records the origin backend a row was replicated from (per ADR 0012).
  *
  * Consumers mix this aspect in when one target entity consolidates rows from
  * multiple source backends, and set `source.origin` on each sibling pipeline
@@ -61,7 +61,7 @@ entity Pipelines {
         source         : LargeString; // JSON serialized source config
         target         : LargeString; // JSON serialized target config
         mode           : ReplicationMode;
-        origin         : String(100); // ADR 0008: label stamped into target.source for multi-source fan-in
+        origin         : String(100); // ADR 0012: label stamped into target.source for multi-source fan-in
         schedule       : String(200); // human-readable internal schedule for management UI
         // Runtime overrides (persisted across restarts; re-applied after addPipeline).
         // `enabled` gates scheduled ticks only — manual start/execute still runs.
@@ -92,7 +92,7 @@ entity PipelineRuns : cuid {
     endTime    : Timestamp;
     trigger    : RunTrigger;
     mode       : ReplicationMode;
-    origin     : String(100); // ADR 0008: run-scoped echo of Pipelines.origin for observability
+    origin     : String(100); // ADR 0012: run-scoped echo of Pipelines.origin for observability
     error      : LargeString;
     statistics : {
         created : Integer default 0;

@@ -1,8 +1,8 @@
-# Example 07 — Event-driven pipeline runs (ADR 0009)
+# Example 07 — Event-driven pipeline runs
 
 **What this shows:** batch delta replication **plus** CAP messaging micro-runs on the **same pipeline name** — `executeEvent` with `event.read: 'key' | 'payload'` and `event.action: 'upsert' | 'delete'`. Event runs reuse MAP/WRITE and appear in `/pipeline` with `trigger: event`, but **do not** advance the batch watermark (`Pipelines.lastSync`).
 
-This is **not** [example 06](../06-event-hooks/) — that one layers `before` / `on` / `after` on the `PIPELINE.*` lifecycle. Here the entry point is **`execute` / `executeEvent`** with a nested **`event`** object. See [docs/guide/recipes/event-driven-runs.md](../../docs/guide/recipes/event-driven-runs.md) and [decisions/0009-event-driven-pipeline-runs.md](../../decisions/0009-event-driven-pipeline-runs.md).
+This is **not** [example 06](../06-event-hooks/) — that one layers `before` / `on` / `after` on the `PIPELINE.*` lifecycle. Here the entry point is **`execute` / `executeEvent`** with a nested **`event`** object. See [Event-driven runs](https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/event-driven-runs.html).
 
 **Source:** `LogisticsService.Shipments` at `http://localhost:4455/odata/v4/logistics/`.
 **Target:** `example07.Shipments` (same consumption-view pattern as example 01).

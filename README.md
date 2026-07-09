@@ -55,15 +55,3 @@ Runnable demos live under [`examples/`](./examples/). See [`examples/README.md`]
 - [CAP Service Integration guide](https://cap.cloud.sap/docs/guides/integration/calesi) — upstream delegation and federation reference
 
 Preview docs locally: `npm run docs:serve` from the repository root.
-
-## For contributors
-
-Internal references, primers, and the feature tracker live alongside the code. These links are for contributors and AI assistants working on the repository — they are not needed to use the packages from npm.
-
-- [spec/reference/requirements.md](./spec/reference/requirements.md) — full feature matrix with status, priority, and architecture rationale.
-- [spec/reference/test-mapping.md](./spec/reference/test-mapping.md) — auto-generated test ↔ requirement ID mapping.
-- Tests live under `packages/cds-data-pipeline/test/`, `packages/cds-data-federation/test/`, and `packages/cds-data-materialization/test/` (root `npm test` runs all three).
-- [CLAUDE.md](./CLAUDE.md) — deep architecture notes and project conventions.
-- [AGENTS.md](./AGENTS.md) — cross-tool entry point for AI coding assistants (Cursor, Claude Code, Codex, …).
-- [spec/internal/](./spec/internal/) — ADRs, research notes, plans, and the contributor canonical [`spec/concepts/`](./spec/concepts/) tree.
-- [spec/internal/releasing.md](./spec/internal/releasing.md) — how to publish `cds-data-pipeline` and `cds-data-federation` to npm (local `release-it` flow).

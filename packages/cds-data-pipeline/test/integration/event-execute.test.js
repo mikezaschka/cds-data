@@ -32,7 +32,7 @@ function sameCustomerFields(local, remote) {
     )
 }
 
-describe('ADR 0009 — event execute / executeEvent', () => {
+describe('ADR 0013 — event execute / executeEvent', () => {
     beforeAll(async () => {
         const messagingDir = path.resolve(__dirname, '../.messaging-shared')
         if (fs.existsSync(messagingDir)) {

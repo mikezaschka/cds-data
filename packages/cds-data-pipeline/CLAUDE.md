@@ -17,8 +17,7 @@ See [README.md](README.md) for what the plugin does/doesn't do, and [.cursor/rul
 - `app/pipeline-console-src/` — TypeScript UI5 source; **do not hand-edit** `app/pipeline-console/` (built artifact).
 - `test/` — npm-workspaces layout: `fixtures/consumer` is the CAP app under test; `fixtures/{provider,inventory-provider,rest-provider}` are mock backends. `support/` has Vitest setup + spawn helpers. The `CDS_PIPELINE_TEST_CONSUMER=true` env flag (set by `setup-env.js`) toggles fixture loading inside `cds-plugin.js`.
 - `examples/` — runnable consumer apps per use case (replicate / materialize / move-to-service / fan-in / event-hooks). `_providers/` holds shared mock backends. Feature examples enable the built Pipeline Console via `management.reuse.console`. **`examples/_dev/pipeline-console/`** is the contributor-only dev backend (port 4100, multiple pipelines) for live TypeScript UI work on `:8090`.
-- `decisions/` — ADRs. Read the relevant one before changing behavior it covers.
-- `docs/` — published VitePress source. Serve from repo root: `npm run docs:serve` (port 5173 by default).
+- ADRs — [`../../spec/internal/decisions/`](../../spec/internal/decisions/). Read the relevant one before changing behavior it covers.
 
 ## Commands
 

@@ -1,4 +1,4 @@
-# ADR 0010: Pipeline run housekeeping
+# ADR 0014: Pipeline run housekeeping
 
 **Status:** Accepted  
 **Date:** 2026-07-08  
@@ -29,4 +29,4 @@ No on-demand management action in v1 — scheduled job only.
 ## References
 
 - [`docs/pipeline/guide/concepts/housekeeping.md`](../../../docs/pipeline/guide/concepts/housekeeping.md)
-- Requirement **4.13.9** in `spec/reference/requirements.md`
+- Requirement **4.13.9** in [`spec/reference/requirements.md`](../../reference/requirements.md)

@@ -2,7 +2,7 @@ const cds = require('../runtime-cds')
 const { mergeStaticWhereIntoSelect } = require('./mergeStaticWhereIntoSelect')
 
 /**
- * One-shot read for ADR 0009 event `read: 'key'`: same `source.entity`,
+ * One-shot read for ADR 0013 event `read: 'key'`: same `source.entity`,
  * `viewMapping` columns, and `staticWhere` as batch OData/CQN, plus `keys`
  * AND-combined with the static projection filter.
  *

@@ -1,9 +1,9 @@
-# ADR 0009 — Event-driven pipeline runs (CAP messaging / CloudEvents)
+# ADR 0013 — Event-driven pipeline runs (CAP messaging / CloudEvents)
 
 Status: Implemented (v1 code in `DataPipelineService.execute` / `executeEvent`, `Pipeline._executeEventPayload`, `srv/lib/eventKeyRead.js`)
 Date: 2026-04-25
 Supersedes: —
-Extends: ADR 0008 — Multi-source fan-in; refines [G4 — Messaging / CDC](0008-multi-source-into-one-entity.md#capability-gap-inventory-vs-gregorwolfcap-replication-demo)
+Extends: ADR 0012 — Multi-source fan-in; refines [G4 — Messaging / CDC](0012-multi-source-into-one-entity.md#capability-gap-inventory-vs-gregorwolfcap-replication-demo)
 
 ## Context
 
@@ -14,18 +14,18 @@ Replication workloads commonly combine two ingestion paths:
 
 `cds-data-pipeline` already:
 
-- Declares `RunTrigger.event` in [db/index.cds](../db/index.cds) and whitelists `trigger: 'event'` on the management [execute](../srv/DataPipelineManagementService.js) path.
+- Declares `RunTrigger.event` in [db/index.cds](../../../packages/cds-data-pipeline/db/index.cds) and whitelists `trigger: 'event'` on the management [execute](../../../packages/cds-data-pipeline/srv/DataPipelineManagementService.js) path.
 - Records `PipelineRuns.trigger` for every run.
 
-But `DataPipelineService.execute` and `Pipeline._run` always run the **full** READ/MAP/WRITE path for the configured **batch** source adapter ([srv/lib/Pipeline.js](../srv/lib/Pipeline.js): `_deltaSync` → `adapter.readStream(tracker)`). A successful run **always** updates `Pipelines.lastSync` to the run end time (same file). Therefore:
+But `DataPipelineService.execute` and `Pipeline._run` always run the **full** READ/MAP/WRITE path for the configured **batch** source adapter ([srv/lib/Pipeline.js](../../../packages/cds-data-pipeline/srv/lib/Pipeline.js): `_deltaSync` → `adapter.readStream(tracker)`). A successful run **always** updates `Pipelines.lastSync` to the run end time (same file). Therefore:
 
 - Using `POST /pipeline/execute` with `trigger: 'event'` only **labels** the run; it does **not** model event semantics and can **corrupt** batch **delta** watermarks if event micro-runs advance `lastSync` without reading the same slice as a normal delta.
 
-ADR 0008 [G4](0008-multi-source-into-one-entity.md#capability-gap-inventory-vs-gregorwolfcap-replication-demo) proposed a v2 `MessagingAdapter` and `source.kind: 'messaging'`. This ADR replaces that *shape* for the first shippable increment with a design that **reuses the same `Pipelines` row and phase machine** (START → READ → MAP_BATCH → WRITE_BATCH → DONE) so that **event-driven** upserts are **observable in the same scope** as batch runs and reuse **`viewMapping`**, [targets](../docs/guide/targets/db.md), and [hooks](../docs/reference/management-service.md#event-hooks).
+ADR 0012 [G4](0012-multi-source-into-one-entity.md#capability-gap-inventory-vs-gregorwolfcap-replication-demo) proposed a v2 `MessagingAdapter` and `source.kind: 'messaging'`. This ADR replaces that *shape* for the first shippable increment with a design that **reuses the same `Pipelines` row and phase machine** (START → READ → MAP_BATCH → WRITE_BATCH → DONE) so that **event-driven** upserts are **observable in the same scope** as batch runs and reuse **`viewMapping`**, [targets](../../../docs/pipeline/guide/targets/db.md), and [hooks](../../../docs/pipeline/reference/management-service.md#event-hooks).
 
 ## Decision summary
 
-- **Primary entry point:** extend [`DataPipelineService#execute`](../srv/DataPipelineService.js) with an optional **nested** `event` object for event **micro-runs**. The public verb stays **`execute`** — no separate `handleEvent` / `ingestEvent` as the only way in.
+- **Primary entry point:** extend [`DataPipelineService#execute`](../../../packages/cds-data-pipeline/srv/DataPipelineService.js) with an optional **nested** `event` object for event **micro-runs**. The public verb stays **`execute`** — no separate `handleEvent` / `ingestEvent` as the only way in.
 - **Alias:** **`executeEvent(name, opts)`** — a **thin** wrapper that defaults to `trigger: 'event'`, and for the common case `event.action: 'upsert'`, while forwarding **`async`** and **`engine`** exactly like `execute` (see [Async and sync](#async-and-sync)).
 - **Naming — run `mode` vs read strategy:** the **top-level** `mode` on `execute` remains the **pipeline run mode** (`'delta' | 'full'` for batch-style runs) as today. **Do not** overload it for “key vs payload”. Use the nested field **`event.read: 'key' | 'payload'`** for how the engine obtains source rows in an event micro-run.
 - **Read strategies** (see [Read strategies and action](#read-strategies-and-action-normative)):
@@ -51,7 +51,7 @@ ADR 0008 [G4](0008-multi-source-into-one-entity.md#capability-gap-inventory-vs-g
 | Dimension | Values | Role |
 |------------|--------|------|
 | **`event.read`** | `key` \| `payload` | How the READ phase **obtains** source-shaped rows. **Not** the same as run **`mode`** (`delta` / `full`). |
-| **`event.action`** | `upsert` \| `delete` | **Upsert** — MAP/WRITE as today (default DB path: UPSERT). **Delete** — remove target row(s) by key (implementation must supply DELETE semantics, including [sourced](../db/index.cds) compound keys if applicable). |
+| **`event.action`** | `upsert` \| `delete` | **Upsert** — MAP/WRITE as today (default DB path: UPSERT). **Delete** — remove target row(s) by key (implementation must supply DELETE semantics, including [sourced](../../../packages/cds-data-pipeline/db/index.cds) compound keys if applicable). |
 | **`event.keys`** | object | Key predicate for **`read: 'key'`** — field names in the **source** (remote) shape **before** MAP (see [Keys semantics](#keys-semantics)). |
 | **`event.payload`** | object \| object[] | Source-shaped row(s) for **`read: 'payload'`** (after any configured `mapPayload`). |
 
@@ -113,7 +113,7 @@ logisticsService.on('shipments.updated', async (event) => {
 
 ### Async and sync
 
-- **No** new public methods **`executeSync` / `executeAsync`**. The existing **`async: true | false`** and **`engine: 'spawn' | 'queued'`** on `execute` (and on `executeEvent` forwards) remain the only sync/async control surface, aligned with [DataPipelineService#execute](../srv/DataPipelineService.js) today.
+- **No** new public methods **`executeSync` / `executeAsync`**. The existing **`async: true | false`** and **`engine: 'spawn' | 'queued'`** on `execute` (and on `executeEvent` forwards) remain the only sync/async control surface, aligned with [DataPipelineService#execute](../../../packages/cds-data-pipeline/srv/DataPipelineService.js) today.
 
 ## Naming collision: `mode` vs `read`
 
@@ -126,8 +126,8 @@ Using **`mode: 'key'`** at the top level is **rejected** by this ADR: it would c
 
 Batch and event **key** reads **must** apply the same **static** predicate to the same logical source entity:
 
-- **Inferred from the target** — when `viewMapping` is omitted, [`_inferViewMappingIfMissing`](../srv/DataPipelineService.js) uses [`extractViewMappingFromEntityDef`](../srv/lib/extractViewMappingFromEntity.js) to copy **`staticWhere`** from the consumption **projection**’s `where` in CDS.
-- **Explicit** — if `viewMapping` is provided manually, include **`viewMapping.staticWhere`** (CQN `where` xpr array) so [ODataAdapter](../srv/adapters/ODataAdapter.js) / [CqnAdapter](../srv/adapters/CqnAdapter.js) continue to [mergeStaticWhereIntoSelect](../srv/lib/mergeStaticWhereIntoSelect.js) into the one-shot `SELECT` for event **`read: 'key'`** the same way as for batch `SELECT.from(source.entity)`.
+- **Inferred from the target** — when `viewMapping` is omitted, [`_inferViewMappingIfMissing`](../../../packages/cds-data-pipeline/srv/DataPipelineService.js) uses [`extractViewMappingFromEntityDef`](../../../packages/cds-data-pipeline/srv/lib/extractViewMappingFromEntity.js) to copy **`staticWhere`** from the consumption **projection**’s `where` in CDS.
+- **Explicit** — if `viewMapping` is provided manually, include **`viewMapping.staticWhere`** (CQN `where` xpr array) so [ODataAdapter](../../../packages/cds-data-pipeline/srv/adapters/ODataAdapter.js) / [CqnAdapter](../../../packages/cds-data-pipeline/srv/adapters/CqnAdapter.js) continue to [mergeStaticWhereIntoSelect](../../../packages/cds-data-pipeline/srv/lib/mergeStaticWhereIntoSelect.js) into the one-shot `SELECT` for event **`read: 'key'`** the same way as for batch `SELECT.from(source.entity)`.
 
 **Rule of thumb:** one CDS `where` on the consumption projection (or one explicit `staticWhere`) — not a duplicate “filter string” in `addPipeline` for events only.
 
@@ -167,13 +167,13 @@ Batch and event **key** reads **must** apply the same **static** predicate to th
 - **Automatic fan-out** of one message to N pipelines — the app may call `execute` with `trigger: 'event'` N times or this may be a later convenience.
 - **Separate** `handleEvent` as the **only** public method name — the **contract** is **`execute` + `event`**, with optional `executeEvent` alias (see [Public API contract](#public-api-contract-normative)).
 
-## Relationship to ADR 0008 §“v2 — Messaging / CDC”
+## Relationship to ADR 0012 §“v2 — Messaging / CDC”
 
-ADR 0008 listed:
+ADR 0012 listed:
 
 > `srv/adapters/MessagingAdapter.js` + factory routing for `source.kind: 'messaging'`.
 
-This ADR **supersedes that deliverable** for the **first** release of event support: a **`execute` extension** (nested `event` object) + optional **`executeEvent`**, **not** a standalone `readStream` that blocks on a message bus, and not **`handleEvent`** as the only user-facing name. A future `kind: 'messaging'` could still wrap the same **internals** if needed. **Update ADR 0008’s G4 / v2 text** to reference ADR 0009 when this ships (already partially aligned).
+This ADR **supersedes that deliverable** for the **first** release of event support: a **`execute` extension** (nested `event` object) + optional **`executeEvent`**, **not** a standalone `readStream` that blocks on a message bus, and not **`handleEvent`** as the only user-facing name. A future `kind: 'messaging'` could still wrap the same **internals** if needed. **Update ADR 0012’s G4 / v2 text** to reference ADR 0013 when this ships (already partially aligned).
 
 ## Acceptance criteria (when implemented)
 
@@ -188,12 +188,12 @@ This ADR **supersedes that deliverable** for the **first** release of event supp
 
 ## References
 
-- [db/index.cds](../db/index.cds) — `RunTrigger`, `PipelineRuns`.
-- [srv/lib/Pipeline.js](../srv/lib/Pipeline.js) — `_run`, `_deltaSync`, READ/MAP/WRITE, `lastSync` update.
-- [srv/DataPipelineService.js](../srv/DataPipelineService.js) — `execute`, `addPipeline`, `_validateConfig`, `_inferViewMappingIfMissing`.
-- [srv/lib/extractViewMappingFromEntity.js](../srv/lib/extractViewMappingFromEntity.js) — `staticWhere` from consumption projection.
-- [srv/lib/mergeStaticWhereIntoSelect.js](../srv/lib/mergeStaticWhereIntoSelect.js) — AND static filter into CQN.
-- [srv/adapters/ODataAdapter.js](../srv/adapters/ODataAdapter.js), [srv/adapters/CqnAdapter.js](../srv/adapters/CqnAdapter.js) — use `viewMapping.staticWhere`.
-- [decisions/0008-multi-source-into-one-entity.md](0008-multi-source-into-one-entity.md) — G4, gregorwolf demo.
-- [docs/guide/sources/custom.md](../docs/guide/sources/custom.md) — `readStream(tracker)` contract (batch model).
+- [db/index.cds](../../../packages/cds-data-pipeline/db/index.cds) — `RunTrigger`, `PipelineRuns`.
+- [srv/lib/Pipeline.js](../../../packages/cds-data-pipeline/srv/lib/Pipeline.js) — `_run`, `_deltaSync`, READ/MAP/WRITE, `lastSync` update.
+- [srv/DataPipelineService.js](../../../packages/cds-data-pipeline/srv/DataPipelineService.js) — `execute`, `addPipeline`, `_validateConfig`, `_inferViewMappingIfMissing`.
+- [srv/lib/extractViewMappingFromEntity.js](../../../packages/cds-data-pipeline/srv/lib/extractViewMappingFromEntity.js) — `staticWhere` from consumption projection.
+- [srv/lib/mergeStaticWhereIntoSelect.js](../../../packages/cds-data-pipeline/srv/lib/mergeStaticWhereIntoSelect.js) — AND static filter into CQN.
+- [srv/adapters/ODataAdapter.js](../../../packages/cds-data-pipeline/srv/adapters/ODataAdapter.js), [srv/adapters/CqnAdapter.js](../../../packages/cds-data-pipeline/srv/adapters/CqnAdapter.js) — use `viewMapping.staticWhere`.
+- [0012-multi-source-into-one-entity.md](0012-multi-source-into-one-entity.md) — G4, gregorwolf demo.
+- [docs/guide/sources/custom.md](../../../docs/pipeline/guide/sources/custom.md) — `readStream(tracker)` contract (batch model).
 - CAP: [Core eventing](https://cap.cloud.sap/docs/guides/events/core-concepts), [Messaging](https://cap.cloud.sap/docs/guides/messaging) (in-process and remote).

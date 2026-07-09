@@ -69,7 +69,7 @@ class Pipeline {
             this.srv._validateTargetCapabilities(this.baseConfig, this.targetAdapter)
         }
 
-        // ADR 0008 — memoize multi-source state once. `origin` is the
+        // ADR 0012 — memoize multi-source state once. `origin` is the
         // label stamped into the target's `source` key column; the
         // aspect test recognizes consumers that mixed in
         // `plugin.data_pipeline.sourced` *and* consumers who declared a
@@ -96,7 +96,7 @@ class Pipeline {
     /**
      * True when the target entity exposes a `source` element marked as a
      * primary key — the structural fingerprint of the
-     * `plugin.data_pipeline.sourced` aspect (ADR 0008). Checks the
+     * `plugin.data_pipeline.sourced` aspect (ADR 0012). Checks the
      * compiled CDS model rather than the aspect name so consumers who
      * declared `key source : String(100)` inline (without the import)
      * keep working.
@@ -120,7 +120,7 @@ class Pipeline {
      *   @param {string} [runId]   caller-supplied correlation id; minted
      *                             here if omitted so scheduler / TICK
      *                             callers work unchanged.
-     *   @param {null|{ event: object }} [eventPayload]  ADR 0009: structured
+     *   @param {null|{ event: object }} [eventPayload]  ADR 0013: structured
      *                             `event` object — micro-run; skips batch
      *                             `readStream` and (on success) skips
      *                             `Pipelines.lastSync` / cumulative stats.
@@ -277,7 +277,7 @@ class Pipeline {
         // wipe here would clobber rows outside the slice on a
         // partial-refresh pipeline.
         //
-        // ADR 0008: when the target uses the `sourced` aspect and this
+        // ADR 0012: when the target uses the `sourced` aspect and this
         // pipeline has an `origin` label, scope the pre-sync wipe to its
         // own origin so sibling pipelines' rows survive `mode: 'full'`.
         if (!this._isSnapshotWrite()) {
@@ -292,7 +292,7 @@ class Pipeline {
     }
 
     /**
-     * Clear the target in preparation for a full re-sync. ADR 0008 scopes
+     * Clear the target in preparation for a full re-sync. ADR 0012 scopes
      * the DELETE to `source = <origin>` when the target mixes in the
      * `sourced` aspect and this pipeline carries an origin label, so N
      * sibling pipelines can share one target table without wiping each
@@ -381,7 +381,7 @@ class Pipeline {
     }
 
     /**
-     * ADR 0009 — event micro-run: delete by source-shaped keys (remote names),
+     * ADR 0013 — event micro-run: delete by source-shaped keys (remote names),
      * mapped to local key columns, optional `sourced` origin.
      */
     async _eventDeleteByKeys(keys) {
@@ -405,7 +405,7 @@ class Pipeline {
     }
 
     /**
-     * ADR 0009 — `event` object from `DataPipelineService.execute` / `executeEvent`.
+     * ADR 0013 — `event` object from `DataPipelineService.execute` / `executeEvent`.
      */
     async _executeEventPayload(event) {
         if (!event || typeof event.read !== 'string') {
@@ -415,7 +415,7 @@ class Pipeline {
         if (action === 'delete') {
             if (event.read !== 'key' || !event.keys) {
                 throw new Error(
-                    `Pipeline '${this.name}': event action delete requires read: 'key' and event.keys (ADR 0009)`
+                    `Pipeline '${this.name}': event action delete requires read: 'key' and event.keys (ADR 0013)`
                 )
             }
             return this._eventDeleteByKeys(event.keys)
@@ -425,7 +425,7 @@ class Pipeline {
         }
         if (this._isSnapshotWrite()) {
             throw new Error(
-                `Pipeline '${this.name}': event execute is not supported for query-shape (materialize) pipelines in v1 (ADR 0009)`
+                `Pipeline '${this.name}': event execute is not supported for query-shape (materialize) pipelines in v1 (ADR 0013)`
             )
         }
 
@@ -442,12 +442,12 @@ class Pipeline {
         } else if (event.read === 'key') {
             if (!event.keys || typeof event.keys !== 'object' || Object.keys(event.keys).length === 0) {
                 throw new Error(
-                    `Pipeline '${this.name}': event read:key requires a non-empty event.keys object (ADR 0009)`
+                    `Pipeline '${this.name}': event read:key requires a non-empty event.keys object (ADR 0013)`
                 )
             }
             if (this.config.source && this.config.source.adapter) {
                 throw new Error(
-                    `Pipeline '${this.name}': event read:key with source.adapter custom class is not supported in v1 (ADR 0009)`
+                    `Pipeline '${this.name}': event read:key with source.adapter custom class is not supported in v1 (ADR 0013)`
                 )
             }
             const service = await cds.connect.to(this.config.source.service)
@@ -466,7 +466,7 @@ class Pipeline {
 
     /**
      * Shared MAP/WRITE loop for any async-iterable of source batches
-     * (batch `_deltaSync` and ADR 0009 event upserts).
+     * (batch `_deltaSync` and ADR 0013 event upserts).
      */
     async _processBatchesFromStream(sourceStream) {
         const stats = { created: 0, updated: 0, deleted: 0 }
@@ -619,7 +619,7 @@ class Pipeline {
         const config = req.data.config || this.config
         const target = req.data.target || config.target
 
-        // ADR 0008 belt-and-braces: re-stamp `source = origin` right
+        // ADR 0012 belt-and-braces: re-stamp `source = origin` right
         // before WRITE so a consumer-supplied `on('PIPELINE.MAP_BATCH')` that
         // forgot the stamp still produces valid compound keys.
         this._stampOrigin(records)
@@ -643,7 +643,7 @@ class Pipeline {
     /**
      * Stamp `source = origin` on every record when this pipeline carries
      * an origin label and the target mixes in the `sourced` aspect
-     * (ADR 0008). No-op for legacy single-origin pipelines.
+     * (ADR 0012). No-op for legacy single-origin pipelines.
      */
     _stampOrigin(records) {
         if (!this.hasSourceAspect || !this.origin || !records || records.length === 0) return
@@ -732,7 +732,7 @@ class Pipeline {
     }
 
     /**
-     * Reset the tracker row and clear the target. ADR 0008: when the
+     * Reset the tracker row and clear the target. ADR 0012: when the
      * target mixes in the `sourced` aspect and this pipeline carries an
      * origin label, only rows tagged with that origin are deleted —
      * sibling origins in the same table are left intact. Legacy
