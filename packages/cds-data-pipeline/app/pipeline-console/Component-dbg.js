@@ -106,15 +106,11 @@ sap.ui.define(["sap/ui/core/UIComponent", "sap/ui/model/json/JSONModel", "pipeli
     },
     onRouteMatched: function _onRouteMatched(event) {
       const routeName = event.getParameter("name");
-      const args = event.getParameter("arguments");
       const query = event.getParameter("arguments")?.["?query"];
       updateLayoutFromRoute(this.getModel("fcl"), routeName, query?.layout);
       syncFclActionButtonsDeferred(this);
       if (routeName === "master") {
         this.setFastPolling(false);
-      }
-      if (args?.name && routeName !== "master") {
-        // detail routes may need fast polling once status is running
       }
     },
     exit: function _exit() {

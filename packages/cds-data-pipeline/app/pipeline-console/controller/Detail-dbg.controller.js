@@ -18,6 +18,7 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
   const isMidColumnFullScreen = __pipeline_monitor_fcl_util_FclHelper["isMidColumnFullScreen"];
   const parseFlowGraphPayload = __pipeline_monitor_fcl_util_FlowGraph["parseFlowGraphPayload"];
   const renderFlowGraph = __pipeline_monitor_fcl_util_FlowGraph["renderFlowGraph"];
+  const fitFlowGraphToView = __pipeline_monitor_fcl_util_FlowGraph["fitFlowGraphToView"];
   const statusState = __pipeline_monitor_fcl_util_Formatters["statusState"];
   const statusIcon = __pipeline_monitor_fcl_util_Formatters["statusIcon"];
   const errorState = __pipeline_monitor_fcl_util_Formatters["errorState"];
@@ -368,11 +369,13 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
     onDetailTabSelect: function _onDetailTabSelect(event) {
       const key = event.getParameter("key");
       if (key === "flow") {
-        void this.loadFlowGraph().then(() => {
-          const graph = this.byId("flowGraph");
-          graph?.invalidate();
+        void this.loadFlowGraph({
+          fit: true
         });
       }
+    },
+    isFlowTabSelected: function _isFlowTabSelected() {
+      return this.byId("iconTabBar")?.getSelectedKey() === "flow";
     },
     onInspectSourceLoadData: function _onInspectSourceLoadData() {
       void this.loadInspectSide("source");
@@ -576,24 +579,34 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
         value: ""
       }));
     },
-    applyFlowMetadata: function _applyFlowMetadata(raw) {
+    applyFlowMetadata: function _applyFlowMetadata(raw, options) {
       const graph = this.byId("flowGraph");
       if (!graph) {
         return;
       }
       const payload = parseFlowGraphPayload(raw);
-      renderFlowGraph(graph, payload, {
-        fitToView: true
-      });
-      this.detailModel().setProperty("/flowReady", !!payload?.nodes?.length);
+      const hasNodes = !!payload?.nodes?.length;
+      if (!hasNodes) {
+        renderFlowGraph(graph, null);
+        this.detailModel().setProperty("/flowReady", false);
+        return;
+      }
+
+      // Graph is bound to visible="{detail>/flowReady}" — show it before fit-to-view
+      // so layout uses the real viewport size (not 0×0 while hidden).
+      this.detailModel().setProperty("/flowReady", true);
+      renderFlowGraph(graph, payload);
+      if (options?.fit ?? this.isFlowTabSelected()) {
+        fitFlowGraphToView(graph);
+      }
     },
-    loadFlowGraph: async function _loadFlowGraph() {
+    loadFlowGraph: async function _loadFlowGraph(options) {
       if (!getEntityContext(this)) {
         return;
       }
       try {
         const raw = await invokeBoundFunction(this, BOUND_FLOW);
-        this.applyFlowMetadata(raw);
+        this.applyFlowMetadata(raw, options);
       } catch {
         renderFlowGraph(this.byId("flowGraph"), null);
         this.detailModel().setProperty("/flowReady", false);
@@ -623,6 +636,22 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
       };
       const i18nKey = i18nKeys[key];
       return i18nKey ? getTextSync(this, i18nKey) : String(status ?? "");
+    },
+    formatRunStatusLabel: function _formatRunStatusLabel(status) {
+      const key = String(status ?? "").trim().toLowerCase();
+      const i18nKeys = {
+        completed: "runStatusCompleted",
+        running: "statusLabelRunning",
+        failed: "statusLabelFailed"
+      };
+      const i18nKey = i18nKeys[key];
+      return i18nKey ? getTextSync(this, i18nKey) : String(status ?? "");
+    },
+    formatCount: function _formatCount(value) {
+      if (value === null || value === undefined || value === "") {
+        return "0";
+      }
+      return String(value);
     },
     showOrigin: function _showOrigin(origin) {
       return !!origin;
@@ -912,7 +941,11 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
         return;
       }
       const name = String(ctx.getProperty("name") || "");
-      void getText(this, "flushConfirm", [name]).then(text => {
+      const origin = ctx.getProperty("origin");
+      const hasOrigin = origin != null && String(origin).trim() !== "";
+      const confirmKey = hasOrigin ? "flushConfirmOrigin" : "flushConfirm";
+      const confirmArgs = hasOrigin ? [name, String(origin)] : [name];
+      void getText(this, confirmKey, confirmArgs).then(text => {
         MessageBox.confirm(text, {
           onClose: action => {
             if (action !== MessageBox.Action.OK) {

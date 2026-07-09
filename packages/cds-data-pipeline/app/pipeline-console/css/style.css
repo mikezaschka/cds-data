@@ -135,10 +135,6 @@
     transform-origin: center center;
 }
 
-.fclApp .fclStatusCell {
-    min-height: 1.5rem;
-}
-
 .fclApp .fclColumnSelector {
     max-width: 100%;
     min-width: 12rem;

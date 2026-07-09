@@ -17,7 +17,7 @@
                  select="onMasterTabSelect">
                 <items>
                     <IconTabFilter text="{i18n>masterTabPipelines}" key="pipelines">
-                        <Table id="pipelineTable" class="fclPipelinesTable" growing="true" growingThreshold="20"
+                        <Table id="pipelineTable" class="fclPipelinesTable" fixedLayout="true" growing="true" growingThreshold="20"
                             width="100%" mode="SingleSelectMaster" selectionChange="onSelectionChange"
                             noDataText="{i18n>noPipelines}" updateFinished="onTableUpdateFinished"
                             items="{
@@ -34,45 +34,41 @@
                             </headerToolbar>
                             <columns>
                                 <Column width="12rem"><Text text="{i18n>colName}"/></Column>
-                                <Column width="9rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                                <Column width="6rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
                                     <Text text="{i18n>colStatus}"/>
                                 </Column>
-                                <Column width="5rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                                <Column width="4.5rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
                                     <Text text="{i18n>colMode}"/>
                                 </Column>
-                                <Column width="10rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                                <Column width="11rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
                                     <Text text="{i18n>colEnabled}"/>
                                 </Column>
-                                <Column width="9rem" minScreenWidth="Desktop" demandPopin="true" popinDisplay="Block">
+                                <Column width="10rem" minScreenWidth="Desktop" demandPopin="true" popinDisplay="Block">
                                     <Text text="{i18n>colLastRun}"/>
                                 </Column>
-                                <Column width="4.5rem" hAlign="End" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                                <Column width="4rem" hAlign="End" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
                                     <Text text="{i18n>colErrors}"/>
                                 </Column>
                             </columns>
                             <items>
-                                <ColumnListItem vAlign="Top" type="Active"
+                                <ColumnListItem type="Active"
                                     highlight="{ parts: [{path:'status'},{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.rowHighlight' }">
                                     <cells>
                                         <ObjectIdentifier title="{name}" text="{description}" class="fclNameCell"/>
-                                        <HBox alignItems="Center" class="fclStatusCell">
-                                            <core:Icon src="sap-icon://refresh"
+                                        <HBox alignItems="Center">
+                                            <core:Icon
+                                                src="sap-icon://refresh"
                                                 visible="{= ${ path: 'status', targetType: 'any' } === 'running' }"
                                                 size="1rem"
                                                 class="fclRunningIcon sapUiTinyMarginEnd" />
-                                            <ObjectStatus
+                                            <Text
                                                 text="{ path: 'status', formatter: '.formatStatusLabel' }"
-                                                state="{ path: 'status', formatter: '.statusState' }"
                                                 tooltip="{ path: 'status', formatter: '.statusTooltip' }" />
                                         </HBox>
-                                        <ObjectStatus text="{mode}" state="Information" inverted="true" />
-                                        <ObjectStatus
-                                            text="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatScheduleCellLabel' }"
-                                            state="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatSchedulingState' }"
-                                            icon="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatSchedulingIcon' }"
-                                            inverted="true" />
+                                        <Text text="{mode}" />
+                                        <Text text="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatScheduleCellLabel' }" />
                                         <Text text="{ path: 'lastSync', formatter: '.formatLastRun' }" />
-                                        <ObjectNumber number="{errorCount}" state="{ path: 'errorCount', formatter: '.errorState' }" />
+                                        <Text text="{ path: 'errorCount', formatter: '.formatCount' }" textAlign="End" />
                                     </cells>
                                 </ColumnListItem>
                             </items>

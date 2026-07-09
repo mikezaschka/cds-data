@@ -129,49 +129,49 @@
                         <IconTabFilter text="{i18n>runsGroup} ({detail>/runCount})" key="runs">
                             <VBox class="fclTabPanel">
                                 <IllustratedMessage visible="{= ${detail>/ready} &amp;&amp; ${detail>/runCount} === 0 }" illustrationType="sapIllus-NoData" title="{i18n>noRunsTitle}" description="{i18n>noRunsDesc}" />
-                                <Table id="runsTable" visible="{= ${detail>/runCount} > 0 || !${detail>/ready} }" class="fclRunsTable" growing="true" growingThreshold="30" width="100%" updateFinished="onRunsUpdateFinished" items="{ path: 'runs', sorter: { path: 'startTime', descending: true }, templateShareable: false }" noDataText="{i18n>noRuns}">
+                                <Table id="runsTable" visible="{= ${detail>/runCount} > 0 || !${detail>/ready} }" class="fclRunsTable" fixedLayout="true" growing="true" growingThreshold="30" width="100%" updateFinished="onRunsUpdateFinished" items="{ path: 'runs', sorter: { path: 'startTime', descending: true }, templateShareable: false }" noDataText="{i18n>noRuns}">
                                     <columns>
-                                        <Column width="10rem">
+                                        <Column width="11rem">
                                             <Text text="{i18n>colStart}"/>
                                         </Column>
-                                        <Column width="10rem">
+                                        <Column width="11rem">
                                             <Text text="{i18n>colEnd}"/>
                                         </Column>
-                                        <Column width="5rem">
+                                        <Column width="5.5rem">
                                             <Text text="{i18n>colDuration}"/>
                                         </Column>
-                                        <Column width="5rem">
+                                        <Column width="6rem">
                                             <Text text="{i18n>colRunStatus}"/>
                                         </Column>
-                                        <Column width="5rem">
+                                        <Column width="5.5rem">
                                             <Text text="{i18n>colTrigger}"/>
                                         </Column>
-                                        <Column width="6rem" hAlign="End">
+                                        <Column width="4.5rem" hAlign="End">
                                             <Text text="{i18n>colC}"/>
                                         </Column>
-                                        <Column width="6rem" hAlign="End">
+                                        <Column width="4.5rem" hAlign="End">
                                             <Text text="{i18n>colU}"/>
                                         </Column>
-                                        <Column width="6rem" hAlign="End">
+                                        <Column width="4.5rem" hAlign="End">
                                             <Text text="{i18n>colD}"/>
                                         </Column>
-                                        <Column minWidth="8rem">
+                                        <Column minWidth="10rem">
                                             <Text text="{i18n>colError}"/>
                                         </Column>
                                     </columns>
                                     <items>
-                                        <ColumnListItem type="Inactive" vAlign="Top" highlight="{= ${status} === 'failed' ? 'Error' : 'None' }">
+                                        <ColumnListItem type="Inactive" highlight="{= ${status} === 'failed' ? 'Error' : 'None' }">
                                             <cells>
                                                 <Text text="{ path: 'startTime', formatter: '.formatTimestamp' }" />
                                                 <Text text="{ path: 'endTime', formatter: '.formatTimestamp' }" />
                                                 <Text text="{ parts: [{path:'startTime'},{path:'endTime'}], formatter: '.runDuration' }" />
-                                                <ObjectStatus text="{status}" state="{ path: 'status', formatter: '.statusState' }" />
+                                                <Text text="{ path: 'status', formatter: '.formatRunStatusLabel' }" />
                                                 <Text text="{trigger}" />
-                                                <ObjectNumber number="{statistics_created}" />
-                                                <ObjectNumber number="{statistics_updated}" />
-                                                <ObjectNumber number="{statistics_deleted}" />
-                                                <HBox justifyContent="SpaceBetween" alignItems="Center">
-                                                    <Text text="{ path: 'error', formatter: '.errorPreview' }" class="fclErrorCell" maxLines="2" width="100%" />
+                                                <Text text="{ path: 'statistics_created', formatter: '.formatCount' }" textAlign="End" />
+                                                <Text text="{ path: 'statistics_updated', formatter: '.formatCount' }" textAlign="End" />
+                                                <Text text="{ path: 'statistics_deleted', formatter: '.formatCount' }" textAlign="End" />
+                                                <HBox alignItems="Center" justifyContent="End">
+                                                    <Text text="{ path: 'error', formatter: '.errorPreview' }" wrapping="true" maxLines="2" visible="{= !!${error} }" />
                                                     <Button type="Transparent" icon="sap-icon://message-information" tooltip="{i18n>viewFullError}" press="onShowError" visible="{= !!${error} }" enabled="{= !!${error} }" />
                                                 </HBox>
                                             </cells>
@@ -187,9 +187,9 @@
                                     <ToolbarSpacer />
                                     <Button
                                         type="Transparent"
-                                        
+                                        icon="sap-icon://reset"
                                         text="{i18n>actionResetOverrides}"
-                                        
+                                        iconFirst="true"
                                         press="onResetOverrides"
                                         enabled="{detail>/ready}" />
                                 </OverflowToolbar>

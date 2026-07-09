@@ -3,6 +3,7 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/model/Filter", "sap/ui/mode
 
   const parseFlowGraphPayload = __pipeline_monitor_fcl_util_FlowGraph["parseFlowGraphPayload"];
   const renderFlowGraph = __pipeline_monitor_fcl_util_FlowGraph["renderFlowGraph"];
+  const fitFlowGraphToView = __pipeline_monitor_fcl_util_FlowGraph["fitFlowGraphToView"];
   const getText = __pipeline_monitor_fcl_util_I18n["getText"];
   const getTextSync = __pipeline_monitor_fcl_util_I18n["getTextSync"];
   const statusState = __pipeline_monitor_fcl_util_Formatters["statusState"];
@@ -147,9 +148,13 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/model/Filter", "sap/ui/mode
         await binding.execute();
         const raw = binding.getBoundContext()?.getObject();
         const payload = parseFlowGraphPayload(raw);
+        const hasNodes = !!payload?.nodes?.length;
+        this.masterModel().setProperty("/landscapeReady", hasNodes);
         renderFlowGraph(graph, payload);
-        this.masterModel().setProperty("/landscapeReady", !!payload?.nodes?.length);
         this.overviewLoaded = true;
+        if (hasNodes) {
+          fitFlowGraphToView(graph);
+        }
       } catch {
         renderFlowGraph(graph, null);
         this.masterModel().setProperty("/landscapeReady", false);
@@ -216,6 +221,12 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/model/Filter", "sap/ui/mode
         return getTextSync(this, "neverRun");
       }
       return formatRelativeTime(value);
+    },
+    formatCount: function _formatCount(value) {
+      if (value === null || value === undefined || value === "") {
+        return "0";
+      }
+      return String(value);
     },
     rowHighlight: function _rowHighlight(status, schedule, enabled) {
       const key = String(status ?? "").trim().toLowerCase();

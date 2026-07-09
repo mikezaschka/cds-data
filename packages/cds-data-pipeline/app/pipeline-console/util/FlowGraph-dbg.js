@@ -2,6 +2,8 @@ sap.ui.define(["sap/suite/ui/commons/networkgraph/Node", "sap/suite/ui/commons/n
   "use strict";
 
   const ElementStatus = library.networkgraph.ElementStatus;
+  const FIT_MAX_ATTEMPTS = 24;
+  const FIT_RETRY_MS = 50;
   function mapNodeStatus(status) {
     switch (status) {
       case "Warning":
@@ -23,21 +25,41 @@ sap.ui.define(["sap/suite/ui/commons/networkgraph/Node", "sap/suite/ui/commons/n
       value: a.value
     }));
   }
+  function graphHasVisibleSize(graph) {
+    const dom = graph.getDomRef();
+    return (dom?.clientWidth ?? 0) > 0 && (dom?.clientHeight ?? 0) > 0;
+  }
+  function invokeFitToScreen(graph) {
+    graph._fitToScreen?.();
+  }
+
   /** Fit the full graph into the visible viewport (same as the toolbar “fit to screen” action). */
-  function fitFlowGraphToView(graph) {
+  function fitFlowGraphToView(graph, attempt = 0) {
     if (!graph) {
       return;
     }
+    if (!graphHasVisibleSize(graph)) {
+      if (attempt < FIT_MAX_ATTEMPTS) {
+        window.setTimeout(() => fitFlowGraphToView(graph, attempt + 1), FIT_RETRY_MS);
+      }
+      return;
+    }
     const runFit = () => {
-      graph._fitToScreen?.();
+      if (!graphHasVisibleSize(graph)) {
+        if (attempt < FIT_MAX_ATTEMPTS) {
+          window.setTimeout(() => fitFlowGraphToView(graph, attempt + 1), FIT_RETRY_MS);
+        }
+        return;
+      }
+      invokeFitToScreen(graph);
     };
     if (graph._bIsLayedOut) {
       runFit();
       return;
     }
     const onReady = () => {
-      runFit();
       graph.detachGraphReady(onReady);
+      runFit();
     };
     graph.attachGraphReady(onReady);
   }

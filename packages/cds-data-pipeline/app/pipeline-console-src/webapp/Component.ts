@@ -106,7 +106,6 @@ export default class Component extends UIComponent {
 
     private onRouteMatched(event: Route$PatternMatchedEvent): void {
         const routeName = event.getParameter("name") as string;
-        const args = event.getParameter("arguments") as Record<string, string | undefined>;
         const query = event.getParameter("arguments")?.["?query"] as
             | { layout?: string }
             | undefined;
@@ -118,9 +117,6 @@ export default class Component extends UIComponent {
         syncFclActionButtonsDeferred(this);
         if (routeName === "master") {
             this.setFastPolling(false);
-        }
-        if (args?.name && routeName !== "master") {
-            // detail routes may need fast polling once status is running
         }
     }
 
