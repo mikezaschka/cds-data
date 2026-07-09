@@ -1,4 +1,3 @@
-const { expect } = require('chai')
 const path = require('path')
 const {
     compileProjectionToQuery,
@@ -17,11 +16,11 @@ describe('projection-to-query compiler', () => {
             projection,
         })
         const built = queryFn()
-        expect(built.SELECT).to.exist
+        expect(built.SELECT).toBeTruthy()
         const fromRef = built.SELECT.from.ref
-        expect(fromRef.join('.')).to.equal('consumer.SourceOrders')
-        expect(built.SELECT.columns.length).to.equal(4)
-        expect(built.SELECT.groupBy).to.deep.equal([{ ref: ['customerId'] }])
+        expect(fromRef.join('.')).toBe('consumer.SourceOrders')
+        expect(built.SELECT.columns.length).toBe(4)
+        expect(built.SELECT.groupBy).toEqual([{ ref: ['customerId'] }])
     })
 
     it('[M-3] resolveSourceFrom uses namespace for single-segment from ref', () => {
@@ -29,12 +28,12 @@ describe('projection-to-query compiler', () => {
             projection,
             entityFqn: 'spike.DailyRevenue',
         })
-        expect(from).to.equal('spike.Orders')
+        expect(from).toBe('spike.Orders')
     })
 
     it('[M-5] rejects non-aggregation projections', () => {
         expect(() =>
             validateSupportedProjection('X', { columns: [{ ref: ['id'] }] }),
-        ).to.throw(/group by or aggregate/)
+        ).toThrow(/group by or aggregate/)
     })
 })

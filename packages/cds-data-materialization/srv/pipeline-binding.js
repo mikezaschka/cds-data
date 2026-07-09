@@ -12,7 +12,8 @@ async function bindMaterializeConfigs(configs) {
     } catch (err) {
         throw new Error(
             `@materialize.snapshot requires 'cds-data-pipeline' to be installed. ` +
-            `Run: npm install cds-data-pipeline. Original error: ${err.message}`
+            `Run: npm install cds-data-pipeline. Original error: ${err.message}`,
+            { cause: err }
         )
     }
 
@@ -38,6 +39,7 @@ async function bindMaterializeConfigs(configs) {
             },
             refresh,
             schedule: config.options.schedule,
+            preload: config.options.preload,
         })
     }
 
