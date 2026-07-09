@@ -1,12 +1,12 @@
 # cds-data-federation tests
 
-Package-local Jest suite for `@federation.*` delegation, caching, CUD, cross-service expand/navigation, and thin replicate→pipeline binding. Engine-depth pipeline runs live in [`packages/cds-data-pipeline/test/`](../cds-data-pipeline/test/).
+Package-local Vitest suite for `@federation.*` delegation, caching, CUD, cross-service expand/navigation, and thin replicate→pipeline binding. Engine-depth pipeline runs live in [`packages/cds-data-pipeline/test/`](../cds-data-pipeline/test/).
 
 ## Layout
 
 ```
 test/
-  support/           jest-setup-env.js (cds.root → fixtures/consumer), setup.js (dynamic ports)
+  support/           setup-env.js (cds.root → fixtures/consumer), setup.js (dynamic ports)
   fixtures/
     consumer/        Movies-style CAP app with @federation.* + cds-data-pipeline peer
     provider/        OData V4 + V2 mock
@@ -24,7 +24,16 @@ test/
     cql/
     misc/
     replicate-binding/   Thin @federation.replicate → pipeline registration smoke
+    mcp/                 @cap-js/mcp on delegate + replicate (see examples/mcp-federation/)
     northwind/           Optional external contract tests (skipped when unreachable)
+```
+
+Runnable MCP demo: [`examples/mcp-federation/`](../examples/mcp-federation/) (`npm run example:mcp -w cds-data-federation`).
+
+MCP integration only:
+
+```bash
+npm run test:integration -w cds-data-federation -- test/integration/mcp
 ```
 
 ## Running

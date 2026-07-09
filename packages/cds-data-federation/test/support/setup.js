@@ -9,6 +9,7 @@ require('@sap/cds')
 const cds = global.cds
 
 const PROVIDER_DIR = path.join(__dirname, '../fixtures/provider')
+const HCQL_PROVIDER_DIR = path.join(__dirname, '../fixtures/hcql-provider')
 const INVENTORY_DIR = path.join(__dirname, '../fixtures/inventory')
 const REST_PROVIDER_DIR = path.join(__dirname, '../fixtures/rest-provider')
 
@@ -17,6 +18,7 @@ let _inventoryPort = null
 let _restProviderPort = null
 
 let providerProcess = null
+let hcqlProviderProcess = null
 let inventoryProcess = null
 let restProviderProcess = null
 
@@ -36,11 +38,22 @@ function applyProviderServiceUrls(port) {
     const base = `http://localhost:${port}`
     const r = (cds.env.requires ||= {})
     const ps = (r.ProviderService ||= {})
+    ps.kind = 'odata'
     const psCreds = (ps.credentials ||= {})
     psCreds.url = `${base}/odata/v4/provider`
     const v2 = (r.ProviderServiceV2 ||= {})
     const v2Creds = (v2.credentials ||= {})
     v2Creds.url = `${base}/odata/v2/provider`
+}
+
+/** Prefer HCQL for CAP-to-CAP reads (flatten paths). Call before cds.test boots. */
+function applyProviderServiceHcqlUrl(port) {
+    const base = `http://localhost:${port}`
+    const r = (cds.env.requires ||= {})
+    const ps = (r.ProviderService ||= {})
+    ps.kind = 'hcql'
+    const psCreds = (ps.credentials ||= {})
+    psCreds.url = `${base}/hcql/provider`
 }
 
 function applyInventoryServiceUrl(port) {
@@ -133,9 +146,21 @@ async function startProvider() {
     return _providerPort
 }
 
+async function startHcqlProvider() {
+    if (hcqlProviderProcess) return _providerPort
+    await stopProvider()
+    const port = await getFreePort()
+    applyProviderServiceHcqlUrl(port)
+    _providerPort = port
+    hcqlProviderProcess = await startServer('HCQL Provider', HCQL_PROVIDER_DIR, port)
+    return _providerPort
+}
+
 async function stopProvider() {
     await stopServer(providerProcess)
+    await stopServer(hcqlProviderProcess)
     providerProcess = null
+    hcqlProviderProcess = null
     _providerPort = null
 }
 
@@ -229,6 +254,8 @@ module.exports = {
     stopInventoryProvider,
     startRestProvider,
     stopRestProvider,
+    startHcqlProvider,
+    applyProviderServiceHcqlUrl,
     get PROVIDER_PORT() { return _providerPort },
     get INVENTORY_PORT() { return _inventoryPort },
     get REST_PROVIDER_PORT() { return _restProviderPort },

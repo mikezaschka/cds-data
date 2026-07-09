@@ -1,5 +1,5 @@
 /**
- * Jest setup for entity-cache multi-tenancy integration tests (EC2).
+ * Vitest setup for entity-cache multi-tenancy integration tests (EC2).
  * Uses consumer-ec-mt fixture so FederationEntityCache + entityCache.urlTemplate load
  * before cds.env is cached (ADR 0010).
  */
