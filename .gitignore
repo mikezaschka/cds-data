@@ -2,6 +2,8 @@
 _out
 *.db
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 connection.properties
 default-*.json
 .cdsrc-private.json
@@ -33,7 +35,11 @@ mta_archives/
 # @cap-js/cds-typer
 @cds-models
 
-# MkDocs build output
-site/
-.cache/
+# VitePress build output
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+
+# Python / legacy MkDocs leftovers
 .venv/
+.cache/
+site/

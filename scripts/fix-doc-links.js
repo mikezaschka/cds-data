@@ -64,7 +64,7 @@ const REPLACEMENTS = [
     'https://github.com/mikezaschka/cds-data',
   ],
   // Inline path references (non-URL)
-  [/[`\[]test\/delegation\/basic\.test\.js[`\]]/g, '`packages/cds-data-federation/test/integration/delegate/basic.test.js`'],
+  [/[`[]test\/delegation\/basic\.test\.js[`\]]/g, '`packages/cds-data-federation/test/integration/delegate/basic.test.js`'],
   [/test\/delegation\/basic\.test\.js/g, 'packages/cds-data-federation/test/integration/delegate/basic.test.js'],
   [
     /test\/delegation\/cross-service-expand-local-to-remote\.test\.js/g,

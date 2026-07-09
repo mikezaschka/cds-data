@@ -25,11 +25,20 @@ entity ReplicatedPartners as projection on remote.A_BusinessPartner {
   ],
 } as const
 
-const plugins = [
+type Plugin = {
+  name: string
+  href: string
+  summary: string
+  code: string
+  badge?: string
+}
+
+const plugins: Plugin[] = [
   {
     name: 'cds-data-materialization',
     href: '/materialization/',
-    summary: 'Persist scheduled rollups from group-by projections.',
+    badge: 'Experimental',
+    summary: 'Persist scheduled rollups from group-by projections. Experimental — not yet released.',
     code: `@materialize.snapshot: { source: { service: 'db' } }
 entity DailyRevenue as projection on Orders {
   key customerId,
@@ -48,7 +57,7 @@ group by customerId;`,
   schedule: 600_000,
 });`,
   },
-] as const
+]
 </script>
 
 <template>
@@ -79,6 +88,7 @@ group by customerId;`,
       <article v-for="pkg in plugins" :key="pkg.name" class="packages-card">
         <h3 class="packages-title">
           <a :href="pkg.href">{{ pkg.name }}</a>
+          <span v-if="pkg.badge" class="packages-badge">{{ pkg.badge }}</span>
         </h3>
         <p class="packages-summary">{{ pkg.summary }}</p>
         <div class="packages-code">
@@ -132,6 +142,17 @@ group by customerId;`,
 
 .packages-title a:hover {
   text-decoration: underline;
+}
+
+.packages-badge {
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  vertical-align: middle;
+  color: var(--vp-c-warning-1, #b8860b);
+  background: var(--vp-c-warning-soft, rgba(234, 179, 8, 0.14));
 }
 
 .packages-summary {

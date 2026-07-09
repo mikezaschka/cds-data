@@ -5,6 +5,7 @@ const pipelineGuideConcepts = [
   { text: 'Overview', link: '/pipeline/guide/concepts/' },
   { text: 'Terminology', link: '/pipeline/guide/concepts/terminology' },
   { text: 'Inference rules', link: '/pipeline/guide/concepts/inference' },
+  { text: 'Configuration overrides', link: '/pipeline/guide/concepts/overrides' },
   { text: 'Consumption views', link: '/pipeline/guide/concepts/consumption-views' },
   {
     text: 'Change history and pipeline replication',
@@ -101,11 +102,33 @@ export default withMermaid(
       ],
       nav: [
         { text: 'Home', link: '/' },
+        { text: 'Concepts', link: '/concepts/', activeMatch: '^/concepts/' },
         { text: 'cds-data-federation', link: '/federation/', activeMatch: '^/federation/' },
         { text: 'cds-data-materialization', link: '/materialization/', activeMatch: '^/materialization/' },
         { text: 'cds-data-pipeline', link: '/pipeline/', activeMatch: '^/pipeline/' },
       ],
       sidebar: {
+        '/concepts/': [
+          {
+            text: 'Shared concepts',
+            collapsed: false,
+            items: [
+              { text: 'The cds-data suite', link: '/concepts/' },
+              { text: 'Terminology', link: '/concepts/terminology' },
+              { text: 'Architecture', link: '/concepts/architecture' },
+              { text: 'CDS 10, HCQL and MCP', link: '/concepts/cds-10' },
+            ],
+          },
+          {
+            text: 'Per-plugin docs',
+            collapsed: false,
+            items: [
+              { text: 'cds-data-federation', link: '/federation/' },
+              { text: 'cds-data-pipeline', link: '/pipeline/' },
+              { text: 'cds-data-materialization', link: '/materialization/' },
+            ],
+          },
+        ],
         '/pipeline/': [
           { text: 'Home', link: '/pipeline/' },
           {
@@ -114,6 +137,7 @@ export default withMermaid(
             items: [
               { text: 'Introduction', link: '/pipeline/guide/introduction' },
               { text: 'Get started', link: '/pipeline/guide/get-started' },
+              { text: 'Feature activation', link: '/pipeline/guide/feature-activation' },
               { text: 'Pipeline Console', link: '/pipeline/guide/pipeline-console' },
               { text: 'Concepts', collapsed: true, items: pipelineGuideConcepts },
               { text: 'Sources', collapsed: true, items: pipelineGuideSources },
@@ -126,6 +150,7 @@ export default withMermaid(
             collapsed: true,
             items: [
               { text: 'Features', link: '/pipeline/reference/features' },
+              { text: 'Programmatic API', link: '/pipeline/reference/api' },
               { text: 'Management service', link: '/pipeline/reference/management-service' },
             ],
           },
@@ -156,6 +181,7 @@ export default withMermaid(
             collapsed: true,
             items: [
               { text: 'cds-caching', link: '/federation/integration/caching' },
+              { text: 'MCP (AI agents)', link: '/federation/integration/mcp' },
               { text: 'Multi-Tenancy', link: '/federation/integration/multitenancy' },
             ],
           },

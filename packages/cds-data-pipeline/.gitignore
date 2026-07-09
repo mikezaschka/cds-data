@@ -7,6 +7,8 @@ default-*.json
 .cdsrc-private.json
 gen/
 node_modules/
+app/node_modules/
+app/webapp/
 target/
 
 # Test fixture installs
@@ -44,3 +46,7 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 .cache/
 .venv/
+
+# Vendored UI5 runtime (offline Pipeline Console build output)
+app/pipeline-console/resources/
+app/pipeline-console/test-resources/
