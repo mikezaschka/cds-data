@@ -100,6 +100,6 @@ Three ways to drive a pipeline. Pick the one that matches your operational model
 |---|---|---|
 | `PIPELINE.START` | Once per run, before READ | `runId`, `mode`, `trigger`, `config`, `tracker` |
 | `PIPELINE.READ` | Once per run, before batch iteration | `runId`, `config`, `source`, `target` → handler sets `sourceStream` (async iterable) |
-| `PIPELINE.MAP_BATCH` | Once per batch | `runId`, `batchIndex`, `sourceRecords`, `targetRecords` (handler fills `targetRecords`) |
-| `PIPELINE.WRITE_BATCH` | Once per batch, after MAP_BATCH | `runId`, `batchIndex`, `targetRecords` (handler writes and sets `statistics`) |
+| `PIPELINE.MAP` | Once per batch | `runId`, `batchIndex`, `sourceRecords`, `targetRecords` (handler fills `targetRecords`) |
+| `PIPELINE.WRITE` | Once per batch, after MAP | `runId`, `batchIndex`, `targetRecords` (handler writes and sets `statistics`) |
 | `PIPELINE.DONE` | Once per run, success or failure | `runId`, `status`, `mode`, `trigger`, `startTime`, `endTime`, `statistics`, `error?` |

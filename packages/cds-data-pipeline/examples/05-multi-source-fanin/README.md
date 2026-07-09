@@ -70,8 +70,8 @@ await pipelines.addPipeline({
 | Phase | With `source.origin` | Without |
 |---|---|---|
 | Registration | Writes `origin` to `Pipelines.origin` on the tracker | `origin` is null |
-| `PIPELINE.MAP_BATCH` default | Stamps `row.source = origin` on every mapped row | No stamp |
-| `PIPELINE.WRITE_BATCH` default | Re-stamps `source = origin` (belt + braces), UPSERTs with compound key `(businessKey, source)` | UPSERTs with declared business key only |
+| `PIPELINE.MAP` default | Stamps `row.source = origin` on every mapped row | No stamp |
+| `PIPELINE.WRITE` default | Re-stamps `source = origin` (belt + braces), UPSERTs with compound key `(businessKey, source)` | UPSERTs with declared business key only |
 | `mode: 'full'` pre-sync | `DELETE FROM target WHERE source = origin` — siblings survive | Full `DELETE FROM target` |
 | Per-pipeline `flush` | Only deletes the matching origin's rows | Deletes the full target |
 

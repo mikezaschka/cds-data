@@ -114,7 +114,7 @@ module.exports = async () => {
 1. The scheduler fires at midnight.
 2. A tracker row is opened and `CsvFileAdapter.readStream(tracker)` is called.
 3. The generator yields record batches; each one is awaited (backpressure) before the next is requested.
-4. `PIPELINE.MAP_BATCH` runs per batch — identity by default, or a `remoteToLocal` rename if supplied.
+4. `PIPELINE.MAP` runs per batch — identity by default, or a `remoteToLocal` rename if supplied.
 5. `DbTargetAdapter.writeBatch(records, { mode: 'upsert' })` UPSERTs into `db.Customers`.
 6. After the stream ends, the tracker row is updated with the new `lastSync`.
 

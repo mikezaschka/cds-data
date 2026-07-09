@@ -38,7 +38,7 @@ Tests run serially (`--runInBand`, `maxConcurrency: 1`) because fixture provider
 ## Conventions
 
 - **Pipeline behavior is inferred from config shape**, not flags. Before adding a new option, check whether the existing inference rules (see `docs/pipeline/guide/concepts/inference.md` and `srv/lib/Pipeline.js`) already cover it.
-- **Event hooks use CAP's standard `before / on / after(event, pipelineName, handler)`** — don't introduce a parallel hook system. Lifecycle events: `PIPELINE.START` → `PIPELINE.READ` → (`PIPELINE.MAP_BATCH` → `PIPELINE.WRITE_BATCH`)* → `PIPELINE.DONE`.
+- **Event hooks use CAP's standard `before / on / after(event, pipelineName, handler)`** — don't introduce a parallel hook system. Lifecycle events: `PIPELINE.START` → `PIPELINE.READ` → (`PIPELINE.MAP` → `PIPELINE.WRITE`)* → `PIPELINE.DONE`.
 - **Authorization is the consumer's job** — the plugin does not put `@(requires:…)` on `/pipeline`. Don't add it.
 - **Peer dep** is `@sap/cds >= 9`; Node `>= 22`. Don't import from `@sap/cds` internals.
 - **Published `files`** in `package.json` is allowlist-only. New runtime code must live under an allowed path or be added to `files`.

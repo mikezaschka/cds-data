@@ -199,8 +199,8 @@ Status: **Implemented**
 
 Status: **Implemented**
 
-- `packages/cds-data-pipeline/test/integration/lifecycle.test.js` — [4.7.1] R18: before MAP_BATCH can filter sourceRecords
-- `packages/cds-data-pipeline/test/integration/lifecycle.test.js` — [4.7.1] R19: after MAP_BATCH can enrich targetRecords
+- `packages/cds-data-pipeline/test/integration/lifecycle.test.js` — [4.7.1] R18: before MAP can filter sourceRecords
+- `packages/cds-data-pipeline/test/integration/lifecycle.test.js` — [4.7.1] R19: after MAP can enrich targetRecords
 
 ### 4.8.2
 

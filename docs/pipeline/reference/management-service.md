@@ -334,12 +334,12 @@ const cds = require('@sap/cds');
 const pipelines = await cds.connect.to('DataPipelineService');
 
 // Filter records before MAP (before hooks receive the request only)
-pipelines.before('PIPELINE.MAP_BATCH', 'ReplicatedPartners', async (req) => {
+pipelines.before('PIPELINE.MAP', 'ReplicatedPartners', async (req) => {
     req.data.sourceRecords = req.data.sourceRecords.filter(r => !r.blocked);
 });
 
 // Custom MAP default — overrides the built-in rename mapping
-pipelines.on('PIPELINE.MAP_BATCH', 'ReplicatedPartners', async (req) => {
+pipelines.on('PIPELINE.MAP', 'ReplicatedPartners', async (req) => {
     req.data.targetRecords = req.data.sourceRecords.map(record => ({
         ID: record.BusinessPartner,
         name: record.BusinessPartnerFullName,
@@ -348,7 +348,7 @@ pipelines.on('PIPELINE.MAP_BATCH', 'ReplicatedPartners', async (req) => {
 });
 
 // Enrich after MAP (after hooks receive `(results, req)` per CAP convention)
-pipelines.after('PIPELINE.MAP_BATCH', 'ReplicatedPartners', async (_results, req) => {
+pipelines.after('PIPELINE.MAP', 'ReplicatedPartners', async (_results, req) => {
     req.data.targetRecords = req.data.targetRecords.map(r => ({
         ...r,
         classification: classify(r),
@@ -405,8 +405,8 @@ Five events fire per run:
 |---|---|---|
 | `PIPELINE.START` | Once per run, before READ | `runId`, `mode`, `trigger`, `config`, `tracker` |
 | `PIPELINE.READ` | Once per run, before batch iteration | `runId`, `config`, `source`, `target` → handler sets `sourceStream` (async iterable) |
-| `PIPELINE.MAP_BATCH` | Once per batch | `runId`, `batchIndex`, `sourceRecords`, `targetRecords` (handler fills `targetRecords`) |
-| `PIPELINE.WRITE_BATCH` | Once per batch, after MAP_BATCH | `runId`, `batchIndex`, `targetRecords` (handler writes and sets `statistics`) |
+| `PIPELINE.MAP` | Once per batch | `runId`, `batchIndex`, `sourceRecords`, `targetRecords` (handler fills `targetRecords`) |
+| `PIPELINE.WRITE` | Once per batch, after MAP | `runId`, `batchIndex`, `targetRecords` (handler writes and sets `statistics`) |
 | `PIPELINE.DONE` | Once per run, success or failure | `runId`, `status` (`'completed'` / `'failed'`), `mode`, `trigger`, `startTime`, `endTime`, `statistics`, `error?` |
 
 Hooks register via the standard CAP API: `srv.before/on/after(event, pipelineName, handler)`. `PIPELINE.START` and `PIPELINE.DONE` have no built-in default handler — use `on` / `before` / `after` freely. `after('PIPELINE.DONE', name, handler)` is the canonical hook for end-of-run notifications and works uniformly for sync, async-spawn, async-queued, and scheduled runs.

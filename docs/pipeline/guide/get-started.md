@@ -123,7 +123,7 @@ cds.on('served', async () => {
     });
 
     // Example: tweak one column after the default mapper (do not use `on` here — it would replace the default)
-    pipelines.after('PIPELINE.MAP_BATCH', 'NorthwindProducts', (_results, req) => {
+    pipelines.after('PIPELINE.MAP', 'NorthwindProducts', (_results, req) => {
         for (const row of req.data.targetRecords) {
             if (row.ProductTitle != null) {
                 row.ProductTitle = String(row.ProductTitle).trim().toUpperCase();
@@ -135,7 +135,7 @@ cds.on('served', async () => {
 module.exports = cds.server;
 ```
 
-`after('PIPELINE.MAP_BATCH')` runs per batch on top of the built-in mapping. `req.data.targetRecords` already uses local names (e.g. `ProductTitle`, not `ProductName`). Use `before` / `after` to layer behavior — `on` replaces the default mapper entirely. See [Event hooks](recipes/event-hooks.md).
+`after('PIPELINE.MAP')` runs per batch on top of the built-in mapping. `req.data.targetRecords` already uses local names (e.g. `ProductTitle`, not `ProductName`). Use `before` / `after` to layer behavior — `on` replaces the default mapper entirely. See [Event hooks](recipes/event-hooks.md).
 
 ## 5. Deploy and run
 

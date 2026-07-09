@@ -21,7 +21,7 @@ But `DataPipelineService.execute` and `Pipeline._run` always run the **full** RE
 
 - Using `POST /pipeline/execute` with `trigger: 'event'` only **labels** the run; it does **not** model event semantics and can **corrupt** batch **delta** watermarks if event micro-runs advance `lastSync` without reading the same slice as a normal delta.
 
-ADR 0012 [G4](0012-multi-source-into-one-entity.md#capability-gap-inventory-vs-gregorwolfcap-replication-demo) proposed a v2 `MessagingAdapter` and `source.kind: 'messaging'`. This ADR replaces that *shape* for the first shippable increment with a design that **reuses the same `Pipelines` row and phase machine** (START → READ → MAP_BATCH → WRITE_BATCH → DONE) so that **event-driven** upserts are **observable in the same scope** as batch runs and reuse **`viewMapping`**, [targets](../../../docs/pipeline/guide/targets/db.md), and [hooks](../../../docs/pipeline/reference/management-service.md#event-hooks).
+ADR 0012 [G4](0012-multi-source-into-one-entity.md#capability-gap-inventory-vs-gregorwolfcap-replication-demo) proposed a v2 `MessagingAdapter` and `source.kind: 'messaging'`. This ADR replaces that *shape* for the first shippable increment with a design that **reuses the same `Pipelines` row and phase machine** (START → READ → MAP → WRITE → DONE) so that **event-driven** upserts are **observable in the same scope** as batch runs and reuse **`viewMapping`**, [targets](../../../docs/pipeline/guide/targets/db.md), and [hooks](../../../docs/pipeline/reference/management-service.md#event-hooks).
 
 ## Decision summary
 
@@ -139,7 +139,7 @@ Batch and event **key** reads **must** apply the same **static** predicate to th
 ## Engine behavior
 
 - Reuse `Pipeline._deltaSync`’s **iterator** (MAP/WRITE per batch) but not necessarily the same **default READ** handler: READ must set `sourceStream` to an **async iterable** that **yields a small number of batches** (usually one) and then completes.
-- Reuse the same default **MAP_BATCH** and **WRITE_BATCH** (and user hooks) as batch runs for **`action: 'upsert'`**; **DELETE** is a **separate** WRITE or target-adapter code path.
+- Reuse the same default **MAP** and **WRITE** (and user hooks) as batch runs for **`action: 'upsert'`**; **DELETE** is a **separate** WRITE or target-adapter code path.
 - **PIPELINE.START** / **PIPELINE.DONE** payloads should allow hooks to see `trigger === 'event'` and optional **message** / correlation fields.
 - `Pipeline._makeReq` / `currentRunId` — same as today for correlation.
 

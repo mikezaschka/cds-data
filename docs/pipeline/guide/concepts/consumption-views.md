@@ -25,7 +25,7 @@ That single declaration does four jobs:
 1. **Local persistence.** `@cds.persistence.table` tells CAP to materialize the projection as a local table rather than resolving it through the remote service at query time.
 2. **Target schema.** The projected fields (`ID`, `Name`, `modifiedAt`) become the columns of the local table, so the pipeline's target entity is already defined.
 3. **Column restriction.** Only the listed fields are pulled from the remote — the pipeline uses `SELECT.from(source)` against the remote service, and CAP translates the projection's column list into `$select`.
-4. **Rename mapping.** The aliases (`BusinessPartner as ID`, `PersonFullName as Name`, …) are the source-to-target rename map. At registration time, if you **omit** `viewMapping`, the engine **infers** `projectedColumns`, `remoteToLocal`, and `localToRemote` from the target entity's CDS projection (the same rules as `cds-data-federation`'s scanner). The built-in `PIPELINE.MAP_BATCH` handler still applies `remoteToLocal` on each batch. A **static** `where` on the projection is merged into the READ query for OData and CQN sources (not combined automatically with OData `delta.mode: 'datetime-fields'` string filters — use `timestamp` / `key` delta for full parity).
+4. **Rename mapping.** The aliases (`BusinessPartner as ID`, `PersonFullName as Name`, …) are the source-to-target rename map. At registration time, if you **omit** `viewMapping`, the engine **infers** `projectedColumns`, `remoteToLocal`, and `localToRemote` from the target entity's CDS projection (the same rules as `cds-data-federation`'s scanner). The built-in `PIPELINE.MAP` handler still applies `remoteToLocal` on each batch. A **static** `where` on the projection is merged into the READ query for OData and CQN sources (not combined automatically with OData `delta.mode: 'datetime-fields'` string filters — use `timestamp` / `key` delta for full parity).
 
 When the target is this consumption view, a minimal pipeline is enough:
 
@@ -62,7 +62,7 @@ await pipelines.addPipeline({
 });
 ```
 
-If the target is **not** a projection (plain table) and you omit `viewMapping`, the default `PIPELINE.MAP_BATCH` handler copies `sourceRecords` unchanged — remote and local element names must match, or you need a custom `PIPELINE.MAP_BATCH` hook.
+If the target is **not** a projection (plain table) and you omit `viewMapping`, the default `PIPELINE.MAP` handler copies `sourceRecords` unchanged — remote and local element names must match, or you need a custom `PIPELINE.MAP` hook.
 
 Consumption views give you the declarative option — **say what the local shape should be, once, in CDS**, and let the plugin infer mapping and apply it at runtime.
 

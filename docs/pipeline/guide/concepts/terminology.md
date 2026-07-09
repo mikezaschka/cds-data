@@ -17,7 +17,7 @@ Pipeline behaviour — row-preserving copy vs. aggregated snapshot vs. cross-ser
 Every pipeline has **one source** and **one target**.
 
 - **Source** — a service (identified by a `cds.requires` key) plus an entity name, optionally with a CQN `query` closure that replaces entity-based reading with a custom SELECT. Source adapters bridge the service's transport (OData V4 / V2, REST, or a custom adapter) to a uniform streaming contract the plugin consumes.
-- **Target** — a service plus an entity name, typically a DB entity (`@cds.persistence.table`). The WRITE phase is dispatched through a [target adapter](../targets/index.md): the built-in [`DbTargetAdapter`](../targets/db.md) handles the common case (`target.service` unset or `'db'`); the built-in [`ODataTargetAdapter`](../targets/odata.md) handles remote OData services; everything else is covered by a [custom target adapter](../targets/custom.md) or a [`PIPELINE.WRITE_BATCH` event hook](../recipes/event-hooks.md#on-as-a-target-adapter-alternative). For replicate pipelines the target is most idiomatically a **consumption view** — a local `projection on <remote.Entity>` that also carries the column selection and rename mapping (see [Consumption views](consumption-views.md)).
+- **Target** — a service plus an entity name, typically a DB entity (`@cds.persistence.table`). The WRITE phase is dispatched through a [target adapter](../targets/index.md): the built-in [`DbTargetAdapter`](../targets/db.md) handles the common case (`target.service` unset or `'db'`); the built-in [`ODataTargetAdapter`](../targets/odata.md) handles remote OData services; everything else is covered by a [custom target adapter](../targets/custom.md) or a [`PIPELINE.WRITE` event hook](../recipes/event-hooks.md#on-as-a-target-adapter-alternative). For replicate pipelines the target is most idiomatically a **consumption view** — a local `projection on <remote.Entity>` that also carries the column selection and rename mapping (see [Consumption views](consumption-views.md)).
 
 ---
 
@@ -68,15 +68,15 @@ Pipeline event hooks use the `PIPELINE.*` namespace. Five events bracket each ru
 |---|---|---|
 | `PIPELINE.START` | once | After the concurrency guard acquires the tracker lock, before READ. Run-level setup, veto, trace correlation. |
 | `PIPELINE.READ` | once | Around the READ phase. Default handler resolves the source adapter and produces an async iterable (`sourceStream`) the engine iterates. |
-| `PIPELINE.MAP_BATCH` | per batch | Around the transformation phase between read and write. Field renames are applied here via `config.viewMapping.remoteToLocal` when supplied by the caller; user `PIPELINE.MAP_BATCH` hooks can override or extend the mapping. |
-| `PIPELINE.WRITE_BATCH` | per batch | Around the UPSERT (or adapter-specific write) into the target entity. |
+| `PIPELINE.MAP` | per batch | Around the transformation phase between read and write. Field renames are applied here via `config.viewMapping.remoteToLocal` when supplied by the caller; user `PIPELINE.MAP` hooks can override or extend the mapping. |
+| `PIPELINE.WRITE` | per batch | Around the UPSERT (or adapter-specific write) into the target entity. |
 | `PIPELINE.DONE` | once | After the tracker row is finalized. Fires on both success and failure; `req.data.status` discriminates. Canonical hook for end-of-run notifications. |
 
-Every payload carries `runId` so handlers can correlate across phases; `MAP_BATCH` and `WRITE_BATCH` additionally carry `batchIndex` (0-based). Register handlers via the standard CAP pattern:
+Every payload carries `runId` so handlers can correlate across phases; `MAP` and `WRITE` additionally carry `batchIndex` (0-based). Register handlers via the standard CAP pattern:
 
 ```javascript
-srv.before('PIPELINE.WRITE_BATCH', 'MyPipeline', (req) => { /* ... */ });
-srv.on('PIPELINE.MAP_BATCH', 'MyPipeline', async (req, next) => {
+srv.before('PIPELINE.WRITE', 'MyPipeline', (req) => { /* ... */ });
+srv.on('PIPELINE.MAP', 'MyPipeline', async (req, next) => {
   const rows = await next();
   return rows.filter(r => r.active);
 });

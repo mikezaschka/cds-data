@@ -1,6 +1,6 @@
 # Targets
 
-The **target** side of a pipeline owns the `PIPELINE.WRITE_BATCH` phase plus the pre-write clear (`truncate` / `deleteSlice`) that full-refresh and partial-refresh modes need. A target adapter reports its `capabilities()` so `addPipeline` can reject incompatible configs at registration time rather than halfway through the first run.
+The **target** side of a pipeline owns the `PIPELINE.WRITE` phase plus the pre-write clear (`truncate` / `deleteSlice`) that full-refresh and partial-refresh modes need. A target adapter reports its `capabilities()` so `addPipeline` can reject incompatible configs at registration time rather than halfway through the first run.
 
 Every write is dispatched through the resolved target adapter. Non-`db` targets without a `target.adapter` class reference are rejected at registration — there is no silent fallback to the local DB.
 

@@ -38,9 +38,9 @@ The plugin auto-resolves the target adapter from the connected remote service's 
 Source and target don't have identical shapes:
 
 - `Shipments.carrier.code` → `ShipmentArchive.carrierCode` (association → plain column) — handled by the `viewMapping.remoteToLocal` entry.
-- `ShipmentArchive.archivedAt` — has no source column; stamped by an `after('PIPELINE.MAP_BATCH', ...)` hook in [server.js](server.js).
+- `ShipmentArchive.archivedAt` — has no source column; stamped by an `after('PIPELINE.MAP', ...)` hook in [server.js](server.js).
 
-The built-in `PIPELINE.MAP_BATCH` default runs the rename; the user hook runs afterwards and enriches each row with `archivedAt`. No custom source code — everything sits on top of the built-in adapters.
+The built-in `PIPELINE.MAP` default runs the rename; the user hook runs afterwards and enriches each row with `archivedAt`. No custom source code — everything sits on top of the built-in adapters.
 
 ## O(n) full refresh tradeoff
 

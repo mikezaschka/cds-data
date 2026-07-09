@@ -1,6 +1,6 @@
 # Example 06 — Event hooks (5-event envelope)
 
-**What this shows:** layer `before` / `on` / `after` handlers on every phase of a pipeline run — `PIPELINE.START`, `PIPELINE.READ`, `PIPELINE.MAP_BATCH`, `PIPELINE.WRITE_BATCH`, `PIPELINE.DONE`. `DataPipelineService` is a standard `cds.Service`, so CAP's native hook API plugs straight in. See [docs/guide/recipes/event-hooks.md](../../docs/guide/recipes/event-hooks.md).
+**What this shows:** layer `before` / `on` / `after` handlers on every phase of a pipeline run — `PIPELINE.START`, `PIPELINE.READ`, `PIPELINE.MAP`, `PIPELINE.WRITE`, `PIPELINE.DONE`. `DataPipelineService` is a standard `cds.Service`, so CAP's native hook API plugs straight in. See [docs/guide/recipes/event-hooks.md](../../docs/guide/recipes/event-hooks.md).
 
 **Source:** `LogisticsService.Shipments` at `http://localhost:4455/odata/v4/logistics/`.
 **Target:** `example06.Shipments` (mirrors example 01) + `example06.BatchMetrics` (populated by the WRITE hook).
@@ -28,22 +28,22 @@ Stop with Ctrl+C.
 |---|---|---|
 | `PIPELINE.START` | `before` | Run-scope setup — stash a `startedAt` timestamp and batch/row counters keyed by `runId`. |
 | `PIPELINE.READ` | `before` | Parameter injection — if env var `REPLAY_FROM` is set, rewrite `req.data.config.delta.lastSync` for this one run. |
-| `PIPELINE.MAP_BATCH` | `before` | Source-row filter — drop rows where `status === 'pending'`. Runs *before* the built-in rename default. |
-| `PIPELINE.WRITE_BATCH` | `after` | Per-batch metric — insert a `BatchMetrics` row within the pipeline's own transaction. |
+| `PIPELINE.MAP` | `before` | Source-row filter — drop rows where `status === 'pending'`. Runs *before* the built-in rename default. |
+| `PIPELINE.WRITE` | `after` | Per-batch metric — insert a `BatchMetrics` row within the pipeline's own transaction. |
 | `PIPELINE.DONE` | `after` | Run summary — log duration, batch count, and final statistics; release the run-scope state. |
 
 `req.data` carries different fields per event; see [recipes/event-hooks.md](../../docs/guide/recipes/event-hooks.md#hook-surface-at-a-glance) for the full table.
 
 ## `on` vs `before`/`after` semantics
 
-- `on` **replaces** the built-in default for that event. `PIPELINE.READ`, `PIPELINE.MAP_BATCH`, and `PIPELINE.WRITE_BATCH` have defaults — a user `on` takes over that slot entirely. `PIPELINE.START` and `PIPELINE.DONE` have no default.
+- `on` **replaces** the built-in default for that event. `PIPELINE.READ`, `PIPELINE.MAP`, and `PIPELINE.WRITE` have defaults — a user `on` takes over that slot entirely. `PIPELINE.START` and `PIPELINE.DONE` have no default.
 - `before` and `after` **layer** on top of whatever `on` is active (default or user). Use them whenever you want to extend rather than replace.
 
 This example uses only `before` / `after` — every default adapter behaviour stays in effect.
 
 ## What the MAP filter does
 
-The LogisticsService seed data includes one shipment with `status='pending'` (order 10255). The `before('PIPELINE.MAP_BATCH', ...)` hook drops it before the default MAP renames columns. Verify with:
+The LogisticsService seed data includes one shipment with `status='pending'` (order 10255). The `before('PIPELINE.MAP', ...)` hook drops it before the default MAP renames columns. Verify with:
 
 ```
 GET /odata/v4/example/Shipments?$filter=status eq 'pending'
@@ -53,7 +53,7 @@ GET /odata/v4/example/Shipments?$filter=status eq 'pending'
 
 ## What the WRITE hook does
 
-`after('PIPELINE.WRITE_BATCH', ...)` inserts a row into `example06.BatchMetrics` using `cds.tx(req)` so the metric commits together with the pipeline batch. Rolled-back runs leave no metric trace. A real-world replacement might emit a CloudEvent, increment a Prometheus counter, or write an audit-log entry.
+`after('PIPELINE.WRITE', ...)` inserts a row into `example06.BatchMetrics` using `cds.tx(req)` so the metric commits together with the pipeline batch. Rolled-back runs leave no metric trace. A real-world replacement might emit a CloudEvent, increment a Prometheus counter, or write an audit-log entry.
 
 ## Scenarios
 

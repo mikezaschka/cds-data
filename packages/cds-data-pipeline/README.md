@@ -24,7 +24,7 @@ It sits **above** ad-hoc `cds.spawn` scripts and **below** SAP Integration Suite
 ## Key concepts
 
 - **`addPipeline(...)`** — register a pipeline. Behavior is [inferred from the config shape](https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/inference).
-- **Event hooks** — `PIPELINE.START → READ → MAP_BATCH → WRITE_BATCH → DONE`, using CAP's standard `before / on / after` API.
+- **Event hooks** — `PIPELINE.START → READ → MAP → WRITE → DONE`, using CAP's standard `before / on / after` API.
 - **Consumption views** — declare the target as a `projection on <remote.Entity>` with `@cds.persistence.table`. One CDS declaration defines schema, column restriction, renames, and filters. See [Consumption views](https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/consumption-views).
 - **Source adapters** — OData V2/V4, REST (cursor/offset/page pagination), CQN, or [custom](https://mikezaschka.github.io/cds-data/pipeline/guide/sources/custom).
 - **Target adapters** — local DB, remote OData, or [custom](https://mikezaschka.github.io/cds-data/pipeline/guide/targets/custom).

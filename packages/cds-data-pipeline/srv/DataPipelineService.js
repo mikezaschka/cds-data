@@ -20,8 +20,8 @@ const PIPELINES = 'plugin_data_pipeline_Pipelines'
 const PIPELINE_EVENTS = [
     'PIPELINE.START',
     'PIPELINE.READ',
-    'PIPELINE.MAP_BATCH',
-    'PIPELINE.WRITE_BATCH',
+    'PIPELINE.MAP',
+    'PIPELINE.WRITE',
     'PIPELINE.DONE',
 ]
 
@@ -47,11 +47,11 @@ const PIPELINE_DESCRIPTION_MAX = 1024
  * dispatch. Five namespaced events bracket each run (prefix avoids
  * collision with CAP's CRUD aliases `READ` / `WRITE`):
  *
- *   PIPELINE.START       — once per run, before READ
- *   PIPELINE.READ        — once per run, stream setup
- *   PIPELINE.MAP_BATCH   — per batch
- *   PIPELINE.WRITE_BATCH — per batch, after MAP_BATCH
- *   PIPELINE.DONE        — once per run, success or failure
+ *   PIPELINE.START — once per run, before READ
+ *   PIPELINE.READ  — once per run, stream setup
+ *   PIPELINE.MAP   — per batch
+ *   PIPELINE.WRITE — per batch, after MAP
+ *   PIPELINE.DONE  — once per run, success or failure
  *
  * Defaults per pipeline are stored in internal maps and invoked from a
  * single service-level `on()` router. User hooks registered via the standard
@@ -657,21 +657,14 @@ class DataPipelineService extends cds.Service {
         return super.on(event, pathOrHandler, handler)
     }
 
-    _normalizePipelineEvent(event) {
-        if (event === 'PIPELINE.MAP') return 'PIPELINE.MAP_BATCH'
-        if (event === 'PIPELINE.WRITE') return 'PIPELINE.WRITE_BATCH'
-        return event
-    }
-
     _trackPipelineHook(pipelineName, phase, event) {
-        const normalized = this._normalizePipelineEvent(event)
-        if (!PIPELINE_EVENTS.includes(normalized)) return
+        if (!PIPELINE_EVENTS.includes(event)) return
         let entry = this._pipelineHooks.get(pipelineName)
         if (!entry) {
             entry = { before: new Set(), after: new Set(), on: new Set() }
             this._pipelineHooks.set(pipelineName, entry)
         }
-        entry[phase].add(normalized)
+        entry[phase].add(event)
     }
 
     async _syncScheduleTracker(name, schedule) {

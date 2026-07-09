@@ -14,8 +14,8 @@
 flowchart LR
     SRC["Source<br/>OData / REST / CQN"]
     READ["PIPELINE.READ"]
-    MAP["PIPELINE.MAP_BATCH"]
-    WRITE["PIPELINE.WRITE_BATCH"]
+    MAP["PIPELINE.MAP"]
+    WRITE["PIPELINE.WRITE"]
     TGT["Target<br/>DB or OData"]
     SRC --> READ --> MAP --> WRITE
     WRITE -->|"next batch"| MAP

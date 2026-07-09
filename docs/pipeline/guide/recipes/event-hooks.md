@@ -12,15 +12,15 @@ Five events fire per run. Two bracket the run (once), one sets up the source str
 |---|---|---|
 | `PIPELINE.START` | Once per run, before READ | `runId`, `mode`, `trigger`, `config`, `tracker` |
 | `PIPELINE.READ` | Once per run, before batch iteration | `runId`, `config`, `source`, `target` → handler sets `sourceStream` (async iterable) |
-| `PIPELINE.MAP_BATCH` | Once per batch | `runId`, `batchIndex`, `sourceRecords`, `targetRecords` (handler fills `targetRecords`) |
-| `PIPELINE.WRITE_BATCH` | Once per batch, after MAP_BATCH | `runId`, `batchIndex`, `targetRecords` (handler writes and sets `statistics`) |
+| `PIPELINE.MAP` | Once per batch | `runId`, `batchIndex`, `sourceRecords`, `targetRecords` (handler fills `targetRecords`) |
+| `PIPELINE.WRITE` | Once per batch, after MAP | `runId`, `batchIndex`, `targetRecords` (handler writes and sets `statistics`) |
 | `PIPELINE.DONE` | Once per run, success or failure | `runId`, `status`, `mode`, `trigger`, `startTime`, `endTime`, `statistics`, `error?` |
 
 `runId` is carried on every event's payload so handlers can correlate across phases — it's also the primary key on `PipelineRuns`.
 
 Two semantic rules govern composition:
 
-- **`on` replaces the built-in default.** Default `on` handlers exist for `PIPELINE.READ`, `PIPELINE.MAP_BATCH`, and `PIPELINE.WRITE_BATCH`; a user `on` takes over that slot entirely. `PIPELINE.START` and `PIPELINE.DONE` have no default — consumers add behaviour via any of `before` / `on` / `after`.
+- **`on` replaces the built-in default.** Default `on` handlers exist for `PIPELINE.READ`, `PIPELINE.MAP`, and `PIPELINE.WRITE`; a user `on` takes over that slot entirely. `PIPELINE.START` and `PIPELINE.DONE` have no default — consumers add behaviour via any of `before` / `on` / `after`.
 - **`before` and `after` layer on top.** They compose with whatever `on` handler is active (default or user-supplied). Use them whenever you want to extend rather than replace.
 
 See [Reference → Management Service → Event hooks](../../reference/management-service.md#event-hooks) for the authoritative signature table.
@@ -89,16 +89,16 @@ pipelines.after('PIPELINE.READ', 'BusinessPartners', async (_results, req) => {
 });
 ```
 
-Wrap the async iterable before MAP_BATCH pulls from it — useful for per-batch logging, throttling, or teeing rows into a debug sink.
+Wrap the async iterable before MAP pulls from it — useful for per-batch logging, throttling, or teeing rows into a debug sink.
 
-## `PIPELINE.MAP_BATCH`
+## `PIPELINE.MAP`
 
 Fires once per batch. The default `on` applies `config.viewMapping.remoteToLocal` renames, stamps the multi-source `origin` if the target mixes in `sourced`, and shallow-clones every record into `req.data.targetRecords`. This is the event you override most often.
 
 ### `before` — filter source rows
 
 ```javascript
-pipelines.before('PIPELINE.MAP_BATCH', 'BusinessPartners', async (req) => {
+pipelines.before('PIPELINE.MAP', 'BusinessPartners', async (req) => {
     req.data.sourceRecords = req.data.sourceRecords.filter(r => !r.blocked);
 });
 ```
@@ -108,7 +108,7 @@ Cheapest way to drop records — the default mapper will only see rows that surv
 ### `on` — full custom mapping
 
 ```javascript
-pipelines.on('PIPELINE.MAP_BATCH', 'BusinessPartners', async (req) => {
+pipelines.on('PIPELINE.MAP', 'BusinessPartners', async (req) => {
     req.data.targetRecords = req.data.sourceRecords.map(record => ({
         ID: record.BusinessPartner,
         name: record.BusinessPartnerFullName,
@@ -122,7 +122,7 @@ Replacing the default is the right choice when the rename map would be more code
 ### `after` — enrich the mapped batch
 
 ```javascript
-pipelines.after('PIPELINE.MAP_BATCH', 'BusinessPartners', async (_results, req) => {
+pipelines.after('PIPELINE.MAP', 'BusinessPartners', async (_results, req) => {
     req.data.targetRecords = req.data.targetRecords.map(r => ({
         ...r,
         classification: classify(r),
@@ -132,14 +132,14 @@ pipelines.after('PIPELINE.MAP_BATCH', 'BusinessPartners', async (_results, req) 
 
 Layer on top of the default (or your own `on`) to add computed columns, hash rows for change detection, or attach enrichment looked up from another service.
 
-## `PIPELINE.WRITE_BATCH`
+## `PIPELINE.WRITE`
 
-Fires once per batch, after MAP_BATCH. The default `on` delegates to the resolved target adapter — `DbTargetAdapter.writeBatch` for local DB targets, `ODataTargetAdapter.writeBatch` for remote OData targets, or your custom adapter.
+Fires once per batch, after MAP. The default `on` delegates to the resolved target adapter — `DbTargetAdapter.writeBatch` for local DB targets, `ODataTargetAdapter.writeBatch` for remote OData targets, or your custom adapter.
 
 ### `before` — normalize or stamp
 
 ```javascript
-pipelines.before('PIPELINE.WRITE_BATCH', 'BusinessPartners', async (req) => {
+pipelines.before('PIPELINE.WRITE', 'BusinessPartners', async (req) => {
     const now = new Date().toISOString();
     for (const row of req.data.targetRecords) {
         row.ingestedAt = now;
@@ -166,7 +166,7 @@ module.exports = async () => {
         mode: 'delta',
     });
 
-    pipelines.on('PIPELINE.WRITE_BATCH', 'OrdersToReportingInline', async (req) => {
+    pipelines.on('PIPELINE.WRITE', 'OrdersToReportingInline', async (req) => {
         const reporting = await cds.connect.to('ReportingService');
         const rows = req.data.targetRecords;
         await reporting.send({ event: 'OrderFacts.upsertBatch', data: { rows } });
@@ -178,7 +178,7 @@ module.exports = async () => {
 What happens at runtime:
 
 1. Schedule fires, `PIPELINE.START` and `PIPELINE.READ` run, then batch iteration begins.
-2. For each batch, `PIPELINE.MAP_BATCH` then `PIPELINE.WRITE_BATCH` fire. Your `on` handler runs instead of the default target adapter's `writeBatch` — the staging table is never actually written to.
+2. For each batch, `PIPELINE.MAP` then `PIPELINE.WRITE` fire. Your `on` handler runs instead of the default target adapter's `writeBatch` — the staging table is never actually written to.
 3. The handler must set `req.data.statistics = { created, updated, deleted }` — the tracker reads those counts for per-run history.
 4. If `mode: 'full'`, `DbTargetAdapter.truncate(target)` is still called against the staging table before the first batch. If you don't want that, point the target at a throwaway table or use a [custom target adapter](custom-target-adapter.md) instead.
 
@@ -193,7 +193,7 @@ Stick with the write hook when the forwarding is one-off (prototype, debug dump,
 ### `after` — publish metrics or per-batch side-effects
 
 ```javascript
-pipelines.after('PIPELINE.WRITE_BATCH', 'BusinessPartners', async (_results, req) => {
+pipelines.after('PIPELINE.WRITE', 'BusinessPartners', async (_results, req) => {
     const messaging = await cds.connect.to('messaging');
     await messaging.emit('BusinessPartners.batchWritten', {
         runId: req.data.runId,
@@ -258,6 +258,6 @@ Multiple hooks for the same `(event, path)` run in parallel. For sequential orde
 ## See also
 
 - [Recipes → Custom source adapter](custom-source-adapter.md) — the reusable alternative when a `PIPELINE.READ` override would otherwise get copied across pipelines.
-- [Recipes → Custom target adapter](custom-target-adapter.md) — the reusable, capability-gated alternative to a `PIPELINE.WRITE_BATCH` override.
+- [Recipes → Custom target adapter](custom-target-adapter.md) — the reusable, capability-gated alternative to a `PIPELINE.WRITE` override.
 - [Reference → Management Service → Event hooks](../../reference/management-service.md#event-hooks) — authoritative signature and `req.data` reference.
 - [Concepts → Terminology → Event namespace](../concepts/terminology.md#event-namespace) — `PIPELINE.*` hook semantics.

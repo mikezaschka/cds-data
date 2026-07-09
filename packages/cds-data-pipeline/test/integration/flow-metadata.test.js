@@ -37,12 +37,12 @@ describe('flowMetadata management functions', () => {
         expect(payload.events.map((e) => e.id)).toEqual([
             'PIPELINE.START',
             'PIPELINE.READ',
-            'PIPELINE.MAP_BATCH',
-            'PIPELINE.WRITE_BATCH',
+            'PIPELINE.MAP',
+            'PIPELINE.WRITE',
             'PIPELINE.DONE',
         ])
         expect(payload.graph.nodes.some((n) => n.key === 'source')).toBe(true)
-        expect(payload.graph.nodes.some((n) => n.key === 'PIPELINE.MAP_BATCH')).toBe(true)
+        expect(payload.graph.nodes.some((n) => n.key === 'PIPELINE.MAP')).toBe(true)
         expect(payload.graph.nodes.some((n) => n.key === 'target')).toBe(true)
         expect(payload.graph.groups?.length).toBeGreaterThanOrEqual(3)
         expect(payload.customizations.some((c) => c.id === 'view-mapping')).toBe(true)
@@ -50,15 +50,15 @@ describe('flowMetadata management functions', () => {
 
     it('flowMetadata lists registered hooks', async () => {
         const srv = await cds.connect.to('DataPipelineService')
-        srv.before('PIPELINE.MAP_BATCH', 'ReplicatedCustomers', () => {})
+        srv.before('PIPELINE.MAP', 'ReplicatedCustomers', () => {})
 
         const { data } = await GET(
             `/pipeline/Pipelines('ReplicatedCustomers')/DataPipelineManagementService.flowMetadata()`,
             { auth },
         )
         const payload = parsePayload(data)
-        expect(payload.customizations.some((c) => c.kind === 'hook' && c.event === 'PIPELINE.MAP_BATCH')).toBe(true)
-        const mapNode = payload.graph.nodes.find((n) => n.key === 'PIPELINE.MAP_BATCH')
+        expect(payload.customizations.some((c) => c.kind === 'hook' && c.event === 'PIPELINE.MAP')).toBe(true)
+        const mapNode = payload.graph.nodes.find((n) => n.key === 'PIPELINE.MAP')
         expect(mapNode.status).toBe('Warning')
         expect(mapNode.attributes).toEqual(
             expect.arrayContaining([

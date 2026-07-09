@@ -2,7 +2,7 @@ const cds = require('../../runtime-cds')
 
 /**
  * Abstract target adapter. A target adapter is the protocol-specific
- * implementation of the `PIPELINE.WRITE_BATCH` phase (and the pre-write
+ * implementation of the `PIPELINE.WRITE` phase (and the pre-write
  * clearing that full / partial refresh runs require). It isolates every
  * engine call that used to hard-code `cds.connect.to('db')` behind a
  * capability-checked interface.
@@ -13,7 +13,7 @@ const cds = require('../../runtime-cds')
  *
  * | Method                                | When the engine calls it                                      |
  * |---------------------------------------|---------------------------------------------------------------|
- * | `writeBatch(records, { mode, target })` | Once per MAP_BATCH-produced batch                           |
+ * | `writeBatch(records, { mode, target })` | Once per MAP-produced batch                           |
  * | `truncate(target)`                    | `mode: 'full'` pre-sync, and `refresh: 'full'` materialize  |
  * | `deleteSlice(target, predicate)`      | `refresh: { mode: 'partial', slice }` materialize           |
  * | `capabilities()`                      | Once at registration, before validation                     |
@@ -84,7 +84,7 @@ class BaseTargetAdapter {
     /**
      * Write one batch of target-shape records.
      *
-     * @param {object[]} _records - Target-shape records from PIPELINE.MAP_BATCH.
+     * @param {object[]} _records - Target-shape records from PIPELINE.MAP.
      * @param {{ mode: 'upsert' | 'snapshot', target: object }} _ctx
      * @returns {Promise<{ created?: number, updated?: number, deleted?: number }>}
      *   Statistics for this batch. The engine accumulates per-run totals.

@@ -36,7 +36,7 @@ Run [http/10-run-and-query.http](http/10-run-and-query.http) top to bottom with 
 ## Configuration highlights
 
 - **Delta mode.** `delta: { mode: 'timestamp', field: 'modifiedAt' }` — row-delta based on the provider's `modifiedAt` column. If the source had no such column, swap to `mode: 'key'` with the primary key, or `mode: 'full'` for unconditional refresh.
-- **`viewMapping.remoteToLocal`.** Mirrors the consumption view aliases. The built-in `PIPELINE.MAP_BATCH` handler reads this map and renames each batch of rows on the fly — no custom hook required. Drop this block entirely when remote and local columns match 1:1.
+- **`viewMapping.remoteToLocal`.** Mirrors the consumption view aliases. The built-in `PIPELINE.MAP` handler reads this map and renames each batch of rows on the fly — no custom hook required. Drop this block entirely when remote and local columns match 1:1.
 - **`schedule: 60_000`.** In-process `cds.spawn({ every: 60_000 })` — fires every 60 s on every app instance. For scaled deployments use `{ every: '10m', engine: 'queued' }` (persistent task queue) or omit `schedule` and drive runs externally via BTP Job Scheduling Service / Kubernetes CronJob.
 
 ## Pipeline Console

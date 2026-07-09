@@ -113,7 +113,7 @@ cds.on('served', async () => {
         viewMapping: archiveViewMapping,
     })
 
-    pipelines.after('PIPELINE.MAP_BATCH', 'ShipmentArchive', (_results, req) => {
+    pipelines.after('PIPELINE.MAP', 'ShipmentArchive', (_results, req) => {
         const now = new Date().toISOString()
         for (const row of req.data.targetRecords) row.archivedAt = now
     })
@@ -146,11 +146,11 @@ cds.on('served', async () => {
         runState.set(req.data.runId, { startedAt: Date.now() })
     })
 
-    pipelines.before('PIPELINE.MAP_BATCH', 'ShipmentsWithHooks', (req) => {
+    pipelines.before('PIPELINE.MAP', 'ShipmentsWithHooks', (req) => {
         req.data.sourceRecords = req.data.sourceRecords.filter((r) => r.status !== 'pending')
     })
 
-    pipelines.after('PIPELINE.WRITE_BATCH', 'ShipmentsWithHooks', async (_results, req) => {
+    pipelines.after('PIPELINE.WRITE', 'ShipmentsWithHooks', async (_results, req) => {
         const { runId, batchIndex, targetRecords } = req.data
         await cds.tx(req).run(INSERT.into('consoleDev.BatchMetrics').entries({
             runId,

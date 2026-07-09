@@ -17,7 +17,7 @@ Each example enables the **plugin-provided Pipeline Console** and management ODa
 | [03-materialize-cqn](03-materialize-cqn/) | Query-shape materialize (CQN aggregate) with `refresh: 'full'` + partial-refresh slice | [recipes/built-in-materialize](../docs/guide/recipes/built-in-materialize.md) | 4103 |
 | [04-move-to-service](04-move-to-service/) | Move-to-service via `ODataTargetAdapter` — remote OData source → remote OData target | [recipes/built-in-replicate#to-a-remote-odata-target](../docs/guide/recipes/built-in-replicate.md) | 4104 |
 | [05-multi-source-fanin](05-multi-source-fanin/) | N backends → one target table with `source.origin` + `plugin.data_pipeline.sourced` aspect | [recipes/multi-source](../docs/guide/recipes/multi-source.md) | 4105 |
-| [06-event-hooks](06-event-hooks/) | Full 5-event envelope: `before/on/after` on `PIPELINE.START`/`READ`/`MAP_BATCH`/`WRITE_BATCH`/`DONE` | [recipes/event-hooks](../docs/guide/recipes/event-hooks.md) | 4106 |
+| [06-event-hooks](06-event-hooks/) | Full 5-event envelope: `before/on/after` on `PIPELINE.START`/`READ`/`MAP`/`WRITE`/`DONE` | [recipes/event-hooks](../docs/guide/recipes/event-hooks.md) | 4106 |
 | [07-event-driven-runs](07-event-driven-runs/) | Batch delta + CAP messaging micro-runs (`executeEvent`, `read: key/payload`, watermark-safe) | [recipes/event-driven-runs](../docs/guide/recipes/event-driven-runs.md) | 4107 |
 
 ## Port allocation

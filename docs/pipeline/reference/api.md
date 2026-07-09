@@ -167,7 +167,7 @@ These back the Pipeline Console; you can also call them directly.
 Five namespaced events bracket every run. Register handlers with the standard CAP `before` / `on` / `after` API, keyed by pipeline name.
 
 ```javascript
-pipelines.before('PIPELINE.MAP_BATCH', 'NorthwindProducts', (req) => { … })
+pipelines.before('PIPELINE.MAP', 'NorthwindProducts', (req) => { … })
 pipelines.on('PIPELINE.READ', 'NorthwindProducts', (req) => { … })
 pipelines.after('PIPELINE.DONE', 'NorthwindProducts', (req) => { … })
 ```
@@ -176,14 +176,12 @@ pipelines.after('PIPELINE.DONE', 'NorthwindProducts', (req) => { … })
 |---|---|---|
 | `PIPELINE.START` | Before READ | Once per run |
 | `PIPELINE.READ` | Stream setup | Once per run |
-| `PIPELINE.MAP_BATCH` | After each batch is read | Per batch |
-| `PIPELINE.WRITE_BATCH` | After each batch is mapped | Per batch |
+| `PIPELINE.MAP` | After each batch is read | Per batch |
+| `PIPELINE.WRITE` | After each batch is mapped | Per batch |
 | `PIPELINE.DONE` | Run finished (success or failure) | Once per run |
 
-`PIPELINE.MAP` and `PIPELINE.WRITE` are accepted as aliases for `MAP_BATCH` / `WRITE_BATCH` at registration.
-
 ::: warning `on` replaces the default
-`on('PIPELINE.MAP_BATCH', …)` and `on('PIPELINE.WRITE_BATCH', …)` **replace** the built-in mapper/writer for that pipeline. To layer behavior on top of the defaults, use `before` / `after`. The `name` must match `addPipeline({ name })` (or the federated entity name for `@federation.replicate`).
+`on('PIPELINE.MAP', …)` and `on('PIPELINE.WRITE', …)` **replace** the built-in mapper/writer for that pipeline. To layer behavior on top of the defaults, use `before` / `after`. The `name` must match `addPipeline({ name })` (or the federated entity name for `@federation.replicate`).
 :::
 
 For worked examples, see [Event hooks](/pipeline/guide/recipes/event-hooks).

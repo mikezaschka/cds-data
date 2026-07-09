@@ -167,10 +167,10 @@ Any headers configured on the `cds.requires.<service>.credentials` block (or sup
 
 ## Mapping REST fields to target columns
 
-Response field names must match the target entity's field names, or a `PIPELINE.MAP_BATCH` hook must translate:
+Response field names must match the target entity's field names, or a `PIPELINE.MAP` hook must translate:
 
 ```javascript
-pipelines.on('PIPELINE.MAP_BATCH', 'ReplicatedRestCustomers', async (req) => {
+pipelines.on('PIPELINE.MAP', 'ReplicatedRestCustomers', async (req) => {
     req.data.targetRecords = req.data.sourceRecords.map(r => ({
         ID:         r.customer_id,
         name:       r.full_name,
@@ -186,7 +186,7 @@ See [Reference → Management Service → Event hooks](../../reference/managemen
 ## Limitations
 
 - **Entity-shape only.** Query-shape (materialize) pipelines require an adapter capable of executing a SELECT CQN; REST is replicate-only.
-- **No typed response mapping.** Field names in the REST response must match the target entity's field names exactly, or a custom `PIPELINE.MAP_BATCH` hook must translate.
+- **No typed response mapping.** Field names in the REST response must match the target entity's field names exactly, or a custom `PIPELINE.MAP` hook must translate.
 - **No server-side filtering beyond delta.** The adapter reads the full (paginated) dataset modulo the delta param. Server-side `$filter` equivalents would require custom request shaping via hooks.
 
 ## See also

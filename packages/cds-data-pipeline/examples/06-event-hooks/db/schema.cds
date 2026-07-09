@@ -20,7 +20,7 @@ entity Shipments as projection on logistics.Shipments {
     modifiedAt         as modifiedAt
 };
 
-// Separate target for hook-produced metrics — each WRITE_BATCH hook below
+// Separate target for hook-produced metrics — each WRITE hook below
 // appends one row here so you can inspect per-batch behaviour by querying
 // `/odata/v4/example/BatchMetrics`. In real code you'd ship these to
 // Prometheus or Cloud Logging.

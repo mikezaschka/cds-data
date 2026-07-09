@@ -55,7 +55,7 @@ describe('PIPELINE lifecycle hooks', () => {
         expect(seen.done).toBe(seen.start)
     })
 
-    it('[4.7.1] R18: before MAP_BATCH can filter sourceRecords', async () => {
+    it('[4.7.1] R18: before MAP can filter sourceRecords', async () => {
         const srv = await getPipelineService()
         const name = `__lc_map_${Date.now()}`
         await srv.addPipeline({
@@ -63,7 +63,7 @@ describe('PIPELINE lifecycle hooks', () => {
             source: { service: 'ProviderService', entity: 'Customers' },
             target: { entity: 'consumer.ReplicatedCustomersV2' },
         })
-        srv.before('PIPELINE.MAP_BATCH', name, (req) => {
+        srv.before('PIPELINE.MAP', name, (req) => {
             req.data.sourceRecords = req.data.sourceRecords.filter(
                 r => r.blocked === false || r.blocked === 'false',
             )
@@ -76,7 +76,7 @@ describe('PIPELINE lifecycle hooks', () => {
         expect(rows.every(c => c.ID !== 'C003')).toBe(true)
     })
 
-    it('[4.7.1] R19: after MAP_BATCH can enrich targetRecords', async () => {
+    it('[4.7.1] R19: after MAP can enrich targetRecords', async () => {
         const srv = await getPipelineService()
         const name = `__lc_after_${Date.now()}`
         await srv.addPipeline({
@@ -90,7 +90,7 @@ describe('PIPELINE lifecycle hooks', () => {
                 localToRemote: {},
             },
         })
-        srv.after('PIPELINE.MAP_BATCH', name, (_res, req) => {
+        srv.after('PIPELINE.MAP', name, (_res, req) => {
             req.data.targetRecords = req.data.targetRecords.map(r => ({
                 ...r,
                 category: r.category ? r.category.toUpperCase() : r.category,

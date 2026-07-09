@@ -123,7 +123,7 @@ See [Concepts → Inference rules → Registration validation](../concepts/infer
 
 1. Schedule fires (or a manual `run` is dispatched via the management service).
 2. `PIPELINE.READ` runs against `OrdersService.Orders` through the auto-selected source adapter, yielding batches.
-3. `PIPELINE.MAP_BATCH` applies any renames / filters.
+3. `PIPELINE.MAP` applies any renames / filters.
 4. For each batch `ReportingTargetAdapter.writeBatch(records, { mode: 'upsert', target })` is called — which fans out to `ReportingService.send('upsertBatch', ...)`.
 5. If `mode: 'full'` is used, `truncate` is called once before the first batch.
 6. The tracker row is updated with the new `lastSync`.
@@ -134,7 +134,7 @@ See [Concepts → Inference rules → Registration validation](../concepts/infer
 - **Capability gating:** the `capabilities()` declaration makes misuse a registration-time error rather than a run-time one.
 - **Composability with `mode: 'full'` and partial refresh:** the adapter owns `truncate` / `deleteSlice`, so refresh semantics work correctly.
 
-Pick an [`on('PIPELINE.WRITE_BATCH')` event hook](event-hooks.md#on-as-a-target-adapter-alternative) instead for one-off forwarding that will not be repeated, or when you want to layer a bespoke write on top of the default `DbTargetAdapter` (e.g. write to a staging table *and* forward).
+Pick an [`on('PIPELINE.WRITE')` event hook](event-hooks.md#on-as-a-target-adapter-alternative) instead for one-off forwarding that will not be repeated, or when you want to layer a bespoke write on top of the default `DbTargetAdapter` (e.g. write to a staging table *and* forward).
 
 ## See also
 

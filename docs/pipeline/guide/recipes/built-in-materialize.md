@@ -144,7 +144,7 @@ Rows matching the slice predicate are deleted before the new aggregate rows are 
 
 ### Event hooks
 
-All standard pipeline hooks (`PIPELINE.START`, `PIPELINE.READ`, `PIPELINE.MAP_BATCH`, `PIPELINE.WRITE_BATCH`, `PIPELINE.DONE`) fire for materialize runs exactly as they do for replicate. The WRITE_BATCH phase receives the aggregated rows in `req.data.targetRecords` and runs the default `DELETE + INSERT`; user `PIPELINE.WRITE_BATCH` hooks can observe or replace the default write path.
+All standard pipeline hooks (`PIPELINE.START`, `PIPELINE.READ`, `PIPELINE.MAP`, `PIPELINE.WRITE`, `PIPELINE.DONE`) fire for materialize runs exactly as they do for replicate. The WRITE phase receives the aggregated rows in `req.data.targetRecords` and runs the default `DELETE + INSERT`; user `PIPELINE.WRITE` hooks can observe or replace the default write path.
 
 ## Constraints
 

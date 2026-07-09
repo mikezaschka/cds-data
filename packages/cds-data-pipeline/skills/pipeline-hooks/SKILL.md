@@ -8,7 +8,7 @@ description: Registers cds-data-pipeline event hooks on DataPipelineService. Use
 ## Lifecycle
 
 ```
-PIPELINE.START → PIPELINE.READ → (PIPELINE.MAP_BATCH → PIPELINE.WRITE_BATCH)* → PIPELINE.DONE
+PIPELINE.START → PIPELINE.READ → (PIPELINE.MAP → PIPELINE.WRITE)* → PIPELINE.DONE
 ```
 
 Aliases: `PIPELINE.MAP` / `PIPELINE.WRITE` for batch handlers.

@@ -19,10 +19,10 @@ const RUNS = 'plugin_data_pipeline_PipelineRuns'
  *
  * Drives the pipeline by constructing `cds.Request` instances and
  * dispatching them through the parent `DataPipelineService`. Five events
- * bracket each run: `PIPELINE.START`, `PIPELINE.READ`, `PIPELINE.MAP_BATCH`,
- * `PIPELINE.WRITE_BATCH`, `PIPELINE.DONE`. Default per-phase handlers for
- * READ / MAP_BATCH / WRITE_BATCH are registered on the parent service and
- * invoked via its internal router; user-facing hooks (`before.PIPELINE.MAP_BATCH`,
+ * bracket each run: `PIPELINE.START`, `PIPELINE.READ`, `PIPELINE.MAP`,
+ * `PIPELINE.WRITE`, `PIPELINE.DONE`. Default per-phase handlers for
+ * READ / MAP / WRITE are registered on the parent service and
+ * invoked via its internal router; user-facing hooks (`before.PIPELINE.MAP`,
  * `after.PIPELINE.DONE`, ...) compose through CAP's native handler chain.
  *
  * Config layering (see `overrides.js`):
@@ -41,8 +41,8 @@ class Pipeline {
 
     async init() {
         this.srv.registerDefault('PIPELINE.READ', this.name, (req) => this._defaultReadHandler(req))
-        this.srv.registerDefault('PIPELINE.MAP_BATCH', this.name, (req) => this._defaultMapHandler(req))
-        this.srv.registerDefault('PIPELINE.WRITE_BATCH', this.name, (req) => this._defaultWriteHandler(req))
+        this.srv.registerDefault('PIPELINE.MAP', this.name, (req) => this._defaultMapHandler(req))
+        this.srv.registerDefault('PIPELINE.WRITE', this.name, (req) => this._defaultWriteHandler(req))
 
         // Resolve the read adapter once at registration. Lets the service
         // compose an adapter-aware startup log line (ADR 0007
@@ -481,7 +481,7 @@ class Pipeline {
 
             let batchIndex = 0
             for await (const batch of sourceStream) {
-                const mapReq = this._makeReq('PIPELINE.MAP_BATCH', {
+                const mapReq = this._makeReq('PIPELINE.MAP', {
                     batchIndex,
                     config: this.config,
                     source: this.config.source,
@@ -497,7 +497,7 @@ class Pipeline {
                     continue
                 }
 
-                const writeReq = this._makeReq('PIPELINE.WRITE_BATCH', {
+                const writeReq = this._makeReq('PIPELINE.WRITE', {
                     batchIndex,
                     config: this.config,
                     target: this.config.target,
@@ -568,7 +568,7 @@ class Pipeline {
      * `${srv.name}.${pipelineName}` so user-registered
      * `before/after(event, pipelineName, handler)` hooks match via CAP's
      * native path matcher. `runId` is carried on every payload so consumers
-     * can correlate across START / READ / MAP_BATCH / WRITE_BATCH / DONE.
+     * can correlate across START / READ / MAP / WRITE / DONE.
      */
     _makeReq(event, data) {
         const req = new cds.Request({
@@ -620,7 +620,7 @@ class Pipeline {
         const target = req.data.target || config.target
 
         // ADR 0012 belt-and-braces: re-stamp `source = origin` right
-        // before WRITE so a consumer-supplied `on('PIPELINE.MAP_BATCH')` that
+        // before WRITE so a consumer-supplied `on('PIPELINE.MAP')` that
         // forgot the stamp still produces valid compound keys.
         this._stampOrigin(records)
 

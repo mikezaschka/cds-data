@@ -73,7 +73,7 @@ await pipelines.addPipeline({
 });
 ```
 
-The Remote CQN adapter honours `viewMapping.projectedColumns` on the SELECT it sends to the remote, so only the projected columns are pulled across the wire. Multi-segment path expressions (flattened associations, e.g. `customer.name as buyerName`) work when CAP selects HCQL; OData-only remotes cannot denormalize. The default `PIPELINE.MAP_BATCH` handler applies `viewMapping.remoteToLocal` to rename fields on each batch.
+The Remote CQN adapter honours `viewMapping.projectedColumns` on the SELECT it sends to the remote, so only the projected columns are pulled across the wire. Multi-segment path expressions (flattened associations, e.g. `customer.name as buyerName`) work when CAP selects HCQL; OData-only remotes cannot denormalize. The default `PIPELINE.MAP` handler applies `viewMapping.remoteToLocal` to rename fields on each batch.
 
 See [Concepts → Consumption views](../concepts/consumption-views.md) and the capire [CAP-level Data Federation guide](https://cap.cloud.sap/docs/guides/integration/data-federation) for the broader pattern. Consumption views are optional — you can also pass a fully-matching target table and no `viewMapping` — but they are the recommended default because they keep the target schema, the column selection, and the rename map in a single place.
 
@@ -106,7 +106,7 @@ These are CAP-platform limitations surfaced through the OData adapter:
 | Feature | Why | Workaround |
 |---|---|---|
 | `.where({ field: { like: '%X%' } })` | OData `$filter` has no `like` keyword. | Use `contains(...)`, `startswith(...)`, `endswith(...)` via HTTP `$filter`. |
-| `SELECT.distinct` | CAP's `cqn2odata` rejects `.distinct`. | Deduplicate in a `PIPELINE.MAP_BATCH` hook, or replicate and query the local copy. |
+| `SELECT.distinct` | CAP's `cqn2odata` rejects `.distinct`. | Deduplicate in a `PIPELINE.MAP` hook, or replicate and query the local copy. |
 | `.groupBy()` / `.having()` / `$apply` | CAP rejects aggregation on remote services. | Aggregate in-app (a materialize-shape pipeline against a local copy), or replicate and use local SQL. |
 | `forUpdate()` / `forShareLock()` | DB concept, not OData. | Use ETags for optimistic concurrency. |
 | `pipeline()` / `stream()` / `foreach()` | Only implemented by `DatabaseService`. | Fetch the full result set via paginated batches. |

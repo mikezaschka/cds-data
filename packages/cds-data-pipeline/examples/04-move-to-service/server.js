@@ -32,8 +32,8 @@ cds.on('served', async () => {
         },
 
         // Source `Shipments.carrier.code` → target `ShipmentArchive.carrierCode`.
-        // The built-in PIPELINE.MAP_BATCH default runs this rename; the
-        // `archivedAt` stamp is applied by the `before('PIPELINE.MAP_BATCH')`
+        // The built-in PIPELINE.MAP default runs this rename; the
+        // `archivedAt` stamp is applied by the `before('PIPELINE.MAP')`
         // hook below so the column is populated consistently.
         viewMapping: {
             isWildcard: false,
@@ -55,10 +55,10 @@ cds.on('served', async () => {
 
     // Stamp `archivedAt` on every outbound batch. `req.data.sourceRecords`
     // holds the source-shape rows; `req.data.targetRecords` is populated
-    // by the built-in MAP_BATCH default. We let the default run first
+    // by the built-in MAP default. We let the default run first
     // (so renames are applied), then mutate each target row in an
     // `after` hook.
-    pipelines.after('PIPELINE.MAP_BATCH', 'ShipmentArchive', (_results, req) => {
+    pipelines.after('PIPELINE.MAP', 'ShipmentArchive', (_results, req) => {
         const now = new Date().toISOString()
         for (const row of req.data.targetRecords) row.archivedAt = now
     })

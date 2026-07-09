@@ -1,8 +1,8 @@
 const LIFECYCLE_EVENTS = [
     { id: 'PIPELINE.START', label: 'START', phase: 'lifecycle', icon: 'sap-icon://begin' },
     { id: 'PIPELINE.READ', label: 'READ', phase: 'read', icon: 'sap-icon://download' },
-    { id: 'PIPELINE.MAP_BATCH', label: 'MAP', phase: 'map', icon: 'sap-icon://journey-change' },
-    { id: 'PIPELINE.WRITE_BATCH', label: 'WRITE', phase: 'write', icon: 'sap-icon://upload' },
+    { id: 'PIPELINE.MAP', label: 'MAP', phase: 'map', icon: 'sap-icon://journey-change' },
+    { id: 'PIPELINE.WRITE', label: 'WRITE', phase: 'write', icon: 'sap-icon://upload' },
     { id: 'PIPELINE.DONE', label: 'DONE', phase: 'lifecycle', icon: 'sap-icon://complete' },
 ]
 
@@ -182,12 +182,12 @@ function configCustomizationAnchor(id) {
         'custom-source-adapter': 'PIPELINE.READ',
         'read-adapter': 'PIPELINE.READ',
         'delta-mode': 'PIPELINE.READ',
-        'view-mapping': 'PIPELINE.MAP_BATCH',
-        'fan-in': 'PIPELINE.MAP_BATCH',
-        'remote-target': 'PIPELINE.WRITE_BATCH',
-        'write-adapter': 'PIPELINE.WRITE_BATCH',
-        'partial-refresh': 'PIPELINE.WRITE_BATCH',
-        'full-mode': 'PIPELINE.WRITE_BATCH',
+        'view-mapping': 'PIPELINE.MAP',
+        'fan-in': 'PIPELINE.MAP',
+        'remote-target': 'PIPELINE.WRITE',
+        'write-adapter': 'PIPELINE.WRITE',
+        'partial-refresh': 'PIPELINE.WRITE',
+        'full-mode': 'PIPELINE.WRITE',
         'schedule': 'PIPELINE.START',
     }
     return anchors[id] || 'PIPELINE.READ'

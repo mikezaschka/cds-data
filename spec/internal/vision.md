@@ -43,7 +43,7 @@ We deliberately occupy the **application layer**: `cds.connect.to`, destinations
 
 These principles guide what we build and what we refuse to add.
 
-1. **Idiomatic CAP** — Pipelines use `cds` services, `cds.spawn` / queued scheduling, consumption views, and the standard `before` / `on` / `after` hook API. No parallel hook system; lifecycle events are `PIPELINE.START` → `READ` → `MAP_BATCH` → `WRITE_BATCH` → `DONE`.
+1. **Idiomatic CAP** — Pipelines use `cds` services, `cds.spawn` / queued scheduling, consumption views, and the standard `before` / `on` / `after` hook API. No parallel hook system; lifecycle events are `PIPELINE.START` → `READ` → `MAP` → `WRITE` → `DONE`.
 2. **Behavior from config shape** — Replicate vs materialize vs move-to-service is inferred from how you configure source and target, not from a pile of mode flags. Defaults should match what most configs need; invalid combinations fail at registration with clear errors.
 3. **One source, one target, linear flow** — Each pipeline is easy to reason about. Fan-in is modeled as sibling pipelines into one table (with origin labeling), not as a hidden multi-source graph inside the engine.
 4. **Pluggable edges, fixed core** — OData, REST, CQN, and custom adapters on the read side; DB, OData, and custom adapters on the write side. The phase machine and tracker stay stable.

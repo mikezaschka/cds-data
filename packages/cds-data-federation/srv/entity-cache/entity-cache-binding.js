@@ -23,7 +23,7 @@ function allowedWriteKeys(storageFqn) {
 function registerSanitizeWrites(dataPipelineSrv, pipName, storageFqn) {
     const allowedKeys = allowedWriteKeys(storageFqn)
 
-    dataPipelineSrv.before('PIPELINE.WRITE_BATCH', pipName, (req) => {
+    dataPipelineSrv.before('PIPELINE.WRITE', pipName, (req) => {
         const batch = req.data.targetRecords || []
         for (const row of batch) {
             if (allowedKeys.size <= 1) continue

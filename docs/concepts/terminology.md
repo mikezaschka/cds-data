@@ -17,7 +17,7 @@ These describe `cds-data-pipeline`, the engine every scheduled job runs on.
 | **Mode** | How a run writes: `delta` (only changed rows since the last watermark), `full` (re-read everything), or `partial-refresh` (rebuild a slice of a query-shape target). |
 | **Delta strategy** | How "changed since last run" is detected: `timestamp`, `key`, or `datetime-fields`. Backed by a persisted high-watermark on the tracker. |
 | **Tracker** | The `Pipelines` and `PipelineRuns` entities that persist pipeline state, schedules, overrides, and run history. |
-| **Pipeline events** | `PIPELINE.START`, `PIPELINE.READ`, `PIPELINE.MAP_BATCH`, `PIPELINE.WRITE_BATCH`, `PIPELINE.DONE` — namespaced to avoid collision with CAP's CRUD aliases. `PIPELINE.MAP` / `PIPELINE.WRITE` are accepted aliases at registration. |
+| **Pipeline events** | `PIPELINE.START`, `PIPELINE.READ`, `PIPELINE.MAP`, `PIPELINE.WRITE`, `PIPELINE.DONE` — namespaced to avoid collision with CAP's CRUD aliases. |
 
 ### Pipeline shapes: replicate, materialize, move
 

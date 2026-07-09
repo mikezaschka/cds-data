@@ -55,22 +55,22 @@ cds.on('served', async () => {
         }
     })
 
-    // ── PIPELINE.MAP_BATCH ────────────────────────────────────────────
+    // ── PIPELINE.MAP ────────────────────────────────────────────
     // Filter source rows before MAP applies renames. Drops rows whose
     // `status` is 'pending' — the pipeline materializes only confirmed
     // shipments. A real filter might consult an allow-list service.
-    pipelines.before('PIPELINE.MAP_BATCH', 'Shipments', (req) => {
+    pipelines.before('PIPELINE.MAP', 'Shipments', (req) => {
         const before = req.data.sourceRecords.length
         req.data.sourceRecords = req.data.sourceRecords.filter(r => r.status !== 'pending')
         const dropped = before - req.data.sourceRecords.length
         if (dropped) log.info(`[MAP] batch ${req.data.batchIndex}: dropped ${dropped} pending row(s)`)
     })
 
-    // ── PIPELINE.WRITE_BATCH ──────────────────────────────────────────
+    // ── PIPELINE.WRITE ──────────────────────────────────────────
     // Observe the write result per batch. `_results` is undefined (the
     // default WRITE handler sets `req.data.statistics` rather than
     // returning a value), so we read `req.data` directly.
-    pipelines.after('PIPELINE.WRITE_BATCH', 'Shipments', async (_results, req) => {
+    pipelines.after('PIPELINE.WRITE', 'Shipments', async (_results, req) => {
         const { runId, batchIndex, targetRecords, statistics } = req.data
         const state = runState.get(runId)
         if (state) {

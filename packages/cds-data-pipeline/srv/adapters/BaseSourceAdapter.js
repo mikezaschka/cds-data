@@ -3,15 +3,15 @@ const cds = require('../runtime-cds')
 /**
  * Abstract source adapter. A source adapter is the protocol-specific
  * implementation of the `PIPELINE.READ` phase: given a tracker row it
- * yields batches of source records for the engine's MAP_BATCH +
- * WRITE_BATCH loop.
+ * yields batches of source records for the engine's MAP +
+ * WRITE loop.
  *
  * ## Contract
  *
  * Subclasses must implement `readStream(tracker)` as an async generator
  * (or a method returning an async iterable). Each yielded value is an
  * array of plain-object records in source shape — renames and
- * projections happen downstream in `PIPELINE.MAP_BATCH`, not here.
+ * projections happen downstream in `PIPELINE.MAP`, not here.
  *
  * The generator is consumed exactly once per pipeline run. Respect
  * backpressure: the engine awaits each batch before requesting the next.

@@ -2,7 +2,7 @@ const cds = require('@sap/cds')
 const BaseTargetAdapter = require('cds-data-pipeline/srv/adapters/targets/BaseTargetAdapter')
 
 /**
- * Forwards MAP_BATCH rows to ReportingService via CAP events (no CQN target).
+ * Forwards MAP rows to ReportingService via CAP events (no CQN target).
  * Used by the Pipeline Console dev backend to exercise custom write adapters.
  */
 class ReportingTargetAdapter extends BaseTargetAdapter {

@@ -96,8 +96,8 @@ The OData target adapter routes writes through CAP's remote runtime (POST / PUT 
 
 1. Schedule fires (or a manual `run` is dispatched via the management service).
 2. `PIPELINE.READ` runs; the source adapter returns an async iterable of source batches, filtered by the delta watermark when the mode is `delta`.
-3. For each batch: `PIPELINE.MAP_BATCH` applies view-mapping renames (via `viewMapping.remoteToLocal`) or any user MAP_BATCH hooks.
-4. `PIPELINE.WRITE_BATCH` upserts the mapped rows into the target entity through the resolved target adapter. UPSERT is idempotent across re-runs.
+3. For each batch: `PIPELINE.MAP` applies view-mapping renames (via `viewMapping.remoteToLocal`) or any user MAP hooks.
+4. `PIPELINE.WRITE` upserts the mapped rows into the target entity through the resolved target adapter. UPSERT is idempotent across re-runs.
 5. The tracker row is updated with new `lastSync` / `lastKey` values.
 
 ## Constraints

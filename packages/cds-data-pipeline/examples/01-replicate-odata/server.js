@@ -15,7 +15,7 @@ cds.on('served', async () => {
     // - Delta mode = 'timestamp' is inferred from the shape; `delta.field`
     //   defaults to 'modifiedAt'. We set it explicitly for clarity.
     // - `viewMapping.remoteToLocal` mirrors the alias list in the
-    //   consumption view so the built-in PIPELINE.MAP_BATCH default
+    //   consumption view so the built-in PIPELINE.MAP default
     //   renames each batch on the fly without a custom hook.
     // - `schedule: 60_000` wires an in-process spawn timer (every 60s).
     //   Swap to `{ every: '10m', engine: 'queued' }` for the persistent
