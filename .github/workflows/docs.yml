@@ -12,7 +12,6 @@ on:
       - main
     paths:
       - 'docs/**'
-      - 'docs-requirements.txt'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/docs.yml'

@@ -7,9 +7,22 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  test-cds10:
+    name: test (node ${{ matrix.node-version }}, cds 10)
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node-version: [22, 24]
     steps:
@@ -19,7 +32,55 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
-      - run: npm run lint
       - run: npm run test -w cds-data-pipeline
       - run: npm run test -w cds-data-federation
       - run: npm run test -w cds-data-materialization
+
+  test-cds9:
+    name: test (node 22, cds 9, docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.cds9
+          tags: cds-data-test-cds9
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - run: docker run --rm cds-data-test-cds9
+
+  test-postgres:
+    name: test (postgres smoke, cds-data-pipeline)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cds_data_pipeline_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cds_data_pipeline_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:integration:postgres -w cds-data-pipeline
+        env:
+          CDS_TEST_DB: postgres
+          CDS_TEST_PG_HOST: localhost
+          CDS_TEST_PG_PORT: 5432
+          CDS_TEST_PG_USER: postgres
+          CDS_TEST_PG_PASSWORD: postgres
+          CDS_TEST_PG_DATABASE: cds_data_pipeline_test
