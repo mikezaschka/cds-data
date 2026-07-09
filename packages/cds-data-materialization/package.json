@@ -27,7 +27,7 @@
     "skills/**"
   ],
   "peerDependencies": {
-    "@sap/cds": ">=8",
+    "@sap/cds": ">=9",
     "cds-data-pipeline": ">=0.1.0"
   },
   "peerDependenciesMeta": {
@@ -36,17 +36,16 @@
     }
   },
   "scripts": {
-    "test": "jest --config jest.config.js --runInBand --forceExit",
-    "test:unit": "jest --config jest.config.js --runInBand --forceExit --testPathPattern=test/unit",
-    "test:integration": "jest --config jest.config.js --runInBand --forceExit --testPathPattern=test/integration"
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "@cap-js/cds-test": "^0.4.1",
-    "@cap-js/sqlite": "^2",
+    "@cap-js/cds-test": "^1",
+    "@cap-js/sqlite": "^3",
     "cds-data-pipeline": "*",
-    "chai": "^4.5.0",
-    "chai-as-promised": "^7.1.2",
-    "jest": "^29.7.0"
+    "vitest": "^4"
   },
   "engines": {
     "node": ">=22"

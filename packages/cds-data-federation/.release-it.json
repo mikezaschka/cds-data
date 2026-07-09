@@ -1,0 +1,41 @@
+{
+  "$schema": "https://unpkg.com/release-it/schema/release-it.json",
+  "git": {
+    "tagName": "cds-data-federation@${version}",
+    "commitMessage": "chore: release cds-data-federation@${version}",
+    "tagAnnotation": "Release cds-data-federation@${version}",
+    "commitsPath": "packages/cds-data-federation"
+  },
+  "github": {
+    "release": true
+  },
+  "npm": {
+    "publish": true
+  },
+  "hooks": {
+    "before:init": "npm test"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": {
+        "name": "conventionalcommits",
+        "types": [
+          {
+            "type": "feat",
+            "section": "Features"
+          },
+          {
+            "type": "fix",
+            "section": "Bug Fixes"
+          },
+          {}
+        ]
+      },
+      "infile": "CHANGELOG.md",
+      "path": "packages/cds-data-federation",
+      "gitRawCommitsOpts": {
+        "path": "packages/cds-data-federation"
+      }
+    }
+  }
+}

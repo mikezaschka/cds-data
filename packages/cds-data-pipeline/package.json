@@ -25,18 +25,29 @@
   "files": [
     "srv/**",
     "db/**",
+    "index/**",
+    "index.cds",
     "lib/**",
-    "scripts/**",
     "app/pipeline-console/**",
+    "app/pipeline-console-src/**",
     "cds-plugin.js",
     "README.md",
     "AGENTS.md",
     "skills/**"
   ],
   "scripts": {
-    "test": "jest --config jest.config.js --runInBand --forceExit",
-    "test:unit": "jest --config jest.config.js --runInBand --forceExit --testPathPattern=test/unit",
-    "test:integration": "jest --config jest.config.js --runInBand --forceExit --testPathPattern=test/integration"
+    "test": "vitest run",
+    "test:unit": "vitest run test/unit",
+    "test:integration": "vitest run test/integration",
+    "test:integration:postgres": "vitest run --config vitest.postgres.config.mjs",
+    "test:watch": "vitest",
+    "sync:pipeline-console-webapp": "rm -rf app/webapp && cp -R app/pipeline-console-src/webapp app/webapp",
+    "build:pipeline-console": "npm run sync:pipeline-console-webapp && cd app && ui5 build self-contained --clean-dest --all --config pipeline-console.build.ui5.yaml --dest pipeline-console",
+    "dev:console-backend": "bash examples/_dev/pipeline-console/start.sh",
+    "dev:pipeline-console": "cd app && ui5 serve --config pipeline-console.dev.ui5.yaml --port 8090 -o index.html",
+    "start:pipeline-console": "npm run dev:pipeline-console",
+    "prepublishOnly": "npm run build:pipeline-console",
+    "release": "release-it"
   },
   "cds": {
     "folders": {
@@ -44,20 +55,30 @@
       "srv": "srv"
     },
     "requires": {
-      "DataPipelineService": {
-        "impl": "cds-data-pipeline/srv/DataPipelineService.js"
+      "kinds": {
+        "datapipeline": {
+          "impl": "cds-data-pipeline"
+        },
+        "DataPipelineService": {
+          "impl": "cds-data-pipeline"
+        }
       }
     }
   },
   "peerDependencies": {
-    "@sap/cds": ">=8"
+    "@sap/cds": ">=9"
   },
   "devDependencies": {
-    "@cap-js/cds-test": "^0.4.1",
-    "@cap-js/sqlite": "^2",
-    "@jest/globals": "^29.7.0",
-    "chai": "^4.5.0",
-    "jest": "^29.7.0"
+    "@cap-js/cds-test": "^1",
+    "@cap-js/postgres": "^2.3.0",
+    "@cap-js/sqlite": "^3",
+    "@sapui5/types": "^1.120.0",
+    "@sap/cds-dk": "^9",
+    "@ui5/cli": "^4.0.0",
+    "typescript": "^5.0.0",
+    "ui5-middleware-cap": "^3.3.0",
+    "ui5-tooling-transpile": "^3.3.0",
+    "vitest": "^4"
   },
   "engines": {
     "node": ">=22"

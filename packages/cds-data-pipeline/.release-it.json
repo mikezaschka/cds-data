@@ -1,0 +1,41 @@
+{
+  "$schema": "https://unpkg.com/release-it/schema/release-it.json",
+  "git": {
+    "tagName": "cds-data-pipeline@${version}",
+    "commitMessage": "chore: release cds-data-pipeline@${version}",
+    "tagAnnotation": "Release cds-data-pipeline@${version}",
+    "commitsPath": "packages/cds-data-pipeline"
+  },
+  "github": {
+    "release": true
+  },
+  "npm": {
+    "publish": true
+  },
+  "hooks": {
+    "before:init": "npm test"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": {
+        "name": "conventionalcommits",
+        "types": [
+          {
+            "type": "feat",
+            "section": "Features"
+          },
+          {
+            "type": "fix",
+            "section": "Bug Fixes"
+          },
+          {}
+        ]
+      },
+      "infile": "CHANGELOG.md",
+      "path": "packages/cds-data-pipeline",
+      "gitRawCommitsOpts": {
+        "path": "packages/cds-data-pipeline"
+      }
+    }
+  }
+}
