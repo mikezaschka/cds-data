@@ -304,4 +304,8 @@ These rows are marked `Implemented` but no test carries the `[<id>]` prefix. Eit
 - 4.16.2 — Implemented
 - 4.16.3 — Implemented
 - 4.16.4 — Implemented
-- 4.17.3 — Implemented (as `_defaultWriteHandler`; to be lifted into `DbTargetAdapter`)
+- 4.17.1 — Implemented
+- 4.17.2 — Implemented
+- 4.17.3 — Implemented
+- 4.17.7 — Implemented
+- 4.17.8 — Implemented
