@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "rootDir": "./pipeline-console-src/webapp",
+    "types": ["@openui5/types"]
+  },
+  "include": ["./pipeline-console-src/webapp/**/*.ts"]
+}

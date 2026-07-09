@@ -1,84 +1,130 @@
-sap.ui.define(["sap/ui/core/UIComponent", "sap/ui/model/json/JSONModel"], function (UIComponent, JSONModel) {
+sap.ui.define(["sap/ui/core/UIComponent", "sap/ui/model/json/JSONModel", "pipeline/monitor/fcl/util/FclHelper"], function (UIComponent, JSONModel, __pipeline_monitor_fcl_util_FclHelper) {
   "use strict";
 
+  const updateLayoutFromRoute = __pipeline_monitor_fcl_util_FclHelper["updateLayoutFromRoute"];
+  const syncFclActionButtonsDeferred = __pipeline_monitor_fcl_util_FclHelper["syncFclActionButtonsDeferred"];
   const MANIFEST_REFRESH = "/sap.ui5/pipelineConsole/refreshIntervalSeconds";
-  const L = {
-    one: "OneColumn",
-    twoBegin: "TwoColumnsBeginExpanded",
-    threeMid: "ThreeColumnsMidExpanded"
-  };
-  function refreshODataV4Model(oModel) {
-    const m = oModel;
-    if (!m || typeof m.getGroupId !== "function" || typeof m.refresh !== "function") {
+  const MANIFEST_RUNNING_REFRESH = "/sap.ui5/pipelineConsole/runningRefreshIntervalSeconds";
+  function refreshODataModel(model) {
+    if (!model?.refresh || !model.getGroupId) {
       return;
     }
-    m.refresh(m.getGroupId());
+    model.refresh(model.getGroupId());
   }
-  const PipelineConsoleComponent = UIComponent.extend("pipeline.monitor.fcl.Component", {
+
+  /**
+   * @namespace pipeline.monitor.fcl
+   */
+  const Component = UIComponent.extend("pipeline.monitor.fcl.Component", {
+    constructor: function constructor() {
+      UIComponent.prototype.constructor.apply(this, arguments);
+      this.refreshTimer = null;
+      this.refreshIntervalMs = 30000;
+      this.runningIntervalMs = 3000;
+      this.fastPolling = false;
+    },
     metadata: {
       manifest: "json"
     },
-    _oRefreshTimer: null,
-    init() {
+    init: function _init() {
       UIComponent.prototype.init.call(this);
       this.setModel(new JSONModel({
-        layout: L.one
-      }), "fcl");
-      this.getRouter().attachRouteMatched(this._onRouteMatched, this);
-      this.getRouter().initialize();
-      this._ensureInitialRoute();
-      const iSec = this.getManifestEntry(MANIFEST_REFRESH) ?? 30;
-      if (iSec > 0) {
-        const that = this;
-        this._oRefreshTimer = setInterval(function () {
-          if (typeof document !== "undefined" && document.hidden) {
-            return;
+        layout: "OneColumn",
+        actionButtonsInfo: {
+          midColumn: {
+            fullScreen: null,
+            exitFullScreen: null,
+            closeColumn: null
+          },
+          endColumn: {
+            fullScreen: null,
+            exitFullScreen: null,
+            closeColumn: null
           }
-          refreshODataV4Model(that.getModel());
-        }, iSec * 1000);
-      }
-    },
-    _ensureInitialRoute() {
-      const oRouter = this.getRouter();
-      const fnRun = function () {
-        const oHC = oRouter.getHashChanger && oRouter.getHashChanger();
-        let sHash = "";
-        if (oHC && typeof oHC.getHash === "function") {
-          sHash = oHC.getHash() || "";
-        } else if (typeof window !== "undefined" && window.location && window.location.hash) {
-          sHash = window.location.hash;
+        },
+        midColumnActions: {
+          fullScreen: false,
+          exitFullScreen: false,
+          closeColumn: false
+        },
+        endColumnActions: {
+          fullScreen: false,
+          exitFullScreen: false,
+          closeColumn: false
         }
-        sHash = sHash.replace(/^#/, "");
-        const bDetail = /(^|\/)Pipelines\//.test(sHash);
-        if (!bDetail) {
-          oRouter.navTo("master", {}, true);
+      }), "fcl");
+      this.setModel(new JSONModel({
+        fastPolling: false
+      }), "appState");
+      const idleSec = this.getManifestEntry(MANIFEST_REFRESH) ?? 30;
+      const runningSec = this.getManifestEntry(MANIFEST_RUNNING_REFRESH) ?? 3;
+      this.refreshIntervalMs = Math.max(idleSec, 5) * 1000;
+      this.runningIntervalMs = Math.max(runningSec, 1) * 1000;
+      this.getRouter().attachRouteMatched(this.onRouteMatched, this);
+      this.getRouter().initialize();
+      this.ensureInitialRoute();
+      this.startPolling(false);
+    },
+    setFastPolling: function _setFastPolling(enabled) {
+      if (this.fastPolling === enabled) {
+        return;
+      }
+      this.fastPolling = enabled;
+      this.getModel("appState").setProperty("/fastPolling", enabled);
+      this.startPolling(enabled);
+    },
+    triggerRefresh: function _triggerRefresh() {
+      refreshODataModel(this.getModel());
+    },
+    startPolling: function _startPolling(fast) {
+      if (this.refreshTimer) {
+        clearInterval(this.refreshTimer);
+        this.refreshTimer = null;
+      }
+      const interval = fast ? this.runningIntervalMs : this.refreshIntervalMs;
+      this.refreshTimer = setInterval(() => {
+        if (typeof document !== "undefined" && document.hidden) {
+          return;
+        }
+        refreshODataModel(this.getModel());
+      }, interval);
+    },
+    ensureInitialRoute: function _ensureInitialRoute() {
+      const router = this.getRouter();
+      const run = () => {
+        const hashChanger = router.getHashChanger?.();
+        let hash = hashChanger?.getHash?.() || window.location.hash.replace(/^#/, "");
+        if (!/(^|\/)Pipelines\//.test(hash)) {
+          router.navTo("master", {}, true);
         }
       };
       if (window.requestAnimationFrame) {
-        window.requestAnimationFrame(function () {
-          window.requestAnimationFrame(fnRun);
-        });
+        window.requestAnimationFrame(() => window.requestAnimationFrame(run));
       } else {
-        setTimeout(fnRun, 0);
+        setTimeout(run, 0);
       }
     },
-    _onRouteMatched(oEvent) {
-      const sName = oEvent.getParameter("name");
-      const oFcl = this.getModel("fcl");
-      if (sName === "master") {
-        oFcl.setProperty("/layout", L.one);
-      } else if (sName === "detail") {
-        oFcl.setProperty("/layout", sap.ui.Device.system.phone ? L.twoBegin : L.threeMid);
+    onRouteMatched: function _onRouteMatched(event) {
+      const routeName = event.getParameter("name");
+      const args = event.getParameter("arguments");
+      const query = event.getParameter("arguments")?.["?query"];
+      updateLayoutFromRoute(this.getModel("fcl"), routeName, query?.layout);
+      syncFclActionButtonsDeferred(this);
+      if (routeName === "master") {
+        this.setFastPolling(false);
+      }
+      if (args?.name && routeName !== "master") {
+        // detail routes may need fast polling once status is running
       }
     },
-    exit() {
-      if (this._oRefreshTimer) {
-        clearInterval(this._oRefreshTimer);
-        this._oRefreshTimer = null;
+    exit: function _exit() {
+      if (this.refreshTimer) {
+        clearInterval(this.refreshTimer);
+        this.refreshTimer = null;
       }
       UIComponent.prototype.exit.call(this);
     }
   });
-  return PipelineConsoleComponent;
+  return Component;
 });
 //# sourceMappingURL=Component-dbg.js.map

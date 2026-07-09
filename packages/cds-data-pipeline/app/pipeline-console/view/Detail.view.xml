@@ -3,71 +3,322 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:f="sap.f"
     xmlns:form="sap.ui.layout.form"
-    xmlns:core="sap.ui.core">
-    <f:DynamicPage id="detailPage" class="fclAppDetail" showFooter="false" stickySubheaderProvider="iconTabBar" backgroundDesign="Solid" headerExpanded="true">
+    xmlns:layout="sap.ui.layout"
+    xmlns:core="sap.ui.core"
+    xmlns:graph="sap.suite.ui.commons.networkgraph">
+    <f:DynamicPage id="detailPage" class="fclAppDetail sapUiNoContentPadding" showFooter="false" stickySubheaderProvider="iconTabBar" backgroundDesign="Solid" headerExpanded="true">
         <f:title>
             <f:DynamicPageTitle>
                 <f:heading>
-                    <ObjectIdentifier class="fclDetailHeading sapUiNoContentPadding" title="{name}" />
+                    <Title text="{name}" class="fclDetailHeading" />
                 </f:heading>
-                <f:content>
-                    <ObjectStatus class="fclDetailStatus" text="{status}" state="{
-                            path: 'status',
-                            formatter: '.statusState'
-                        }" />
-                </f:content>
+                <f:expandedContent>
+                    <Label text="{description}" visible="{= !!${description} }" />
+                </f:expandedContent>
+                <f:snappedContent>
+                    <Label text="{description}" visible="{= !!${description} }" />
+                </f:snappedContent>
+                <f:snappedTitleOnMobile>
+                    <Title text="{description}" visible="{= !!${description} }" />
+                </f:snappedTitleOnMobile>
                 <f:actions>
-                      <Button type="Emphasized" text="{i18n>actionStart}" press="onStartDialog" />
-                            <Button type="Default" text="{i18n>actionSetSchedule}" press="onSetScheduleDialog" />
-                            <Button type="Transparent" text="{i18n>actionClearSchedule}" press="onClearSchedule" />
+                    <Button type="Emphasized" text="{i18n>actionStart}" press="onStartDialog" enabled="{= ${detail>/ready} &amp;&amp; ${status} !== 'running' }" />
+                    <Button
+                        type="{ parts: [{path:'enabled', targetType:'any'}], formatter: '.formatPauseActionType' }"
+                        text="{ parts: [{path:'enabled', targetType:'any'}], formatter: '.formatPauseActionText' }"
+                        press="onToggleEnabled"
+                        enabled="{ parts: [{path:'schedule'},{path:'detail>/ready'}], formatter: '.canToggleSchedulePause' }"
+                        tooltip="{ parts: [{path:'schedule'},{path:'detail>/ready'}], formatter: '.pauseScheduleTooltip' }" />
+                    <Button type="Transparent" text="{i18n>actionSetSchedule}" press="onSetScheduleDialog" enabled="{detail>/ready}" />
+                    <Button type="Transparent" text="{i18n>actionClearSchedule}" press="onClearSchedule" enabled="{detail>/ready}" />
+                    <ToolbarSeparator/>
+                    <Button type="Warning" text="{i18n>actionFlush}" press="onFlush" enabled="{= ${detail>/ready} &amp;&amp; ${status} !== 'running' }" />
                 </f:actions>
+                <f:navigationActions>
+                    <Button
+                        visible="{= ${fcl>/layout} !== 'OneColumn' }"
+                        type="Transparent"
+                        icon="{ parts: [{path: '/layout', model: 'fcl'}], formatter: '.formatMidFullScreenIcon' }"
+                        tooltip="{ parts: [{path: '/layout', model: 'fcl'}], formatter: '.formatMidFullScreenTooltip' }"
+                        press="onMidFullScreen" />
+                    <Button visible="{device>/showBack}" type="Transparent" icon="sap-icon://nav-back" tooltip="{i18n>navBack}" press="onNavBack" />
+                    <Button visible="{fcl>/midColumnActions/closeColumn}" type="Transparent" icon="sap-icon://decline" tooltip="{i18n>closeColumn}" press="onCloseMidColumn" />
+                </f:navigationActions>
             </f:DynamicPageTitle>
         </f:title>
-        
+        <f:header>
+            <f:DynamicPageHeader pinnable="true">
+                <layout:HorizontalLayout allowWrapping="true" class="fclHeaderMeta">
+                    <layout:VerticalLayout class="fclHeaderMetaCol sapUiMediumMarginEnd">
+                        <HBox alignItems="Center" class="fclHeaderMetaRow">
+                            <Label text="{i18n>fdMode}" showColon="true" class="fclHeaderMetaLabel" />
+                            <Text text="{mode}" />
+                        </HBox>
+                        <HBox alignItems="Center" class="fclHeaderMetaRow">
+                            <Label text="{i18n>fdSchedule}" showColon="true" class="fclHeaderMetaLabel" />
+                            <Text text="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatScheduleCellLabel' }" />
+                        </HBox>
+                        <HBox alignItems="Center" class="fclHeaderMetaRow">
+                            <Label text="{i18n>fdLastRun}" showColon="true" class="fclHeaderMetaLabel" />
+                            <Text text="{ path: 'lastSync', formatter: '.formatLastRun' }" />
+                        </HBox>
+                    </layout:VerticalLayout>
+                    <layout:VerticalLayout class="fclHeaderMetaCol">
+                        <HBox alignItems="Center" class="fclHeaderMetaRow">
+                            <Label text="{i18n>fdPipelineStatus}" showColon="true" class="fclHeaderMetaLabel" />
+                            <ObjectStatus
+                                text="{ path: 'status', formatter: '.formatStatusLabel' }"
+                                state="{ path: 'status', formatter: '.statusState' }"
+                                tooltip="{ path: 'status', formatter: '.statusTooltip' }"
+                                active="false" />
+                        </HBox>
+                    </layout:VerticalLayout>
+                </layout:HorizontalLayout>
+            </f:DynamicPageHeader>
+        </f:header>
         <f:content>
-            <IconTabBar expandable="false" headerMode="Inline" id="iconTabBar" class="sapUiResponsiveContentPadding">
-                <items>
-                    <IconTabFilter text="{i18n>overviewGroup}" key="overview" icon="sap-icon://overview">
-                        <form:SimpleForm id="detailForm" maxContainerCols="2" labelSpanL="3" labelSpanM="3" columnsL="2" columnsM="1" layout="ColumnLayout" width="100%" editable="false" class="fclForm">
-                            <form:content>
-                                <core:Title text="{i18n>overviewGroup}" />
-                                <Label text="{i18n>fdDescription}" />
-                                <Text text="{description}" class="fclMText" wrapping="true" />
-                                <Label text="{i18n>fdMode}" />
-                                <Text text="{mode}" />
-                                <Label text="{i18n>fdOrigin}" />
-                                <Text text="{origin}" />
-                                <Label text="{i18n>fdLastSync}" />
-                                <Text text="{
-                            path: 'lastSync',
-                            type: 'sap.ui.model.odata.type.DateTimeOffset',
-                            formatOptions: { style: 'medium' }
-                        }" />
-                                <Label text="{i18n>fdLastKey}" />
-                                <Text text="{lastKey}" class="fclMText" />
-                                <core:Title text="{i18n>errorsGroup}" />
-                                <Label text="{i18n>fdErrorCount}" />
-                                <ObjectNumber number="{errorCount}" state="{
-                            path: 'errorCount',
-                            formatter: '.errorState'
-                        }" />
-                                <Label text="{i18n>fdLastError}" />
-                                <Text text="{lastError}" wrapping="true" class="fclMText" />
-                                <core:Title text="{i18n>statsGroup}" />
-                                <Label text="{i18n>fdCreated}" />
-                                <ObjectNumber class="fclStat" number="{statistics_created}" />
-                                <Label text="{i18n>fdUpdated}" />
-                                <ObjectNumber class="fclStat" number="{statistics_updated}" />
-                                <Label text="{i18n>fdDeleted}" />
-                                <ObjectNumber class="fclStat" number="{statistics_deleted}" />
-                            </form:content>
-                        </form:SimpleForm>
-                    </IconTabFilter>
-                    <IconTabFilter text="{i18n>errorsGroup}" key="errors" icon="sap-icon://errors" />
-                    <IconTabFilter text="{i18n>statsGroup}" key="stats" icon="sap-icon://stats" />
-                </items>
-            </IconTabBar>
-
+            <VBox width="100%">
+                <MessageStrip visible="{= !!${detail>/bindError} }" text="{detail>/bindError}" type="Error" showIcon="true" class="sapUiSmallMarginBottom" />
+                <BusyIndicator visible="{detail>/busy}" class="fclDetailBusy" />
+                <IconTabBar visible="{= !${detail>/busy} }" expandable="false" headerMode="Inline" id="iconTabBar" class="sapUiResponsiveContentPadding" select="onDetailTabSelect">
+                    <items>
+                        <IconTabFilter text="{i18n>overviewGroup}" key="overview">
+                            <VBox class="fclTabPanel">
+                                <MessageStrip
+                                    visible="{detail>/schedulePaused}"
+                                    text="{i18n>schedulePausedHint}"
+                                    type="Warning"
+                                    showIcon="true"
+                                    class="sapUiSmallMarginBottom" />
+                                <form:SimpleForm maxContainerCols="2" labelSpanL="3" labelSpanM="3" columnsL="2" columnsM="1" layout="ColumnLayout" editable="false" class="fclForm">
+                                    <form:content>
+                                        <core:Title text="{i18n>overviewGroup}" />
+                                        <Label text="{i18n>fdDescription}" />
+                                        <Text text="{= ${description} || '—' }" wrapping="true" />
+                                        <Label text="{i18n>fdPipelineStatus}" />
+                                        <ObjectStatus text="{ path: 'status', formatter: '.formatStatusLabel' }" state="{ path: 'status', formatter: '.statusState' }" tooltip="{ path: 'status', formatter: '.statusTooltip' }" />
+                                        <Label text="{i18n>fdMode}" />
+                                        <Text text="{mode}" />
+                                        <Label text="{i18n>fdSchedule}" />
+                                        <ObjectStatus
+                                            text="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatScheduleCellLabel' }"
+                                            state="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatSchedulingState' }"
+                                            icon="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatSchedulingIcon' }"
+                                            inverted="true" />
+                                        <Label text="{i18n>fdLastRun}" />
+                                        <Text text="{ path: 'lastSync', formatter: '.formatLastRun' }" tooltip="{ path: 'lastSync', formatter: '.formatTimestamp' }" />
+                                        <Label text="{i18n>fdOrigin}" visible="{ path: 'origin', formatter: '.showOrigin' }" />
+                                        <Text text="{origin}" visible="{ path: 'origin', formatter: '.showOrigin' }" />
+                                        <Label text="{i18n>fdLastKey}" visible="{ path: 'lastKey', formatter: '.showLastKey' }" />
+                                        <Text text="{lastKey}" visible="{ path: 'lastKey', formatter: '.showLastKey' }" />
+                                    </form:content>
+                                </form:SimpleForm>
+                                <MessageStrip visible="{= !!${lastError} }" text="{lastError}" type="Error" showIcon="true" class="sapUiSmallMarginTop" />
+                                <Panel expandable="true" expanded="false" headerText="{i18n>rawConfigGroup}" class="sapUiSmallMarginTop">
+                                    <form:SimpleForm maxContainerCols="1" labelSpanL="3" labelSpanM="3" layout="ColumnLayout" editable="false" class="fclForm">
+                                        <form:content>
+                                            <Label text="{i18n>fdSource}" />
+                                            <Text text="{ path: 'source', formatter: '.formatJson' }" class="fclJsonText" wrapping="true" renderWhitespace="true" />
+                                            <Label text="{i18n>fdTarget}" />
+                                            <Text text="{ path: 'target', formatter: '.formatJson' }" class="fclJsonText" wrapping="true" renderWhitespace="true" />
+                                        </form:content>
+                                    </form:SimpleForm>
+                                </Panel>
+                            </VBox>
+                        </IconTabFilter>
+                        <IconTabFilter text="{i18n>runsGroup} ({detail>/runCount})" key="runs">
+                            <VBox class="fclTabPanel">
+                                <IllustratedMessage visible="{= ${detail>/ready} &amp;&amp; ${detail>/runCount} === 0 }" illustrationType="sapIllus-NoData" title="{i18n>noRunsTitle}" description="{i18n>noRunsDesc}" />
+                                <Table id="runsTable" visible="{= ${detail>/runCount} > 0 || !${detail>/ready} }" class="fclRunsTable" growing="true" growingThreshold="30" width="100%" updateFinished="onRunsUpdateFinished" items="{ path: 'runs', sorter: { path: 'startTime', descending: true }, templateShareable: false }" noDataText="{i18n>noRuns}">
+                                    <columns>
+                                        <Column width="10rem">
+                                            <Text text="{i18n>colStart}"/>
+                                        </Column>
+                                        <Column width="10rem">
+                                            <Text text="{i18n>colEnd}"/>
+                                        </Column>
+                                        <Column width="5rem">
+                                            <Text text="{i18n>colDuration}"/>
+                                        </Column>
+                                        <Column width="5rem">
+                                            <Text text="{i18n>colRunStatus}"/>
+                                        </Column>
+                                        <Column width="5rem">
+                                            <Text text="{i18n>colTrigger}"/>
+                                        </Column>
+                                        <Column width="6rem" hAlign="End">
+                                            <Text text="{i18n>colC}"/>
+                                        </Column>
+                                        <Column width="6rem" hAlign="End">
+                                            <Text text="{i18n>colU}"/>
+                                        </Column>
+                                        <Column width="6rem" hAlign="End">
+                                            <Text text="{i18n>colD}"/>
+                                        </Column>
+                                        <Column minWidth="8rem">
+                                            <Text text="{i18n>colError}"/>
+                                        </Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem type="Inactive" vAlign="Top" highlight="{= ${status} === 'failed' ? 'Error' : 'None' }">
+                                            <cells>
+                                                <Text text="{ path: 'startTime', formatter: '.formatTimestamp' }" />
+                                                <Text text="{ path: 'endTime', formatter: '.formatTimestamp' }" />
+                                                <Text text="{ parts: [{path:'startTime'},{path:'endTime'}], formatter: '.runDuration' }" />
+                                                <ObjectStatus text="{status}" state="{ path: 'status', formatter: '.statusState' }" />
+                                                <Text text="{trigger}" />
+                                                <ObjectNumber number="{statistics_created}" />
+                                                <ObjectNumber number="{statistics_updated}" />
+                                                <ObjectNumber number="{statistics_deleted}" />
+                                                <HBox justifyContent="SpaceBetween" alignItems="Center">
+                                                    <Text text="{ path: 'error', formatter: '.errorPreview' }" class="fclErrorCell" maxLines="2" width="100%" />
+                                                    <Button type="Transparent" icon="sap-icon://message-information" tooltip="{i18n>viewFullError}" press="onShowError" visible="{= !!${error} }" enabled="{= !!${error} }" />
+                                                </HBox>
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </VBox>
+                        </IconTabFilter>
+                        <IconTabFilter text="{i18n>configGroup}" key="configuration">
+                            <VBox class="fclTabPanel">
+                                <Text text="{i18n>overridesHint}" class="sapUiTinyMarginBottom" />
+                                <OverflowToolbar>
+                                    <ToolbarSpacer />
+                                    <Button
+                                        type="Transparent"
+                                        
+                                        text="{i18n>actionResetOverrides}"
+                                        
+                                        press="onResetOverrides"
+                                        enabled="{detail>/ready}" />
+                                </OverflowToolbar>
+                                <Table
+                                    id="overridesTable"
+                                    width="100%"
+                                    class="fclOverridesTable"
+                                    fixedLayout="true"
+                                    items="{detail>/configView/fields}"
+                                    noDataText="{i18n>overridesLoading}"
+                                    mode="None">
+                                    <columns>
+                                        <Column width="8.5rem"><Text text="{i18n>colOverrideField}" /></Column>
+                                        <Column width="22%"><Text text="{i18n>colCodedValue}" /></Column>
+                                        <Column width="14%"><Text text="{i18n>colOverrideValue}" /></Column>
+                                        <Column width="22%"><Text text="{i18n>colEffectiveValue}" /></Column>
+                                        <Column width="5.5rem"><Text text="{i18n>colOverrideSource}" /></Column>
+                                        <Column width="4.5rem"><Text text="" /></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem>
+                                            <cells>
+                                                <Text
+                                                    text="{ path: 'detail>path', formatter: '.formatOverrideFieldLabel' }"
+                                                    wrapping="true" />
+                                                <Text
+                                                    text="{ path: 'detail>coded', formatter: '.formatOverrideCell' }"
+                                                    wrapping="true" />
+                                                <Text
+                                                    text="{ path: 'detail>override', formatter: '.formatOverrideCell' }"
+                                                    wrapping="true"
+                                                    class="{= ${detail>source} === 'override' ? 'fclOverrideActive' : '' }" />
+                                                <Text
+                                                    text="{ path: 'detail>effective', formatter: '.formatOverrideCell' }"
+                                                    wrapping="true" />
+                                                <Text
+                                                    text="{= ${detail>source} === 'override' ? ${i18n>sourceOverride} : ${i18n>sourceCoded} }"
+                                                    class="{= ${detail>source} === 'override' ? 'fclOverrideActive' : '' }" />
+                                                <HBox alignItems="Center" justifyContent="End">
+                                                    <Button
+                                                        icon="sap-icon://edit"
+                                                        type="Transparent"
+                                                        tooltip="{i18n>actionEditOverride}"
+                                                        press="onEditOverride"
+                                                        enabled="{detail>overridable}"
+                                                        visible="{detail>overridable}" />
+                                                    <Button
+                                                        icon="sap-icon://reset"
+                                                        type="Transparent"
+                                                        tooltip="{i18n>actionClearFieldOverride}"
+                                                        press="onClearFieldOverride"
+                                                        visible="{= ${detail>source} === 'override' }" />
+                                                </HBox>
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                            </VBox>
+                        </IconTabFilter>
+                        <IconTabFilter text="{i18n>dataGroup}" key="flow">
+                            <VBox class="fclTabPanel">
+                                <Text text="{i18n>flowEventsLegend}" class="fclFlowLegend sapUiTinyMarginBottom" />
+                                <graph:Graph id="flowGraph" orientation="LeftRight" enableWheelZoom="true" nodesPress="onGraphNodePress" visible="{detail>/flowReady}" class="fclFlowGraph fclDetailFlowGraph" />
+                                <BusyIndicator visible="{= !${detail>/flowReady} }" class="fclDetailBusy" />
+                            </VBox>
+                        </IconTabFilter>
+                        <IconTabFilter text="{i18n>dataPreviewGroup}" key="dataPreview" enabled="{= ${detail>/inspectSourceEnabled} || ${detail>/inspectTargetEnabled} }" tooltip="{= ${detail>/inspectSourceEnabled} || ${detail>/inspectTargetEnabled} ? ${i18n>dataPreviewGroup} : ${i18n>inspectTabDisabled} }">
+                            <items>
+                                <IconTabFilter text="{i18n>inspectSource}" key="inspectSource" enabled="{detail>/inspectSourceEnabled}" tooltip="{= ${detail>/inspectSourceEnabled} ? ${i18n>inspectSource} : ${i18n>inspectTabDisabled} }">
+                                    <VBox class="fclTabPanel fclInspectPanel" width="100%">
+                                        <MessageStrip visible="{detail>/inspectSourceLimited}" text="{i18n>inspectPaginationWarning}" type="Warning" showIcon="true" class="sapUiTinyMarginBottom" />
+                                        <VBox visible="{= !${detail>/inspect/source/loaded} &amp;&amp; !${detail>/inspect/source/busy} }" alignItems="Center" class="fclInspectLoadPrompt">
+                                            <Text text="{i18n>inspectLoadPrompt}" class="sapUiSmallMarginBottom" />
+                                            <Button type="Emphasized" text="{i18n>actionShowData}" icon="sap-icon://download" press="onInspectSourceLoadData" enabled="{detail>/inspectSourceEnabled}" />
+                                        </VBox>
+                                        <VBox visible="{detail>/inspect/source/loaded}" width="100%">
+                                            <HBox alignItems="Center" wrap="Wrap" class="fclInspectToolbar">
+                                                <Label text="{i18n>inspectColumns}" class="sapUiTinyMarginEnd" />
+                                                <MultiComboBox id="columnSelectorSource" width="100%" selectionChange="onInspectSourceColumnsChange" class="fclColumnSelector" />
+                                                <ToolbarSpacer />
+                                                <Button text="{i18n>actionAdvancedFilter}" icon="sap-icon://filter" press="onInspectSourceAdvancedFilter" type="Transparent" enabled="{detail>/inspectSourceEnabled}" />
+                                                <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>actionRefresh}" press="onInspectSourceRefresh" enabled="{detail>/inspectSourceEnabled}" />
+                                            </HBox>
+                                            <MessageStrip visible="{detail>/inspect/source/limitedSupport}" text="{i18n>inspectLimitedSupport}" type="Warning" showIcon="true" class="sapUiTinyMarginTop" />
+                                            <BusyIndicator visible="{detail>/inspect/source/busy}" class="fclInspectBusy" />
+                                            <IllustratedMessage visible="{= ${detail>/inspect/source/ready} &amp;&amp; !${detail>/inspect/source/busy} &amp;&amp; ${detail>/inspect/source/rowCount} === 0 }" illustrationType="sapIllus-NoData" title="{i18n>inspectNoDataTitle}" description="{i18n>inspectNoDataDesc}" />
+                                            <Table id="inspectSourceTable" visible="{= ${detail>/inspect/source/loaded} &amp;&amp; !${detail>/inspect/source/busy} }" width="100%" class="fclDataTable" sticky="ColumnHeaders,HeaderToolbar" />
+                                            <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginTop" visible="{= ${detail>/inspect/source/loaded} &amp;&amp; !${detail>/inspect/source/busy} }">
+                                                <Text visible="{= !${detail>/inspect/source/hasMore} &amp;&amp; ${detail>/inspect/source/rowCount} > 0 }" text="{i18n>inspectPageEnd}" class="fclInspectPageHint" />
+                                                <ToolbarSpacer />
+                                                <Button text="{i18n>actionMore}" type="Emphasized" press="onInspectSourceLoadMore" enabled="{detail>/inspect/source/hasMore}" visible="{detail>/inspect/source/hasMore}" />
+                                            </HBox>
+                                        </VBox>
+                                        <BusyIndicator visible="{= !${detail>/inspect/source/loaded} &amp;&amp; ${detail>/inspect/source/busy} }" class="fclInspectBusy" />
+                                    </VBox>
+                                </IconTabFilter>
+                                <IconTabFilter text="{i18n>inspectTarget}" key="inspectTarget" enabled="{detail>/inspectTargetEnabled}" tooltip="{= ${detail>/inspectTargetEnabled} ? ${i18n>inspectTarget} : ${i18n>inspectTabDisabled} }">
+                                    <VBox class="fclTabPanel fclInspectPanel" width="100%">
+                                        <MessageStrip visible="{detail>/inspectTargetLimited}" text="{i18n>inspectPaginationWarning}" type="Warning" showIcon="true" class="sapUiTinyMarginBottom" />
+                                        <VBox visible="{= !${detail>/inspect/target/loaded} &amp;&amp; !${detail>/inspect/target/busy} }" alignItems="Center" class="fclInspectLoadPrompt">
+                                            <Text text="{i18n>inspectLoadPrompt}" class="sapUiSmallMarginBottom" />
+                                            <Button type="Emphasized" text="{i18n>actionShowData}" icon="sap-icon://download" press="onInspectTargetLoadData" enabled="{detail>/inspectTargetEnabled}" />
+                                        </VBox>
+                                        <VBox visible="{detail>/inspect/target/loaded}" width="100%">
+                                            <HBox alignItems="Center" wrap="Wrap" class="fclInspectToolbar">
+                                                <Label text="{i18n>inspectColumns}" class="sapUiTinyMarginEnd" />
+                                                <MultiComboBox id="columnSelectorTarget" width="100%" selectionChange="onInspectTargetColumnsChange" class="fclColumnSelector" />
+                                                <ToolbarSpacer />
+                                                <Button text="{i18n>actionAdvancedFilter}" icon="sap-icon://filter" press="onInspectTargetAdvancedFilter" type="Transparent" enabled="{detail>/inspectTargetEnabled}" />
+                                                <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>actionRefresh}" press="onInspectTargetRefresh" enabled="{detail>/inspectTargetEnabled}" />
+                                            </HBox>
+                                            <MessageStrip visible="{detail>/inspect/target/limitedSupport}" text="{i18n>inspectLimitedSupport}" type="Warning" showIcon="true" class="sapUiTinyMarginTop" />
+                                            <BusyIndicator visible="{detail>/inspect/target/busy}" class="fclInspectBusy" />
+                                            <IllustratedMessage visible="{= ${detail>/inspect/target/ready} &amp;&amp; !${detail>/inspect/target/busy} &amp;&amp; ${detail>/inspect/target/rowCount} === 0 }" illustrationType="sapIllus-NoData" title="{i18n>inspectNoDataTitle}" description="{i18n>inspectNoDataDesc}" />
+                                            <Table id="inspectTargetTable" visible="{= ${detail>/inspect/target/loaded} &amp;&amp; !${detail>/inspect/target/busy} }" width="100%" class="fclDataTable" sticky="ColumnHeaders,HeaderToolbar" />
+                                            <HBox justifyContent="SpaceBetween" alignItems="Center" class="sapUiSmallMarginTop" visible="{= ${detail>/inspect/target/loaded} &amp;&amp; !${detail>/inspect/target/busy} }">
+                                                <Text visible="{= !${detail>/inspect/target/hasMore} &amp;&amp; ${detail>/inspect/target/rowCount} > 0 }" text="{i18n>inspectPageEnd}" class="fclInspectPageHint" />
+                                                <ToolbarSpacer />
+                                                <Button text="{i18n>actionMore}" type="Emphasized" press="onInspectTargetLoadMore" enabled="{detail>/inspect/target/hasMore}" visible="{detail>/inspect/target/hasMore}" />
+                                            </HBox>
+                                        </VBox>
+                                        <BusyIndicator visible="{= !${detail>/inspect/target/loaded} &amp;&amp; ${detail>/inspect/target/busy} }" class="fclInspectBusy" />
+                                    </VBox>
+                                </IconTabFilter>
+                            </items>
+                        </IconTabFilter>
+                    </items>
+                </IconTabBar>
+            </VBox>
         </f:content>
     </f:DynamicPage>
 </mvc:View>

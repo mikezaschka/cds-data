@@ -2,8 +2,9 @@
     xmlns="sap.m"
     xmlns:mvc="sap.ui.core.mvc"
     xmlns:core="sap.ui.core"
-    xmlns:f="sap.f">
-    <f:DynamicPage id="masterPage" class="fclAppMaster" showNavButton="false">
+    xmlns:f="sap.f"
+    xmlns:graph="sap.suite.ui.commons.networkgraph">
+    <f:DynamicPage id="masterPage" class="fclAppMaster sapUiNoContentPadding" showNavButton="false" stickySubheaderProvider="masterTabBar">
         <f:title>
             <f:DynamicPageTitle>
                 <f:heading>
@@ -12,59 +13,79 @@
             </f:DynamicPageTitle>
         </f:title>
         <f:content>
-            <Table id="pipelineTable" class="fclPipelinesTable" growing="true" growingThreshold="20" width="100%" mode="SingleSelectMaster" selectionChange="onSelectionChange" noDataText="{i18n>noPipelines}" updateFinished="onTableUpdateFinished" items="{
-                path: '/Pipelines',
-                sorter: { path: 'name' },
-                templateShareable: false
-            }">
-                <headerToolbar>
-                    <Toolbar>
-                        <SearchField id="searchField" width="30rem" placeholder="{i18n>searchPlaceholder}" search="onSearch" />
-                    </Toolbar>
-                </headerToolbar>
-                <columns>
-                    <Column hAlign="Begin" width="11rem">
-                        <Text text="{i18n>colName}"/>
-                    </Column>
-                    <Column hAlign="Center" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block" width="7rem">
-                        <Text text="{i18n>colStatus}"/>
-                    </Column>
-                    <Column hAlign="Begin" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block" width="5rem">
-                        <Text text="{i18n>colMode}"/>
-                    </Column>
-                    <Column hAlign="Begin" minScreenWidth="Desktop" demandPopin="true" popinDisplay="Block" width="10rem">
-                        <Text text="{i18n>colLastSync}"/>
-                    </Column>
-                    <Column hAlign="Begin" minScreenWidth="Desktop" demandPopin="true" popinDisplay="Block" width="8rem">
-                        <Text text="{i18n>colOrigin}"/>
-                    </Column>
-                    <Column hAlign="End" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block" width="4.5rem">
-                        <Text text="{i18n>colErrors}"/>
-                    </Column>
-                </columns>
+            <IconTabBar id="masterTabBar" expandable="false" headerMode="Inline" class="sapUiResponsiveContentPadding"
+                 select="onMasterTabSelect">
                 <items>
-                    <ColumnListItem vAlign="Top" type="Active">
-                        <cells>
-                            <ObjectIdentifier title="{name}" text="{description}" class="fclNameCell"/>
-                            <ObjectStatus inverted="true" text="{status}" state="{
-                                path: 'status',
-                                formatter: '.statusState'
-                            }" />
-                            <Text text="{mode}" class="fclMText" />
-                            <Text text="{
-                                path: 'lastSync',
-                                type: 'sap.ui.model.odata.type.DateTimeOffset',
-                                formatOptions: { style: 'medium' }
-                            }" />
-                            <Text text="{origin}" />
-                            <ObjectNumber number="{errorCount}" state="{
-                                path: 'errorCount',
-                                formatter: '.errorState'
-                            }" />
-                        </cells>
-                    </ColumnListItem>
+                    <IconTabFilter text="{i18n>masterTabPipelines}" key="pipelines">
+                        <Table id="pipelineTable" class="fclPipelinesTable" growing="true" growingThreshold="20"
+                            width="100%" mode="SingleSelectMaster" selectionChange="onSelectionChange"
+                            noDataText="{i18n>noPipelines}" updateFinished="onTableUpdateFinished"
+                            items="{
+                                path: '/Pipelines',
+                                sorter: { path: 'name' },
+                                templateShareable: false
+                            }">
+                            <headerToolbar>
+                                <Toolbar class="fclActionToolbar">
+                                    <SearchField id="searchField" width="100%" placeholder="{i18n>searchPlaceholder}" search="onSearch" />
+                                    <ToolbarSpacer />
+                                    <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>actionRefresh}" press="onRefresh" />
+                                </Toolbar>
+                            </headerToolbar>
+                            <columns>
+                                <Column width="12rem"><Text text="{i18n>colName}"/></Column>
+                                <Column width="9rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                                    <Text text="{i18n>colStatus}"/>
+                                </Column>
+                                <Column width="5rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                                    <Text text="{i18n>colMode}"/>
+                                </Column>
+                                <Column width="10rem" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                                    <Text text="{i18n>colEnabled}"/>
+                                </Column>
+                                <Column width="9rem" minScreenWidth="Desktop" demandPopin="true" popinDisplay="Block">
+                                    <Text text="{i18n>colLastRun}"/>
+                                </Column>
+                                <Column width="4.5rem" hAlign="End" minScreenWidth="Tablet" demandPopin="true" popinDisplay="Block">
+                                    <Text text="{i18n>colErrors}"/>
+                                </Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem vAlign="Top" type="Active"
+                                    highlight="{ parts: [{path:'status'},{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.rowHighlight' }">
+                                    <cells>
+                                        <ObjectIdentifier title="{name}" text="{description}" class="fclNameCell"/>
+                                        <HBox alignItems="Center" class="fclStatusCell">
+                                            <core:Icon src="sap-icon://refresh"
+                                                visible="{= ${ path: 'status', targetType: 'any' } === 'running' }"
+                                                size="1rem"
+                                                class="fclRunningIcon sapUiTinyMarginEnd" />
+                                            <ObjectStatus
+                                                text="{ path: 'status', formatter: '.formatStatusLabel' }"
+                                                state="{ path: 'status', formatter: '.statusState' }"
+                                                tooltip="{ path: 'status', formatter: '.statusTooltip' }" />
+                                        </HBox>
+                                        <ObjectStatus text="{mode}" state="Information" inverted="true" />
+                                        <ObjectStatus
+                                            text="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatScheduleCellLabel' }"
+                                            state="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatSchedulingState' }"
+                                            icon="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatSchedulingIcon' }"
+                                            inverted="true" />
+                                        <Text text="{ path: 'lastSync', formatter: '.formatLastRun' }" />
+                                        <ObjectNumber number="{errorCount}" state="{ path: 'errorCount', formatter: '.errorState' }" />
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </IconTabFilter>
+                    <IconTabFilter text="{i18n>masterTabOverview}" key="overview">
+                        <VBox class="fclTabPanel" width="100%" height="800px">
+                            <graph:Graph id="landscapeGraph" orientation="LeftRight" enableWheelZoom="true"
+                                visible="{master>/landscapeReady}" class="fclLandscapeGraph" />
+                        </VBox>
+                    </IconTabFilter>
                 </items>
-            </Table>
+            </IconTabBar>
         </f:content>
     </f:DynamicPage>
 </mvc:View>

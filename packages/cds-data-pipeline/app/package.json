@@ -1,0 +1,11 @@
+{
+  "name": "cds-data-pipeline-console-build",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "@ui5/cli": "^4.0.0",
+    "http-proxy": "^1.18.1",
+    "ui5-tooling-transpile": "^3.3.0",
+    "ui5-utils-express": "^1.5.2"
+  }
+}

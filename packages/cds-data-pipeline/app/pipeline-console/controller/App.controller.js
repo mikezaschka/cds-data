@@ -1,2 +1,2 @@
-sap.ui.define(["sap/ui/core/mvc/Controller"],function(n){"use strict";var e=n.extend("pipeline.monitor.fcl.controller.App",{onInit(){},onExit(){}});return e});
+sap.ui.define(["sap/ui/core/mvc/Controller","pipeline/monitor/fcl/util/FclHelper"],function(t,e){"use strict";const n=e["getFcl"];const o=e["syncFclActionButtonsDeferred"];const c=t.extend("pipeline.monitor.fcl.controller.App",{onInit:function t(){const e=this.getOwnerComponent();n(this.getView()).attachStateChange(()=>{o(e)})}});return c});
 //# sourceMappingURL=App.controller.js.map

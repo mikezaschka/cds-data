@@ -1,0 +1,153 @@
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:form="sap.ui.layout.form">
+    <Dialog
+        id="editOverrideDialog"
+        title="{i18n>actionEditOverride}"
+        resizable="false"
+        contentWidth="28rem"
+        class="fclActionDialog"
+        type="Message">
+        <content>
+            <VBox class="fclEditOverrideDialog">
+                <Text
+                    text="{ path: 'detail>/overrideEdit/path', formatter: '.formatOverrideFieldHelp' }"
+                    wrapping="true"
+                    class="fclOverrideHelpText" />
+                <MessageStrip
+                    visible="{= ${detail>/overrideEdit/kind} === 'schedule' &amp;&amp; !${detail>/configView/meta/scheduleLiveChangeSupported} }"
+                    text="{i18n>scheduleLiveChangeUnsupported}"
+                    type="Warning"
+                    showIcon="true"
+                    class="sapUiSmallMarginBottom" />
+                <form:SimpleForm
+                    id="editOverrideForm"
+                    editable="true"
+                    layout="ResponsiveGridLayout"
+                    adjustLabelSpan="false"
+                    labelSpanXL="4"
+                    labelSpanL="4"
+                    labelSpanM="4"
+                    labelSpanS="12"
+                    emptySpanXL="0"
+                    emptySpanL="0"
+                    emptySpanM="0"
+                    emptySpanS="0"
+                    columnsXL="1"
+                    columnsL="1"
+                    columnsM="1"
+                    class="fclEditOverrideForm">
+                    <form:content>
+                        <Label visible="false" />
+                        <CheckBox
+                            selected="{detail>/overrideEdit/booleanValue}"
+                            visible="{= ${detail>/overrideEdit/kind} === 'boolean' }"
+                            text="{i18n>overrideEnabledCheckbox}" />
+
+                        <Label visible="false" />
+                        <Select
+                            selectedKey="{detail>/overrideEdit/selectKey}"
+                            visible="{= ${detail>/overrideEdit/kind} === 'mode' }"
+                            width="100%">
+                            <core:Item key="delta" text="{i18n>modeDelta}" />
+                            <core:Item key="full" text="{i18n>modeFull}" />
+                            <core:Item key="partial-refresh" text="{i18n>modePartialRefresh}" />
+                        </Select>
+
+                        <Label visible="false" />
+                        <Select
+                            selectedKey="{detail>/overrideEdit/selectKey}"
+                            visible="{= ${detail>/overrideEdit/kind} === 'deltaMode' }"
+                            width="100%">
+                            <core:Item key="timestamp" text="{i18n>deltaModeTimestamp}" />
+                            <core:Item key="key" text="{i18n>deltaModeKey}" />
+                            <core:Item key="datetime-fields" text="{i18n>deltaModeDatetimeFields}" />
+                            <core:Item key="full" text="{i18n>deltaModeFull}" />
+                        </Select>
+
+                        <Label visible="false" />
+                        <Input
+                            value="{detail>/overrideEdit/textValue}"
+                            visible="{= ${detail>/overrideEdit/kind} === 'description' }"
+                            width="100%" />
+
+                        <Label visible="false" />
+                        <Input
+                            value="{detail>/overrideEdit/textValue}"
+                            visible="{= ${detail>/overrideEdit/kind} === 'string' }"
+                            width="100%" />
+
+                        <Label visible="false" />
+                        <Input
+                            value="{detail>/overrideEdit/textValue}"
+                            type="Number"
+                            visible="{= ${detail>/overrideEdit/kind} === 'integer' }"
+                            width="100%" />
+
+                        <Label text="{i18n>fdScheduleKind}" visible="{= ${detail>/overrideEdit/kind} === 'schedule' }" />
+                        <SegmentedButton
+                            id="overrideScheduleKind"
+                            selectedKey="{detail>/overrideEdit/scheduleKind}"
+                            selectionChange="onOverrideScheduleKindChange"
+                            visible="{= ${detail>/overrideEdit/kind} === 'schedule' }">
+                            <items>
+                                <SegmentedButtonItem key="interval" text="{i18n>scheduleKindInterval}" />
+                                <SegmentedButtonItem key="cron" text="{i18n>scheduleKindCron}" />
+                            </items>
+                        </SegmentedButton>
+
+                        <Label
+                            text="{i18n>fdEveryMs}"
+                            id="overrideScheduleEveryLabel"
+                            visible="{= ${detail>/overrideEdit/kind} === 'schedule' &amp;&amp; ${detail>/overrideEdit/scheduleKind} === 'interval' }" />
+                        <Input
+                            id="overrideScheduleEvery"
+                            type="Number"
+                            value="{detail>/overrideEdit/scheduleEvery}"
+                            visible="{= ${detail>/overrideEdit/kind} === 'schedule' &amp;&amp; ${detail>/overrideEdit/scheduleKind} === 'interval' }"
+                            width="100%" />
+
+                        <Label
+                            text="{i18n>fdCron}"
+                            id="overrideScheduleCronLabel"
+                            visible="{= ${detail>/overrideEdit/kind} === 'schedule' &amp;&amp; ${detail>/overrideEdit/scheduleKind} === 'cron' }" />
+                        <Input
+                            id="overrideScheduleCron"
+                            value="{detail>/overrideEdit/scheduleCron}"
+                            placeholder="0 2 * * *"
+                            visible="{= ${detail>/overrideEdit/kind} === 'schedule' &amp;&amp; ${detail>/overrideEdit/scheduleKind} === 'cron' }"
+                            width="100%" />
+
+                        <Label text="{i18n>fdScheduleEngine}" visible="{= ${detail>/overrideEdit/kind} === 'schedule' }" />
+                        <Select
+                            id="overrideScheduleEngine"
+                            selectedKey="{detail>/overrideEdit/scheduleEngine}"
+                            visible="{= ${detail>/overrideEdit/kind} === 'schedule' }"
+                            width="100%">
+                            <core:Item key="spawn" text="spawn" />
+                            <core:Item key="queued" text="queued" />
+                        </Select>
+
+                        <Label visible="false" />
+                        <TextArea
+                            value="{detail>/overrideEdit/textValue}"
+                            visible="{= ${detail>/overrideEdit/kind} === 'json' }"
+                            rows="6"
+                            width="100%" />
+                    </form:content>
+                </form:SimpleForm>
+            </VBox>
+        </content>
+        <beginButton>
+            <Button
+                id="editOverrideConfirmBtn"
+                type="Emphasized"
+                text="{i18n>ok}"
+                press="onEditOverrideConfirm" />
+        </beginButton>
+        <endButton>
+            <Button text="{i18n>cancel}" press="onEditOverrideCancel" />
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

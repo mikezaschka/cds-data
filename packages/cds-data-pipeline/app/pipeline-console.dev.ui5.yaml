@@ -1,0 +1,39 @@
+# Dev server: live TypeScript + proxy to examples/_dev/pipeline-console (:4100).
+# Terminal 1: npm run dev:console-backend
+# Terminal 2: npm run dev:pipeline-console
+specVersion: "3.0"
+metadata:
+  name: pipeline.monitor.fcl
+type: application
+framework:
+  name: SAPUI5
+  version: "1.120.0"
+  libraries:
+    - name: sap.m
+    - name: sap.f
+    - name: sap.ui.core
+    - name: sap.ui.layout
+    - name: sap.suite.ui.commons
+    - name: themelib_sap_horizon
+resources:
+  configuration:
+    paths:
+      webapp: pipeline-console-src/webapp
+server:
+  customMiddleware:
+    - name: ui5-tooling-transpile-middleware
+      afterMiddleware: compression
+      configuration:
+        transformTypeScript: true
+        debug: true
+    - name: pipeline-console-dev-proxy
+      beforeMiddleware: serveResources
+      mountPath: /
+---
+specVersion: "3.0"
+kind: extension
+type: server-middleware
+metadata:
+  name: pipeline-console-dev-proxy
+middleware:
+  path: dev-middleware/pipeline-console-proxy.js

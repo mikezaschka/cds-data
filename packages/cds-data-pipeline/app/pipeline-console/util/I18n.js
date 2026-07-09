@@ -1,0 +1,2 @@
+sap.ui.define([],function(){"use strict";async function e(e,t,n){const o="getOwnerComponent"in e?e.getOwnerComponent():e;const r=o?.getModel("i18n");const u=await(r?.getResourceBundle());return u?.getText(t,n)??t}function t(e,t,n){const o=e.getOwnerComponent()?.getModel("i18n");const r=o?.getResourceBundle();return r?.getText(t,n)??t}var n={__esModule:true};n.getText=e;n.getTextSync=t;return n});
+//# sourceMappingURL=I18n.js.map

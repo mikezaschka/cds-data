@@ -37,7 +37,7 @@
 		"rootView": {
 			"viewName": "pipeline.monitor.fcl.view.App",
 			"type": "XML",
-			"async": false,
+			"async": true,
 			"id": "app"
 		},
 		"dependencies": {
@@ -46,7 +46,8 @@
 				"sap.m": {},
 				"sap.f": {},
 				"sap.ui.core": {},
-				"sap.ui.layout": {}
+				"sap.ui.layout": {},
+				"sap.suite.ui.commons": {}
 			}
 		},
 		"models": {
@@ -89,8 +90,7 @@
 					"pattern": "Pipelines/{name}:?query:",
 					"target": [
 						"master",
-						"detail",
-						"end"
+						"detail"
 					]
 				},
 				{
@@ -113,12 +113,6 @@
 					"name": "Detail",
 					"id": "detail",
 					"controlAggregation": "midColumnPages"
-				},
-				"end": {
-					"type": "View",
-					"name": "EndRuns",
-					"id": "endRuns",
-					"controlAggregation": "endColumnPages"
 				}
 			}
 		},
@@ -134,7 +128,8 @@
 			"cozy": true
 		},
 		"pipelineConsole": {
-			"refreshIntervalSeconds": 30
+			"refreshIntervalSeconds": 30,
+			"runningRefreshIntervalSeconds": 3
 		},
 		"flexBundle": false
 	}
