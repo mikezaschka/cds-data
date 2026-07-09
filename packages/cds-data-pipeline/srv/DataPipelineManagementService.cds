@@ -20,13 +20,56 @@ service DataPipelineManagementService @(path: '/pipeline') {
 
     @readonly
     entity Pipelines as projection on pipeline.Pipelines actions {
-        /** Stops the in-process `cds.spawn({ every })` schedule. Not supported for `schedule.engine: 'queued'` (change requires restart). */
+        /** Stops the internal schedule and persists `schedule: null` as an override. */
         action clearSchedule() returns String;
         /**
-         * Sets or replaces the internal **spawn** schedule: `every` is the interval in ms between delta runs.
-         * Fails if the pipeline was registered with `schedule.engine: 'queued'`.
+         * Sets or replaces the internal schedule via a persisted override.
+         * Pass `every` (ms) **or** `cron` (5-field expression). Optional `engine`:
+         * `'spawn'` | `'queued'`. Cron requires `queued` (and live change requires CDS 10+).
          */
-        action setSchedule( every : Integer ) returns String;
+        action setSchedule(
+            every  : Integer,
+            cron   : String,
+            engine : String
+        ) returns String;
+        /**
+         * Merge a JSON overrides patch onto the coded baseline. Body:
+         * `{ "mode": "full", "source": { "batchSize": 500 }, ... }`.
+         * Returns configView JSON.
+         */
+        action setOverrides( overrides : LargeString ) returns LargeString;
+        /**
+         * Clear override keys (comma-separated paths) or all overrides when `keys` is empty.
+         * Returns configView JSON.
+         */
+        action clearOverrides( keys : String ) returns LargeString;
+        /** Pause (`false`) or resume (`true`) scheduled ticks. Manual start still works. */
+        action setEnabled( enabled : Boolean ) returns LargeString;
+        /**
+         * Baseline / overrides / effective config + per-field meta for the console diff view.
+         */
+        function configView() returns LargeString;
+        /**
+         * Preview source or target data for the Pipeline Console data inspector.
+         * Returns JSON: `{ columns, rows, hasMore, limitedSupport? }`.
+         */
+        function inspectData(
+            side        : String,
+            columnsJson : LargeString,
+            filters     : LargeString,
+            top         : Integer,
+            skip        : Integer
+        ) returns LargeString;
+        /**
+         * Inspect tab availability for the Pipeline Console.
+         * Returns JSON: `{ source: 'full'|'limited'|'none', target: 'full'|'limited'|'none' }`.
+         */
+        function inspectCapabilities() returns LargeString;
+        /**
+         * Data-flow graph metadata for the Pipeline Console: lifecycle events,
+         * configuration deviations, registered hooks, and graph nodes/lines.
+         */
+        function flowMetadata() returns LargeString;
         action start(
             @(Common: {
                 ValueListWithFixedValues : true,
@@ -83,4 +126,7 @@ service DataPipelineManagementService @(path: '/pipeline') {
     action flush(name : String) returns String;
 
     function status(name : String) returns Pipelines;
+
+    /** All pipelines as a deduplicated source → pipeline → target landscape graph. */
+    function landscapeMetadata() returns LargeString;
 }

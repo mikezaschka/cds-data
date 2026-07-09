@@ -33,8 +33,6 @@ function sameCustomerFields(local, remote) {
 }
 
 describe('ADR 0009 — event execute / executeEvent', () => {
-    const { expect } = require('@jest/globals')
-
     beforeAll(async () => {
         const messagingDir = path.resolve(__dirname, '../.messaging-shared')
         if (fs.existsSync(messagingDir)) {

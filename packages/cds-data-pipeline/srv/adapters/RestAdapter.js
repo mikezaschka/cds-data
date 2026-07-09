@@ -45,7 +45,6 @@ class RestAdapter extends BaseSourceAdapter {
                 : (Array.isArray(response) ? response : [])
 
             if (!data || data.length === 0) {
-                hasMore = false
                 break
             }
 

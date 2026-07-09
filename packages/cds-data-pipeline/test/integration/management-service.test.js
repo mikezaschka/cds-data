@@ -6,7 +6,6 @@ const { waitForConsumerFixturePipelines } = require('../support/helpers')
 const consumerRoot = path.join(__dirname, '../fixtures/consumer')
 
 describe('DataPipelineManagementService OData', () => {
-    const { expect } = require('@jest/globals')
     const auth = { username: 'alice', password: 'alice' }
 
     beforeAll(async () => {

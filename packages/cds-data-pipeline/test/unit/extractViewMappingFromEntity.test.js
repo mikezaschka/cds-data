@@ -1,8 +1,6 @@
 const { extractViewMappingFromEntityDef } = require('../../srv/lib/extractViewMappingFromEntity')
 
 describe('extractViewMappingFromEntityDef', () => {
-    const { expect } = require('@jest/globals')
-
     it('returns null for plain entity definitions', () => {
         expect(
             extractViewMappingFromEntityDef({
@@ -25,8 +23,12 @@ describe('extractViewMappingFromEntityDef', () => {
             },
         })
         expect(inferred.isWildcard).toBe(false)
-        expect(inferred.projectedColumns).toEqual(['BusinessPartner', 'PersonFullName', 'LastChangeDate'])
-        expect(inferred.remoteToLocal).toEqual({
+        expect(inferred.projectedColumns).toEqual([
+            { ref: ['BusinessPartner'], as: 'ID' },
+            { ref: ['PersonFullName'], as: 'Name' },
+            'LastChangeDate',
+        ])
+        expect(inferred.remoteToLocal).toMatchObject({
             BusinessPartner: 'ID',
             PersonFullName: 'Name',
         })
@@ -58,6 +60,25 @@ describe('extractViewMappingFromEntityDef', () => {
         expect(inferred.excludedColumns).toEqual(['stock', 'modifiedAt'])
     })
 
+    it('extracts flatten association paths in projected columns', () => {
+        const inferred = extractViewMappingFromEntityDef({
+            kind: 'entity',
+            projection: {
+                columns: [
+                    { ref: ['ID'], as: 'orderId' },
+                    { ref: ['customer', 'name'], as: 'buyerName' },
+                    { ref: ['quantity'] },
+                ],
+            },
+        })
+        expect(inferred.projectedColumns).toEqual([
+            { ref: ['ID'], as: 'orderId' },
+            { ref: ['customer', 'name'], as: 'buyerName' },
+            'quantity',
+        ])
+        expect(inferred.remoteToLocal['customer.name']).toBe('buyerName')
+    })
+
     it('reads projection from query.SELECT when projection key is absent', () => {
         const inferred = extractViewMappingFromEntityDef({
             query: {
@@ -68,7 +89,7 @@ describe('extractViewMappingFromEntityDef', () => {
             },
         })
         expect(inferred.isWildcard).toBe(false)
-        expect(inferred.projectedColumns).toEqual(['a'])
-        expect(inferred.remoteToLocal).toEqual({ a: 'b' })
+        expect(inferred.projectedColumns).toEqual([{ ref: ['a'], as: 'b' }])
+        expect(inferred.remoteToLocal).toMatchObject({ a: 'b' })
     })
 })

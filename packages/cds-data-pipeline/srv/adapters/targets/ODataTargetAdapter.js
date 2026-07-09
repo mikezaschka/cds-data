@@ -170,7 +170,6 @@ class ODataTargetAdapter extends BaseTargetAdapter {
 
             const page = await withRetry(() => this.service.run(query), retryOpts)
             if (!page || page.length === 0) {
-                hasMore = false
                 break
             }
 

@@ -6,8 +6,6 @@ const { getPipelineService, waitForConsumerFixturePipelines } = require('../supp
 const consumerRoot = path.join(__dirname, '../fixtures/consumer')
 
 describe('PIPELINE lifecycle hooks', () => {
-    const { expect } = require('@jest/globals')
-
     beforeAll(async () => {
         await startProvider()
     }, 60000)

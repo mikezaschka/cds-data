@@ -6,7 +6,6 @@ const { getPipelineService, waitForConsumerFixturePipelines } = require('../supp
 const consumerRoot = path.join(__dirname, '../fixtures/consumer')
 
 describe('Internal schedule (spawn)', () => {
-    const { expect } = require('@jest/globals')
     const scheduled = []
 
     beforeAll(async () => {

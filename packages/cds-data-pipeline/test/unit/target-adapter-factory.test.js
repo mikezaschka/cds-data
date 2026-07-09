@@ -7,8 +7,6 @@ const consumerRoot = path.join(__dirname, '../fixtures/consumer')
 
 describe('createTargetAdapter (target factory)', () => {
     cds.test(consumerRoot)
-    const { expect } = require('@jest/globals')
-
     beforeAll(waitForConsumerFixturePipelines)
 
     async function expectThrow(fn) {

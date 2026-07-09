@@ -28,6 +28,12 @@ annotate DataPipelineManagementService.Pipelines with @(
             },
             {
                 $Type              : 'UI.DataFieldForAction',
+                Action             : 'DataPipelineManagementService.setEnabled',
+                Label              : 'Enable / pause schedule',
+                InvocationGrouping : #Isolated
+            },
+            {
+                $Type              : 'UI.DataFieldForAction',
                 Action             : 'DataPipelineManagementService.setSchedule',
                 Label              : 'Set internal schedule',
                 InvocationGrouping : #Isolated
@@ -37,15 +43,23 @@ annotate DataPipelineManagementService.Pipelines with @(
                 Action             : 'DataPipelineManagementService.clearSchedule',
                 Label              : 'Clear internal schedule',
                 InvocationGrouping : #Isolated
+            },
+            {
+                $Type              : 'UI.DataFieldForAction',
+                Action             : 'DataPipelineManagementService.clearOverrides',
+                Label              : 'Reset overrides',
+                InvocationGrouping : #Isolated
             }
         ],
         LineItem: [
             { Value: name,                       Label: 'Name' },
             { Value: description,                Label: 'Description' },
             { Value: status,                     Label: 'Status' },
+            { Value: enabled,                    Label: 'Enabled' },
             { Value: mode,                       Label: 'Mode' },
             { Value: origin,                     Label: 'Origin' },
-            { Value: lastSync,                   Label: 'Last Sync' },
+            { Value: schedule,                   Label: 'Schedule' },
+            { Value: lastSync,                   Label: 'Last Run' },
             { Value: errorCount,                 Label: 'Errors' },
             { Value: ![statistics_created],      Label: 'Created' },
             { Value: ![statistics_updated],      Label: 'Updated' },
@@ -63,7 +77,8 @@ annotate DataPipelineManagementService.Pipelines with @(
                 { Value: status },
                 { Value: mode },
                 { Value: origin },
-                { Value: lastSync },
+                { Value: schedule, Label: 'Schedule' },
+                { Value: lastSync, Label: 'Last successful run' },
                 { Value: lastKey },
                 { Value: errorCount },
                 { Value: lastError },

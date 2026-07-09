@@ -1,3 +1,5 @@
+const { buildColumnMappingsFromProjection } = require('./columnRefPath')
+
 /**
  * Extracts pipeline viewMapping from a CDS entity definition that uses a projection
  * (consumption view). Aligns with cds-data-federation's extractViewMapping logic.
@@ -6,7 +8,7 @@
  * @returns {{
  *   isWildcard: boolean,
  *   excludedColumns: string[],
- *   projectedColumns: string[],
+ *   projectedColumns: Array<string|object>,
  *   localToRemote: Record<string, string>,
  *   remoteToLocal: Record<string, string>,
  *   staticWhere: object | null
@@ -51,21 +53,8 @@ function extractViewMappingFromEntityDef(entityDef) {
         }
     }
 
-    const projectedColumns = []
-    const localToRemote = {}
-    const remoteToLocal = {}
-
-    for (const col of columns) {
-        const remoteName = col.ref?.[0]
-        if (!remoteName) continue
-
-        const localName = col.as || remoteName
-        projectedColumns.push(remoteName)
-        if (col.as) {
-            localToRemote[localName] = remoteName
-            remoteToLocal[remoteName] = localName
-        }
-    }
+    const { projectedColumns, localToRemote, remoteToLocal } =
+        buildColumnMappingsFromProjection(columns)
 
     return {
         isWildcard: false,

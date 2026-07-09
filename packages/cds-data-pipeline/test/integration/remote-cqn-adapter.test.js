@@ -5,9 +5,7 @@ const { getPipelineService, waitForConsumerFixturePipelines } = require('../supp
 
 const consumerRoot = path.join(__dirname, '../fixtures/consumer')
 
-describe('ODataAdapter integration', () => {
-    const { expect } = require('@jest/globals')
-
+describe('RemoteCqnAdapter integration', () => {
     beforeAll(async () => {
         await startProvider()
     }, 60000)
@@ -30,7 +28,7 @@ describe('ODataAdapter integration', () => {
         expect(rows.map(c => c.ID).sort()).toEqual(['C001', 'C002', 'C003', 'C004', 'C005'])
     })
 
-    it('[4.6.1] R24: OData adapter uses viewMapping for column restriction', async () => {
+    it('[4.6.1] R24: remote CQN adapter uses viewMapping for column restriction', async () => {
         const srv = await getPipelineService()
         await srv.clear('ReplicatedProducts')
         await srv.execute('ReplicatedProducts', { mode: 'full', trigger: 'manual' })
@@ -83,6 +81,18 @@ describe('ODataAdapter integration', () => {
         await srv.execute(name, { mode: 'delta', trigger: 'manual' })
         const rows = await SELECT.from('consumer.ReplicatedCustomersV2').where({ ID: { '>=': 'C004' } })
         expect(rows.length).toBeGreaterThanOrEqual(2)
+    })
+
+    it('accepts explicit source.kind hcql', async () => {
+        const srv = await getPipelineService()
+        const name = `__hcql_kind_${Date.now()}`
+        await srv.addPipeline({
+            name,
+            source: { service: 'ProviderService', entity: 'Customers', kind: 'hcql' },
+            target: { entity: 'consumer.ReplicatedCustomers' },
+        })
+        const p = srv.pipelines.get(name)
+        expect(p.adapter.constructor.name).toBe('RemoteCqnAdapter')
     })
 
 })

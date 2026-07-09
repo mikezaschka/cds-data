@@ -20,6 +20,7 @@ type RunTrigger : String enum {
     scheduled;
     external;
     event;
+    preload;
 }
 
 // ─── Aspects ───────────────────────────────────────────────────────────────────
@@ -61,6 +62,12 @@ entity Pipelines {
         target         : LargeString; // JSON serialized target config
         mode           : ReplicationMode;
         origin         : String(100); // ADR 0008: label stamped into target.source for multi-source fan-in
+        schedule       : String(200); // human-readable internal schedule for management UI
+        // Runtime overrides (persisted across restarts; re-applied after addPipeline).
+        // `enabled` gates scheduled ticks only — manual start/execute still runs.
+        enabled        : Boolean default true;
+        baseConfig     : LargeString; // JSON of serializable coded baseline (written at registration)
+        overrides      : LargeString; // JSON delta layered on baseConfig → effective config
         lastSync       : Timestamp;
         lastKey        : String;
         status         : RunStatus default 'idle';

@@ -2,6 +2,13 @@ const cds = require('../runtime-cds')
 const { createAdapter } = require('../adapters/factory')
 const { createTargetAdapter } = require('../adapters/targets/factory')
 const { fetchEventKeyBatch } = require('./eventKeyRead')
+const { rowsAffected } = require('./rowsAffected')
+const { formatScheduleLabel } = require('./inspectData')
+const {
+    serializeBaseConfig,
+    parseOverridesJson,
+    applyOverrides,
+} = require('./overrides')
 
 const LOG = cds.log('cds-data-pipeline')
 const PIPELINES = 'plugin_data_pipeline_Pipelines'
@@ -17,11 +24,18 @@ const RUNS = 'plugin_data_pipeline_PipelineRuns'
  * READ / MAP_BATCH / WRITE_BATCH are registered on the parent service and
  * invoked via its internal router; user-facing hooks (`before.PIPELINE.MAP_BATCH`,
  * `after.PIPELINE.DONE`, ...) compose through CAP's native handler chain.
+ *
+ * Config layering (see `overrides.js`):
+ *   - `baseConfig` — coded normalized config from `addPipeline`
+ *   - `overrides`  — persisted JSON delta (survives restart)
+ *   - `config`     — effective = applyOverrides(baseConfig, overrides)
  */
 class Pipeline {
     constructor(name, config, srv) {
         this.name = name
-        this.config = config
+        this.baseConfig = config
+        this.overrides = {}
+        this.config = applyOverrides(config, {})
         this.srv = srv
     }
 
@@ -36,20 +50,23 @@ class Pipeline {
         // `cds.connect.to(source.service)` lookup on every READ phase.
         // `cds.connect.to` returns an in-process service proxy; no network
         // traffic is issued until the first `.run()`.
-        this.adapter = await createAdapter(this.config)
+        // Adapters use structural source/target (from base); overridable
+        // knobs (batchSize, retry, delta, mode) are read from `this.config`
+        // per run / per request.
+        this.adapter = await createAdapter(this.baseConfig)
 
         // Target adapter is symmetric: one instance per pipeline, resolved
         // once, consulted by every WRITE-phase and pre-write path. The
         // default `DbTargetAdapter` lazily connects to 'db' so no network
         // / DB activity happens until the first batch lands.
-        this.targetAdapter = await createTargetAdapter(this.config)
+        this.targetAdapter = await createTargetAdapter(this.baseConfig)
 
         // Capability-based validation (ADR-0007 rows 6-8) — must happen
         // after the target adapter is resolved and before any tracker
         // writes, so an incompatible config throws cleanly at
         // registration rather than halfway through the first run.
         if (typeof this.srv._validateTargetCapabilities === 'function') {
-            this.srv._validateTargetCapabilities(this.config, this.targetAdapter)
+            this.srv._validateTargetCapabilities(this.baseConfig, this.targetAdapter)
         }
 
         // ADR 0008 — memoize multi-source state once. `origin` is the
@@ -58,11 +75,22 @@ class Pipeline {
         // `plugin.data_pipeline.sourced` *and* consumers who declared a
         // `key source : String(N)` element directly (the element-level
         // shape is what matters at write time).
-        this.origin = (this.config.source && this.config.source.origin) || null
+        this.origin = (this.baseConfig.source && this.baseConfig.source.origin) || null
         this.hasSourceAspect = this._targetHasSourceAspect()
 
         await this._ensureTracker()
         LOG._info && LOG.info(`Initialized pipeline: ${this.name}`)
+    }
+
+    /**
+     * Recompute `this.config` from base + overrides. Rebinds adapters so
+     * per-run knobs (batchSize, delta, flags, …) read the effective config.
+     */
+    applyLoadedOverrides(overrides) {
+        this.overrides = overrides && typeof overrides === 'object' ? overrides : {}
+        this.config = applyOverrides(this.baseConfig, this.overrides)
+        if (this.adapter) this.adapter.config = this.config
+        if (this.targetAdapter) this.targetAdapter.config = this.config
     }
 
     /**
@@ -74,7 +102,7 @@ class Pipeline {
      * keep working.
      */
     _targetHasSourceAspect() {
-        const entityName = this.config.target && this.config.target.entity
+        const entityName = this.baseConfig.target && this.baseConfig.target.entity
         const def = entityName && cds.model && cds.model.definitions && cds.model.definitions[entityName]
         const el = def && def.elements && def.elements.source
         return !!(el && el.key === true)
@@ -103,7 +131,9 @@ class Pipeline {
             .set({ status: 'running' })
             .where({ name: this.name, status: { '!=': 'running' } })
 
-        if (affected === 0) {
+        // `UPDATE` resolves to a number on CDS 9 but to a `{ affected }` shape
+        // on CDS 10; normalize so the concurrency guard works on both.
+        if (rowsAffected(affected) === 0) {
             LOG.warn(`Pipeline '${this.name}' already running, skipping.`)
             return { runId, status: 'skipped', statistics: { created: 0, updated: 0, deleted: 0 } }
         }
@@ -626,16 +656,33 @@ class Pipeline {
 
     async _ensureTracker() {
         const existing = await SELECT.one.from(PIPELINES).where({ name: this.name })
-        const desc = this.config.description != null && this.config.description !== '' ? this.config.description : null
+        const baseJson = JSON.stringify(serializeBaseConfig(this.baseConfig))
+
+        // Load persisted overrides before computing the effective config /
+        // schedule. Survives process restart because addPipeline always
+        // re-registers from code; we re-apply the stored JSON delta here.
+        const loadedOverrides = existing ? parseOverridesJson(existing.overrides) : {}
+        this.applyLoadedOverrides(loadedOverrides)
+
+        const eff = this.config
+        const desc = eff.description != null && eff.description !== '' ? eff.description : null
+        // node:sqlite rejects JS booleans as bind params; store 0/1.
+        const enabled = eff.enabled !== false ? 1 : 0
 
         if (!existing) {
             await INSERT.into(PIPELINES).entries({
                 name: this.name,
                 description: desc,
-                source: JSON.stringify(this.config.source, this._safeReplacer),
-                target: JSON.stringify(this.config.target, this._safeReplacer),
-                mode: this.config.mode,
+                source: JSON.stringify(this.baseConfig.source, this._safeReplacer),
+                target: JSON.stringify(this.baseConfig.target, this._safeReplacer),
+                mode: eff.mode || this.baseConfig.mode,
                 origin: this.origin || null,
+                schedule: formatScheduleLabel(eff.schedule),
+                enabled,
+                baseConfig: baseJson,
+                overrides: Object.keys(loadedOverrides).length
+                    ? JSON.stringify(loadedOverrides)
+                    : null,
                 status: 'idle',
                 errorCount: 0,
                 statistics_created: 0,
@@ -643,21 +690,41 @@ class Pipeline {
                 statistics_deleted: 0,
             })
         } else {
-            // Re-registrations: keep origin / description in sync with config
-            // (same process as a restart with an updated addPipeline in server.js).
-            const patch = {}
+            // Re-registrations: refresh baseConfig + display fields from the
+            // new coded baseline / effective merge, but preserve `overrides`.
+            const patch = {
+                baseConfig: baseJson,
+                source: JSON.stringify(this.baseConfig.source, this._safeReplacer),
+                target: JSON.stringify(this.baseConfig.target, this._safeReplacer),
+                mode: eff.mode || this.baseConfig.mode,
+                schedule: formatScheduleLabel(eff.schedule),
+                enabled,
+                description: desc,
+            }
             if (this.origin && existing.origin !== this.origin) {
                 patch.origin = this.origin
             }
-            const nextDesc = desc != null ? String(desc) : null
-            const existingDesc = existing.description != null ? String(existing.description) : null
-            if (nextDesc !== existingDesc) {
-                patch.description = desc
-            }
-            if (Object.keys(patch).length) {
-                await UPDATE(PIPELINES).set(patch).where({ name: this.name })
-            }
+            await UPDATE(PIPELINES).set(patch).where({ name: this.name })
         }
+    }
+
+    /**
+     * Persist current overrides (+ enabled / schedule label / mode) to the
+     * tracker row after a setOverrides / setEnabled / setSchedule call.
+     */
+    async _persistOverrideState() {
+        const overridesJson = Object.keys(this.overrides).length
+            ? JSON.stringify(this.overrides)
+            : null
+        await UPDATE(PIPELINES).set({
+            overrides: overridesJson,
+            enabled: this.config.enabled !== false ? 1 : 0,
+            schedule: formatScheduleLabel(this.config.schedule),
+            mode: this.config.mode,
+            description: this.config.description != null && this.config.description !== ''
+                ? this.config.description
+                : null,
+        }).where({ name: this.name })
     }
 
     async _getTracker() {

@@ -50,8 +50,6 @@ class NoBatchInsertTarget extends BaseTargetAdapter {
 
 describe('DataPipelineService.addPipeline validation', () => {
     cds.test(consumerRoot)
-    const { expect } = require('@jest/globals')
-
     beforeAll(waitForConsumerFixturePipelines)
 
     async function getSrv() {

@@ -48,4 +48,20 @@ describe('DataPipelineService config normalization', () => {
     it('rejects schedule object without every', () => {
         expect(() => srv._normalizeSchedule({ engine: 'spawn' }, 'x')).toThrow(/schedule\.every/)
     })
+
+    it('normalizes 5-field cron to queued engine', () => {
+        expect(srv._normalizeSchedule('*/10 * * * *', 'x')).toEqual({
+            every: '*/10 * * * *',
+            engine: 'queued',
+        })
+        expect(srv._normalizeSchedule({ every: '0 */10 * * *' }, 'x')).toEqual({
+            every: '0 */10 * * *',
+            engine: 'queued',
+        })
+    })
+
+    it('rejects cron with explicit spawn engine', () => {
+        expect(() => srv._normalizeSchedule({ every: '*/10 * * * *', engine: 'spawn' }, 'x'))
+            .toThrow(/cron/)
+    })
 })

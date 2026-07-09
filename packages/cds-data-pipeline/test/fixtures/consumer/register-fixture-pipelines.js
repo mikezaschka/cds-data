@@ -1,7 +1,7 @@
 /**
- * Registers standard pipelines for Jest integration tests when the test consumer
+ * Registers standard pipelines for integration tests when the test consumer
  * app is served. Loaded from the main cds-data-pipeline cds-plugin when
- * CDS_PIPELINE_TEST_CONSUMER=true (see test/support/jest-setup-env.js).
+ * CDS_PIPELINE_TEST_CONSUMER=true (see test/support/setup-env.js).
  *
  * CAP does not load project-local cds-plugin.js from app folders — only from
  * dependency packages — so this file is required explicitly for tests.
@@ -102,6 +102,12 @@ const pipelines = [
         target: { entity: 'consumer.FanInCustomers' },
         mode: 'delta',
         delta: { mode: 'timestamp', field: 'modifiedAt' },
+    },
+    {
+        name: 'InspectHiddenTarget',
+        source: { service: 'ProviderService', entity: 'Customers' },
+        target: { entity: 'consumer.InspectHiddenCustomers' },
+        mode: 'full',
     },
 ]
 

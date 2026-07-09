@@ -5,12 +5,13 @@
   "dependencies": {
     "@sap-cloud-sdk/http-client": "^3",
     "@sap-cloud-sdk/resilience": "^3",
-    "@sap/cds": "^9",
+    "@sap/cds": ">=9",
     "cds-data-pipeline": "file:../../..",
     "express": "^4"
   },
   "devDependencies": {
-    "@cap-js/sqlite": "^2"
+    "@cap-js/postgres": ">=2",
+    "@cap-js/sqlite": ">=2"
   },
   "cds": {
     "server": {
@@ -23,7 +24,9 @@
       "messaging": {
         "[development]": {
           "kind": "file-based-messaging",
-          "credentials": { "directory": "../.messaging-shared" }
+          "credentials": {
+            "directory": "../.messaging-shared"
+          }
         }
       },
       "db": {
@@ -65,7 +68,9 @@
           "users": {
             "alice": {
               "password": "alice",
-              "roles": ["PipelineRunner"],
+              "roles": [
+                "PipelineRunner"
+              ],
               "jwt": {
                 "user_name": "alice"
               }

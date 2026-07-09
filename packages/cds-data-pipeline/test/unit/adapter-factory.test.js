@@ -14,8 +14,6 @@ class EchoSourceAdapter extends BaseSourceAdapter {
 
 describe('createAdapter (source factory)', () => {
     cds.test(consumerRoot)
-    const { expect } = require('@jest/globals')
-
     beforeAll(waitForConsumerFixturePipelines)
 
     it('prefers source.adapter class reference', async () => {

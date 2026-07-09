@@ -1,4 +1,4 @@
-const cds = require('@sap/cds')
+const cds = require('../runtime-cds')
 const { runInTenantContext } = require('./tenant-context')
 
 const LOG = cds.log('cds-data-pipeline')

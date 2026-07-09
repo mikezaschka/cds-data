@@ -17,10 +17,10 @@ entity InferredViewProducts as projection on ProviderService.Products {
 
 entity ReplicatedCustomers {
     key ID         : String(10);
-        name       : String(100);
+        name       : String(100) @PersonalData.IsPotentiallySensitive;
         city       : String(50);
         country    : String(3);
-        email      : String(100);
+        email      : String(100) @HideFromDataInspector;
         blocked    : Boolean default false;
         modifiedAt : Timestamp;
 }
@@ -97,4 +97,10 @@ entity FanInCustomers : sourced {
         email      : String(100);
         blocked    : Boolean default false;
         modifiedAt : Timestamp;
+}
+
+@HideFromDataInspector
+entity InspectHiddenCustomers {
+    key ID   : String(10);
+        name : String(100);
 }

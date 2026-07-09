@@ -61,7 +61,7 @@ const cds = require('../runtime-cds')
  *    `addPipeline(...)` — the factory instantiates it directly and
  *    skips the kind / remote-kind switch.
  * 2. Transport discriminator: set `source.kind: 'cqn' | 'odata' |
- *    'odata-v2' | 'rest'`, or rely on `cds.requires.<svc>.kind` for
+ *    'odata-v2' | 'hcql' | 'rest'`, or rely on `cds.requires.<svc>.kind` for
  *    annotation-wired pipelines.
  *
  * See `docs/guide/sources/custom.md` for a worked example.

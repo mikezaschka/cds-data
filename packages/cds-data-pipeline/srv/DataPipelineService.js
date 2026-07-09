@@ -1,8 +1,21 @@
 const cds = require('./runtime-cds')
 const Pipeline = require('./lib/Pipeline')
 const { extractViewMappingFromEntityDef } = require('./lib/extractViewMappingFromEntity')
+const { inspectPipelineData, formatScheduleLabel, resolveInspectCapabilities } = require('./lib/inspectData')
+const { flowMetadataForPipeline, buildLandscapeGraph } = require('./lib/flowMetadata')
+const {
+    validateOverridesPatch,
+    clearOverrideKeys,
+    buildConfigView,
+    deepMerge,
+} = require('./lib/overrides')
+const { getHousekeepingConfig } = require('../lib/config-normalizer')
+const { resolvePolicy, purgeRunsForPipeline } = require('./lib/housekeeping')
 
+/** Reserved internal name for the global run-retention schedule registry entry. */
+const HOUSEKEEPING_SCHEDULE_NAME = '__housekeeping'
 const LOG = cds.log('cds-data-pipeline')
+const PIPELINES = 'plugin_data_pipeline_Pipelines'
 
 const PIPELINE_EVENTS = [
     'PIPELINE.START',
@@ -12,7 +25,7 @@ const PIPELINE_EVENTS = [
     'PIPELINE.DONE',
 ]
 
-const VALID_SOURCE_KINDS = new Set(['cqn', 'odata', 'odata-v2', 'rest'])
+const VALID_SOURCE_KINDS = new Set(['cqn', 'odata', 'odata-v2', 'hcql', 'rest'])
 
 // Row-delta `delta.mode` values are only meaningful for entity-shape reads.
 // Query-shape pipelines must use `mode: 'full'` or `mode: 'partial-refresh'`.
@@ -70,6 +83,9 @@ class DataPipelineService extends cds.Service {
             PIPELINE_EVENTS.map(e => [e, new Map()])
         )
 
+        /** @type {Map<string, { before: Set<string>, after: Set<string>, on: Set<string> }>} */
+        this._pipelineHooks = new Map()
+
         // A single catch-all router for each pipeline event. Looks up the
         // default handler registered for `req.data.pipeline` and invokes
         // it; if no default is registered, calls `next()` so user-provided
@@ -101,10 +117,25 @@ class DataPipelineService extends cds.Service {
             await this._runScheduledPipeline(name, mode, trigger, runId, pipeline)
         })
 
-        /** @type {Map<string, { engine: 'spawn'|'queued', em?: import('node:events').EventEmitter }>} */
+        this.on('PIPELINE.HOUSEKEEPING', async () => {
+            try {
+                await this._runHousekeeping()
+            } catch (err) {
+                LOG.error('Pipeline run housekeeping failed:', err)
+            }
+        })
+
+        /** @type {Map<string, { engine: 'spawn'|'queued', em?: import('node:events').EventEmitter, taskName?: string }>} */
         this._scheduleRegistry = new Map()
 
         await super.init()
+        cds.once('served', () => {
+            setImmediate(() => {
+                this._startHousekeeping().catch((err) => {
+                    LOG.warn(`Failed to start pipeline run housekeeping: ${err.message}`)
+                })
+            })
+        })
         LOG._info && LOG.info('cds-data-pipeline ready')
     }
 
@@ -128,25 +159,88 @@ class DataPipelineService extends cds.Service {
 
         try {
             const pipeline = new Pipeline(name, internalConfig, this)
+            // init → _ensureTracker loads persisted overrides and applies them
+            // onto pipeline.config before we start the schedule.
             await pipeline.init()
             this.pipelines.set(name, pipeline)
 
-            if (internalConfig.schedule) {
-                this._startInternalSchedule(name, internalConfig.schedule)
+            const effective = pipeline.config
+            if (effective.enabled !== false && effective.schedule) {
+                this._startInternalSchedule(name, effective.schedule)
+                await this._syncScheduleTracker(name, effective.schedule)
                 LOG._info && LOG.info(
-                    `Pipeline '${name}' has an internal schedule (engine=${internalConfig.schedule.engine}). ` +
+                    `Pipeline '${name}' has an internal schedule (engine=${effective.schedule.engine}). ` +
                     `Omit 'schedule' and call POST /pipeline/execute from an external scheduler ` +
                     `(SAP BTP Job Scheduling, Kubernetes CronJob, ...) if centralized scheduling is preferred.`
                 )
+            } else if (effective.enabled === false) {
+                await this._syncScheduleTracker(name, effective.schedule || null)
+                LOG._info && LOG.info(
+                    `Pipeline '${name}' is disabled (overrides.enabled=false); schedule not started. ` +
+                    `Manual start/execute still allowed.`
+                )
             }
 
-            LOG._info && LOG.info(this._composeRegistrationLog(name, internalConfig, pipeline))
+            LOG._info && LOG.info(this._composeRegistrationLog(name, effective, pipeline))
+
+            // Initial load on startup (req 4.8.4). Runs one sync right after
+            // registration, independent of any schedule. Skipped when the
+            // pipeline is disabled so a paused pipeline stays fully quiet.
+            if (effective.enabled !== false && effective.preload) {
+                await this._runPreload(name, effective)
+            }
         } catch (err) {
             LOG._error && LOG.error(`Failed to add pipeline ${name}:`, err)
             throw err
         }
 
         return this
+    }
+
+    /**
+     * Run the initial-load-on-startup sync for a pipeline whose config sets
+     * `preload` (req 4.8.4). `preload` has been normalized to
+     * `{ wait: boolean, mode?: string }` by `_normalizePreload`.
+     *
+     *   - `wait: false` (default) — fire the run in the background via
+     *     `execute({ async: true })` so app boot is not blocked. Rejections
+     *     are already logged inside `execute`; we swallow the settled promise
+     *     to avoid an unhandled rejection.
+     *   - `wait: true` — await the run; a failure propagates out of
+     *     `addPipeline` (and thus fails boot) so `wait` doubles as a
+     *     fail-fast initial-load guarantee.
+     *
+     * The preload mode defaults to the pipeline's effective `mode`
+     * (`delta` for entity-shape, `full` for query-shape). Override with
+     * `preload.mode` to force a full initial load on an otherwise-delta
+     * pipeline.
+     */
+    async _runPreload(name, effective) {
+        const { wait, mode: preloadMode } = effective.preload
+        const mode = preloadMode || effective.mode
+        LOG._info && LOG.info(
+            `Pipeline '${name}' preload enabled (mode=${mode}, wait=${wait}); ` +
+            `running initial load at startup.`
+        )
+        try {
+            const { done } = await this.execute(name, {
+                mode,
+                trigger: 'preload',
+                async: !wait,
+            })
+            if (done) {
+                if (wait) {
+                    await done
+                } else {
+                    // Already logged in execute()'s spawn path; prevent an
+                    // unhandled promise rejection from a background failure.
+                    Promise.resolve(done).catch(() => {})
+                }
+            }
+        } catch (err) {
+            LOG._error && LOG.error(`Preload run for pipeline '${name}' failed:`, err)
+            if (wait) throw err
+        }
     }
 
     /**
@@ -158,7 +252,7 @@ class DataPipelineService extends cds.Service {
      * Example:
      *   [cds-data-pipeline] registered 'OrdersCopy' — entity-shape from
      *     ProviderService.Orders → db.ArchivedOrders, mode=delta(timestamp
-     *     modifiedAt), adapter=ODataAdapter
+     *     modifiedAt), adapter=RemoteCqnAdapter
      */
     _composeRegistrationLog(name, config, pipeline) {
         const shape = config.source && config.source.query ? 'query-shape' : 'entity-shape'
@@ -284,12 +378,127 @@ class DataPipelineService extends cds.Service {
     }
 
     async _runScheduledPipeline(name, mode, trigger, runId, pipeline) {
+        if (pipeline.config && pipeline.config.enabled === false) {
+            LOG._debug && LOG.debug(`Scheduled tick skipped for disabled pipeline '${name}'`)
+            return
+        }
         const { shouldFanOutScheduledRuns, runForAllTenants } = require('./lib/TenantRunCoordinator')
         if (shouldFanOutScheduledRuns()) {
             await runForAllTenants(this, name, { mode, trigger, runId })
             return
         }
         await pipeline._run(mode, trigger, runId)
+    }
+
+    /**
+     * Start the global run-retention sweep when `cds.requires.*.housekeeping`
+     * enables retentionDays and/or maxRuns.
+     */
+    async _startHousekeeping() {
+        this._housekeepingGlobal = getHousekeepingConfig(cds.env.requires ?? {})
+        if (!this._housekeepingGlobal.enabled) return
+
+        const normalizedSchedule = this._normalizeSchedule(
+            this._housekeepingGlobal.schedule,
+            HOUSEKEEPING_SCHEDULE_NAME,
+        )
+        if (!normalizedSchedule) return
+
+        this._stopInternalSchedule(HOUSEKEEPING_SCHEDULE_NAME)
+
+        if (normalizedSchedule.engine === 'queued') {
+            const taskName = this._scheduleHousekeepingQueued(normalizedSchedule.every)
+            this._scheduleRegistry.set(HOUSEKEEPING_SCHEDULE_NAME, {
+                engine: 'queued',
+                taskName,
+            })
+        } else {
+            const em = this._scheduleHousekeepingSpawn(normalizedSchedule.every)
+            this._scheduleRegistry.set(HOUSEKEEPING_SCHEDULE_NAME, {
+                engine: 'spawn',
+                em,
+            })
+        }
+
+        LOG.info(
+            `Pipeline run housekeeping enabled (engine=${normalizedSchedule.engine}, ` +
+            `retentionDays=${this._housekeepingGlobal.retentionDays ?? 'unset'}, ` +
+            `maxRuns=${this._housekeepingGlobal.maxRuns ?? 'unset'})`,
+        )
+    }
+
+    _scheduleHousekeepingSpawn(every) {
+        const interval = typeof every === 'number' ? every : parseInt(every, 10)
+        if (!interval || interval <= 0) {
+            LOG.warn(`Invalid housekeeping schedule: ${every}`)
+            return undefined
+        }
+        return cds.spawn({ every: interval }, async () => {
+            await this._runHousekeeping()
+        })
+    }
+
+    _scheduleHousekeepingQueued(every) {
+        if (typeof cds.queued !== 'function') {
+            throw new Error(
+                `housekeeping schedule.engine='queued' requires a CAP runtime that exposes ` +
+                `cds.queued(srv).schedule(...).every(...).`,
+            )
+        }
+        const queued = cds.queued(this)
+        if (!queued || typeof queued.schedule !== 'function') {
+            throw new Error(
+                `housekeeping: cds.queued(srv).schedule(...) is not available on this CAP runtime.`,
+            )
+        }
+        const handle = queued.schedule('PIPELINE.HOUSEKEEPING', {})
+        if (!handle || typeof handle.every !== 'function') {
+            throw new Error(
+                `housekeeping: cds.queued(srv).schedule(...).every(...) is not available on this CAP runtime.`,
+            )
+        }
+        const scheduled = handle.every(every)
+        const asTarget = (scheduled && typeof scheduled.as === 'function') ? scheduled
+            : (typeof handle.as === 'function' ? handle : undefined)
+        if (asTarget) {
+            const taskName = this._queuedTaskName(HOUSEKEEPING_SCHEDULE_NAME)
+            asTarget.as(taskName)
+            return taskName
+        }
+        return undefined
+    }
+
+    /**
+     * Sweep all registered pipelines and prune finished PipelineRuns rows.
+     */
+    async _runHousekeeping() {
+        const globalPolicy = this._housekeepingGlobal || getHousekeepingConfig(cds.env.requires ?? {})
+        if (!globalPolicy.enabled) return { deleted: 0 }
+
+        const { shouldFanOutScheduledRuns, listTenants, runInTenantContext } =
+            require('./lib/TenantRunCoordinator')
+
+        const sweep = async () => {
+            let deleted = 0
+            for (const [name, pipeline] of this.pipelines) {
+                const policy = resolvePolicy(pipeline.config?.retention, globalPolicy)
+                if (!policy.enabled) continue
+                const result = await purgeRunsForPipeline(name, policy)
+                deleted += result.deleted
+            }
+            return deleted
+        }
+
+        if (shouldFanOutScheduledRuns()) {
+            const tenants = await listTenants()
+            let deleted = 0
+            for (const tenant of tenants) {
+                deleted += await runInTenantContext(tenant, sweep)
+            }
+            return { deleted }
+        }
+
+        return { deleted: await sweep() }
     }
 
     /**
@@ -360,6 +569,116 @@ class DataPipelineService extends cds.Service {
         return pipeline.getStatus()
     }
 
+    /**
+     * Preview source or target data for the Pipeline Console data inspector.
+     *
+     * @param {string} name
+     * @param {object} opts
+     * @returns {Promise<string>} JSON payload
+     */
+    async inspectData(name, opts = {}) {
+        const pipeline = this.pipelines.get(name)
+        if (!pipeline) {
+            throw new Error(`Unknown pipeline: ${name}`)
+        }
+        return inspectPipelineData(pipeline, opts)
+    }
+
+    /**
+     * Inspect tab availability for the Pipeline Console.
+     *
+     * @param {string} name
+     * @returns {Promise<string>} JSON payload
+     */
+    async inspectCapabilities(name) {
+        const pipeline = this.pipelines.get(name)
+        if (!pipeline) {
+            throw new Error(`Unknown pipeline: ${name}`)
+        }
+        return JSON.stringify(resolveInspectCapabilities(pipeline))
+    }
+
+    /**
+     * Flow metadata for the Pipeline Console: lifecycle events, customizations,
+     * and a graph payload (source → events → target).
+     *
+     * @param {string} name
+     * @returns {Promise<string>} JSON payload
+     */
+    async getFlowMetadata(name, opts = {}) {
+        const pipeline = this.pipelines.get(name)
+        if (!pipeline) {
+            throw new Error(`Unknown pipeline: ${name}`)
+        }
+        const tracker = await pipeline.getStatus()
+        const status = opts.status || (tracker && tracker.status) || 'idle'
+        return JSON.stringify(flowMetadataForPipeline(pipeline, this._pipelineHooks, status, opts))
+    }
+
+    /**
+     * Landscape metadata for the Pipeline Console master view: all pipelines
+     * with a deduplicated source/pipeline/target graph.
+     *
+     * @param {object} [opts]
+     * @returns {Promise<string>} JSON payload
+     */
+    async getLandscapeMetadata(opts = {}) {
+        const items = []
+        for (const pipeline of this.pipelines.values()) {
+            const tracker = await pipeline.getStatus()
+            const status = (tracker && tracker.status) || 'idle'
+            items.push(flowMetadataForPipeline(pipeline, this._pipelineHooks, status, opts))
+        }
+        return JSON.stringify({
+            pipelines: items,
+            graph: buildLandscapeGraph(items, opts),
+            pipelineCount: items.length,
+        })
+    }
+
+    before(event, pathOrHandler, handler) {
+        if (typeof pathOrHandler === 'string' && typeof handler === 'function') {
+            this._trackPipelineHook(pathOrHandler, 'before', event)
+        }
+        return super.before(event, pathOrHandler, handler)
+    }
+
+    after(event, pathOrHandler, handler) {
+        if (typeof pathOrHandler === 'string' && typeof handler === 'function') {
+            this._trackPipelineHook(pathOrHandler, 'after', event)
+        }
+        return super.after(event, pathOrHandler, handler)
+    }
+
+    on(event, pathOrHandler, handler) {
+        if (typeof pathOrHandler === 'string' && typeof handler === 'function') {
+            this._trackPipelineHook(pathOrHandler, 'on', event)
+        }
+        return super.on(event, pathOrHandler, handler)
+    }
+
+    _normalizePipelineEvent(event) {
+        if (event === 'PIPELINE.MAP') return 'PIPELINE.MAP_BATCH'
+        if (event === 'PIPELINE.WRITE') return 'PIPELINE.WRITE_BATCH'
+        return event
+    }
+
+    _trackPipelineHook(pipelineName, phase, event) {
+        const normalized = this._normalizePipelineEvent(event)
+        if (!PIPELINE_EVENTS.includes(normalized)) return
+        let entry = this._pipelineHooks.get(pipelineName)
+        if (!entry) {
+            entry = { before: new Set(), after: new Set(), on: new Set() }
+            this._pipelineHooks.set(pipelineName, entry)
+        }
+        entry[phase].add(normalized)
+    }
+
+    async _syncScheduleTracker(name, schedule) {
+        const label = formatScheduleLabel(schedule)
+        await UPDATE(PIPELINES).set({ schedule: label }).where({ name })
+    }
+
     async clear(name) {
         const pipeline = this.pipelines.get(name)
         if (!pipeline) {
@@ -369,50 +688,227 @@ class DataPipelineService extends cds.Service {
     }
 
     /**
-     * Stops a **spawn** internal schedule and clears `pipeline.config.schedule`.
-     * Queued schedules are not cancelable at runtime; throws.
+     * Stops an internal schedule and records a schedule:null override so the
+     * clear survives restart (coded schedule will not restart until the
+     * override is cleared).
+     *
+     * Spawn schedules are always cancelable (`clearInterval`). Queued
+     * schedules are cancelable on CAP runtimes that expose named-task
+     * unschedule (CDS 10: `srv.schedule(...).as(name)` + `srv.unschedule(name)`).
+     * On older runtimes (CDS 9) that lack that API, queued schedules cannot be
+     * stopped at runtime and this throws with guidance.
      */
     async clearSchedule(name) {
         const pipeline = this.pipelines.get(name)
         if (!pipeline) {
             throw new Error(`Unknown pipeline: ${name}`)
         }
-        if (pipeline.config && pipeline.config.schedule && pipeline.config.schedule.engine === 'queued') {
-            throw new Error(
-                `clearSchedule: pipeline '${name}' uses schedule.engine='queued'. ` +
-                `The persistent task queue cannot be stopped at runtime; ` +
-                `use schedule.engine='spawn' if you need clearSchedule / setSchedule, or restart the app.`
-            )
-        }
-        this._stopInternalSchedule(name)
-        if (pipeline.config) {
-            delete pipeline.config.schedule
-        }
+        this._assertScheduleLiveChange(name, 'clearSchedule')
+        await this._stopInternalSchedule(name)
+        const next = { ...pipeline.overrides, schedule: null }
+        pipeline.applyLoadedOverrides(next)
+        await pipeline._persistOverrideState()
         return `Internal schedule cleared for pipeline '${name}'.`
     }
 
     /**
-     * Replaces the internal **spawn** schedule (`every` in ms). Queued registration cannot be changed at runtime.
+     * Replaces the internal schedule via a persisted override. `every` may be
+     * milliseconds, a time string, or (queued engine only) a 5-field cron
+     * expression. Alias: pass `cron` instead of `every` for cron strings.
+     * The engine defaults to the pipeline's current engine unless overridden.
+     *
+     * Queued reschedules require named-task unschedule support (CDS 10);
+     * otherwise this throws, matching {@link clearSchedule}.
      */
-    async setSchedule(name, { every }) {
+    async setSchedule(name, { every, cron, engine } = {}) {
         const pipeline = this.pipelines.get(name)
         if (!pipeline) {
             throw new Error(`Unknown pipeline: ${name}`)
         }
-        if (pipeline.config && pipeline.config.schedule && pipeline.config.schedule.engine === 'queued') {
+        this._assertScheduleLiveChange(name, 'setSchedule')
+        const scheduleInput = cron != null ? cron : every
+        const rec = this._scheduleRegistry.get(name)
+        const currentEngine = (rec && rec.engine)
+            || (pipeline.config && pipeline.config.schedule && pipeline.config.schedule.engine)
+            || (pipeline.baseConfig && pipeline.baseConfig.schedule && pipeline.baseConfig.schedule.engine)
+            || 'spawn'
+        const normalized = this._normalizeSchedule(
+            { every: scheduleInput, engine: engine || currentEngine },
+            name,
+        )
+        if (!normalized) {
             throw new Error(
-                `setSchedule: pipeline '${name}' was registered with schedule.engine='queued'. ` +
-                `Remove the queued schedule and restart, or add the pipeline with engine='spawn' only.`
+                'setSchedule: `every` (or `cron`) must be a positive interval (milliseconds), ' +
+                'time string, or cron expression.',
             )
         }
-        const normalized = this._normalizeSchedule({ every, engine: 'spawn' }, name)
-        if (!normalized) {
-            throw new Error('setSchedule: `every` must be a positive interval (milliseconds).')
+        const next = { ...pipeline.overrides, schedule: normalized }
+        pipeline.applyLoadedOverrides(next)
+        await this._hotApplySchedule(name, pipeline)
+        await pipeline._persistOverrideState()
+        return `Schedule set for pipeline '${name}': every=${normalized.every}, engine=${normalized.engine}.`
+    }
+
+    /**
+     * Merge a validated overrides patch onto the pipeline, persist, and
+     * hot-apply schedule/enabled changes.
+     *
+     * @param {string} name
+     * @param {object} patch - plain object of overridable fields
+     */
+    async setOverrides(name, patch) {
+        const pipeline = this.pipelines.get(name)
+        if (!pipeline) {
+            throw new Error(`Unknown pipeline: ${name}`)
         }
-        this._stopInternalSchedule(name)
-        pipeline.config.schedule = normalized
-        this._startInternalSchedule(name, normalized)
-        return `Schedule set for pipeline '${name}': every=${normalized.every}ms, engine=spawn.`
+        const cleaned = validateOverridesPatch(patch)
+        if ('schedule' in cleaned) {
+            if (cleaned.schedule !== null) {
+                const normalized = this._normalizeSchedule(cleaned.schedule, name)
+                if (!normalized) {
+                    throw new Error(
+                        'setOverrides: schedule must be a positive interval (ms), time string, ' +
+                        'cron expression, { every, engine? }, or null to clear.',
+                    )
+                }
+                cleaned.schedule = normalized
+            }
+        }
+        if ('schedule' in cleaned || 'enabled' in cleaned) {
+            this._assertScheduleLiveChange(name, 'setOverrides')
+        }
+        // Deep-merge nested objects (source / delta / flags); replace scalars.
+        const merged = { ...pipeline.overrides }
+        for (const [key, value] of Object.entries(cleaned)) {
+            if (key === 'source' || key === 'delta' || key === 'flags') {
+                merged[key] = deepMerge(merged[key] || {}, value)
+            } else {
+                merged[key] = value
+            }
+        }
+        const scheduleTouched = 'schedule' in cleaned || 'enabled' in cleaned
+        pipeline.applyLoadedOverrides(merged)
+        if (scheduleTouched) {
+            await this._hotApplySchedule(name, pipeline)
+        }
+        await pipeline._persistOverrideState()
+        return this.getConfigView(name)
+    }
+
+    /**
+     * Remove override keys (or all overrides when `keys` omitted / empty).
+     * @param {string} name
+     * @param {string[]|string|null} [keys]
+     */
+    async clearOverrides(name, keys) {
+        const pipeline = this.pipelines.get(name)
+        if (!pipeline) {
+            throw new Error(`Unknown pipeline: ${name}`)
+        }
+
+        const clearAll = keys == null || keys === '' || (Array.isArray(keys) && keys.length === 0)
+        let keyList
+        if (clearAll) {
+            keyList = Object.keys(pipeline.overrides)
+        } else if (typeof keys === 'string') {
+            keyList = keys.split(',').map((k) => k.trim()).filter(Boolean)
+        } else if (Array.isArray(keys)) {
+            keyList = keys.map(String)
+        } else {
+            throw new Error('clearOverrides: keys must be a comma-separated string, array, or omitted')
+        }
+
+        const scheduleTouched = clearAll || keyList.some(
+            (k) => k === 'schedule' || k === 'enabled' || k.startsWith('schedule.'),
+        )
+        if (scheduleTouched) {
+            this._assertScheduleLiveChange(name, 'clearOverrides')
+        }
+
+        const next = clearAll ? {} : clearOverrideKeys(pipeline.overrides, keyList)
+        pipeline.applyLoadedOverrides(next)
+
+        if (scheduleTouched) {
+            await this._hotApplySchedule(name, pipeline)
+        }
+        await pipeline._persistOverrideState()
+        return this.getConfigView(name)
+    }
+
+    /**
+     * Pause (`false`) or resume (`true`) scheduled ticks. Manual execute still works.
+     */
+    async setEnabled(name, enabled) {
+        if (typeof enabled !== 'boolean') {
+            throw new Error('setEnabled: enabled must be a boolean')
+        }
+        return this.setOverrides(name, { enabled })
+    }
+
+    /**
+     * Config view for API / console: base, overrides, effective, field meta.
+     */
+    getConfigView(name) {
+        const pipeline = this.pipelines.get(name)
+        if (!pipeline) {
+            throw new Error(`Unknown pipeline: ${name}`)
+        }
+        return buildConfigView({
+            baseConfig: pipeline.baseConfig,
+            overrides: pipeline.overrides,
+            effectiveConfig: pipeline.config,
+            scheduleLiveChangeSupported: this.isScheduleLiveChangeSupported(name),
+        })
+    }
+
+    /**
+     * True when the current schedule (if any) can be stopped/replaced without
+     * a process restart. Spawn is always live; queued needs CDS 10 named tasks.
+     */
+    isScheduleLiveChangeSupported(name) {
+        const pipeline = this.pipelines.get(name)
+        if (!pipeline) return true
+        const rec = this._scheduleRegistry.get(name)
+        if (!rec) {
+            // No live timer — starting a new spawn schedule is always fine;
+            // starting queued still requires cds.queued, but that's a separate check.
+            return true
+        }
+        if (rec.engine === 'spawn') return true
+        return this._canUnscheduleQueued(rec)
+    }
+
+    _assertScheduleLiveChange(name, op) {
+        const rec = this._scheduleRegistry.get(name)
+        if (rec && rec.engine === 'queued' && !this._canUnscheduleQueued(rec)) {
+            throw new Error(
+                `${op}: pipeline '${name}' uses schedule.engine='queued' on a CAP runtime ` +
+                `without named-task unschedule support. Upgrade to a runtime that exposes ` +
+                `srv.schedule(...).as(name) + srv.unschedule(name) (CDS 10), use ` +
+                `schedule.engine='spawn', or restart the app.`,
+            )
+        }
+    }
+
+    /**
+     * Stop any live timer and (re)start from effective schedule when enabled.
+     */
+    async _hotApplySchedule(name, pipeline) {
+        await this._stopInternalSchedule(name)
+        const eff = pipeline.config
+        if (eff.enabled !== false && eff.schedule) {
+            this._startInternalSchedule(name, eff.schedule)
+        }
+        await this._syncScheduleTracker(name, (eff.enabled !== false && eff.schedule) ? eff.schedule : null)
+    }
+
+    /**
+     * True when a queued schedule can be cancelled at runtime — i.e. it was
+     * registered with a task name (`.as(name)`) and the runtime exposes an
+     * `unschedule` function.
+     */
+    _canUnscheduleQueued(rec) {
+        return !!(rec && rec.taskName) && this._queuedUnscheduleSupported()
     }
 
     /**
@@ -443,8 +939,8 @@ class DataPipelineService extends cds.Service {
         this._stopInternalSchedule(name)
         const { every, engine } = schedule
         if (engine === 'queued') {
-            this._scheduleQueued(name, every)
-            this._scheduleRegistry.set(name, { engine: 'queued' })
+            const taskName = this._scheduleQueued(name, every)
+            this._scheduleRegistry.set(name, { engine: 'queued', taskName })
             return
         }
         const em = this._scheduleSpawn(name, every)
@@ -454,16 +950,24 @@ class DataPipelineService extends cds.Service {
     }
 
     /**
-     * Stop internal spawn `setInterval` if present. No-op if nothing registered.
+     * Stop an internal schedule. For spawn, clears the `setInterval`. For
+     * queued, calls `unschedule(taskName)` when the runtime supports it
+     * (CDS 10). No-op if nothing registered. Returns a promise so async
+     * callers (clearSchedule / setSchedule) can await the queued teardown.
      */
     _stopInternalSchedule(name) {
         const rec = this._scheduleRegistry.get(name)
         this._scheduleRegistry.delete(name)
-        if (!rec || rec.engine !== 'spawn' || !rec.em) return
-        const t = rec.em.timer
-        if (t) {
-            clearInterval(t)
+        if (!rec) return undefined
+        if (rec.engine === 'spawn') {
+            const t = rec.em && rec.em.timer
+            if (t) clearInterval(t)
+            return undefined
         }
+        if (rec.engine === 'queued' && rec.taskName) {
+            return this._unscheduleQueued(rec.taskName)
+        }
+        return undefined
     }
 
     /**
@@ -527,7 +1031,61 @@ class DataPipelineService extends cds.Service {
                 `notes or fall back to schedule.engine='spawn'.`
             )
         }
-        handle.every(every)
+
+        // CDS 10 adds `.as(name)` for named singleton tasks that can later be
+        // cancelled via `unschedule(name)`. When available, name the task so
+        // clearSchedule / setSchedule can stop or replace it at runtime. On
+        // CDS 9 (no `.as`), fall back to an anonymous, non-cancelable schedule.
+        const scheduled = handle.every(every)
+        const asTarget = (scheduled && typeof scheduled.as === 'function') ? scheduled
+            : (typeof handle.as === 'function' ? handle : undefined)
+        if (asTarget) {
+            const taskName = this._queuedTaskName(name)
+            asTarget.as(taskName)
+            return taskName
+        }
+        return undefined
+    }
+
+    /** Deterministic, collision-resistant task name for a pipeline's queued schedule. */
+    _queuedTaskName(name) {
+        return `cds-data-pipeline:${name}`
+    }
+
+    /**
+     * True when the runtime exposes an `unschedule` function (on the queued
+     * proxy or the service itself). Introduced with the CDS 10 Event Queues
+     * scheduling API.
+     */
+    _queuedUnscheduleSupported() {
+        let queued
+        if (typeof cds.queued === 'function') {
+            try { queued = cds.queued(this) } catch { /* ignore */ }
+        }
+        return (!!queued && typeof queued.unschedule === 'function')
+            || typeof this.unschedule === 'function'
+    }
+
+    /**
+     * Cancel a named queued task. Tolerates both `cds.queued(srv).unschedule`
+     * and `srv.unschedule`. Returns the underlying promise (or undefined).
+     */
+    _unscheduleQueued(taskName) {
+        try {
+            let queued
+            if (typeof cds.queued === 'function') {
+                try { queued = cds.queued(this) } catch { /* ignore */ }
+            }
+            if (queued && typeof queued.unschedule === 'function') {
+                return queued.unschedule(taskName)
+            }
+            if (typeof this.unschedule === 'function') {
+                return this.unschedule(taskName)
+            }
+        } catch (err) {
+            LOG.warn(`Failed to unschedule queued task '${taskName}': ${err.message}`)
+        }
+        return undefined
     }
 
     /**
@@ -631,6 +1189,75 @@ class DataPipelineService extends cds.Service {
 
         this._validateSource(config)
         this._validateOrigin(config)
+        this._validateRetention(config)
+        this._validatePreload(config)
+    }
+
+    /**
+     * Validate the `preload` option (initial load on startup, req 4.8.4).
+     *
+     * Accepted shapes:
+     *   - unset / null / false     -> no preload
+     *   - true                     -> preload with the pipeline's effective mode
+     *   - { mode?, wait? }         -> `mode` must be a valid run mode for the
+     *                                 source shape; `wait` must be a boolean.
+     */
+    _validatePreload(config) {
+        const { preload, name } = config
+        if (preload === undefined || preload === null || preload === false || preload === true) {
+            return
+        }
+        if (typeof preload !== 'object' || Array.isArray(preload)) {
+            throw new Error(
+                `addPipeline: preload must be a boolean or { mode?, wait? } for pipeline '${name}'`
+            )
+        }
+        if (preload.wait !== undefined && typeof preload.wait !== 'boolean') {
+            throw new Error(`addPipeline: preload.wait must be a boolean for pipeline '${name}'`)
+        }
+        if (preload.mode !== undefined) {
+            const isQueryShape = !!(config.source && config.source.query)
+            if (!['full', 'delta', 'partial-refresh'].includes(preload.mode)) {
+                throw new Error(
+                    `addPipeline: preload.mode must be 'full', 'delta', or 'partial-refresh' ` +
+                    `for pipeline '${name}'`
+                )
+            }
+            if (isQueryShape && preload.mode === 'delta') {
+                throw new Error(
+                    `addPipeline: preload.mode 'delta' requires an entity-shape source for pipeline '${name}'; ` +
+                    `query-shape reads use 'full' or 'partial-refresh'. ${DOC_REF}`
+                )
+            }
+            if (preload.mode === 'partial-refresh') {
+                const refresh = config.refresh
+                if (!refresh || typeof refresh !== 'object' || typeof refresh.slice !== 'function') {
+                    throw new Error(
+                        `addPipeline: preload.mode 'partial-refresh' requires ` +
+                        `refresh.slice: (tracker) => <CQN predicate> for pipeline '${name}'. ${DOC_REF}`
+                    )
+                }
+            }
+        }
+    }
+
+    _validateRetention(config) {
+        const { retention, name } = config
+        if (retention === undefined || retention === null) return
+        if (typeof retention !== 'object' || Array.isArray(retention)) {
+            throw new Error(`addPipeline: retention must be a plain object for pipeline '${name}'`)
+        }
+        for (const key of ['retentionDays', 'maxRuns']) {
+            if (retention[key] === undefined || retention[key] === null) continue
+            const n = typeof retention[key] === 'number'
+                ? retention[key]
+                : parseInt(String(retention[key]), 10)
+            if (!Number.isFinite(n) || n < 0 || !Number.isInteger(n)) {
+                throw new Error(
+                    `addPipeline: retention.${key} must be a non-negative integer for pipeline '${name}'`,
+                )
+            }
+        }
     }
 
     /**
@@ -801,7 +1428,53 @@ class DataPipelineService extends cds.Service {
             normalized.flags = { ...config.flags }
         }
 
+        if (config.retention !== undefined && config.retention !== null) {
+            normalized.retention = {}
+            if (config.retention.retentionDays !== undefined) {
+                normalized.retention.retentionDays = parseInt(String(config.retention.retentionDays), 10)
+            }
+            if (config.retention.maxRuns !== undefined) {
+                normalized.retention.maxRuns = parseInt(String(config.retention.maxRuns), 10)
+            }
+        }
+
+        const preload = this._normalizePreload(config.preload)
+        if (preload) {
+            normalized.preload = preload
+        }
+
         return normalized
+    }
+
+    /**
+     * Normalize `preload` into `{ wait, mode? }` or `undefined`.
+     *
+     *   - unset / null / false  -> `undefined` (no startup run)
+     *   - true                  -> `{ wait: false }` (background initial load)
+     *   - { mode?, wait? }       -> `{ wait: <bool>, mode?: <string> }`
+     */
+    _normalizePreload(preload) {
+        if (preload === undefined || preload === null || preload === false) {
+            return undefined
+        }
+        if (preload === true) {
+            return { wait: false }
+        }
+        const normalized = { wait: preload.wait === true }
+        if (preload.mode) {
+            normalized.mode = preload.mode
+        }
+        return normalized
+    }
+
+    /**
+     * True for a 5-field cron expression (`m h dom mon dow`, e.g. every ten
+     * minutes). Cron scheduling is only supported by the queued engine (the
+     * spawn engine uses a fixed `setInterval`), matching the cron form accepted
+     * by CAP's Event Queues `.every(...)`.
+     */
+    _isCronExpression(value) {
+        return typeof value === 'string' && value.trim().split(/\s+/).length === 5
     }
 
     /**
@@ -813,19 +1486,30 @@ class DataPipelineService extends cds.Service {
      *                                expected path).
      *   - number (milliseconds)    -> `{ every: <number>, engine: 'spawn' }`
      *                                (backwards-compatible default).
+     *   - string ('10m')           -> `{ every, engine: 'spawn' }`.
+     *   - string (cron, 5 fields)  -> `{ every, engine: 'queued' }` (cron
+     *                                requires the queued engine).
      *   - { every, engine? }       -> passed through; `engine` defaults to
-     *                                `'spawn'`. Supported engines: `spawn`,
-     *                                `queued`.
+     *                                `'spawn'`, or `'queued'` when `every` is a
+     *                                cron expression. Supported engines:
+     *                                `spawn`, `queued`. Cron + explicit
+     *                                `engine: 'spawn'` throws.
      */
     _normalizeSchedule(schedule, pipelineName) {
         if (schedule === undefined || schedule === null || schedule === 0 || schedule === '') {
             return undefined
         }
-        if (typeof schedule === 'number' || typeof schedule === 'string') {
+        if (typeof schedule === 'number') {
             return { every: schedule, engine: 'spawn' }
         }
+        if (typeof schedule === 'string') {
+            // Cron expressions can only be honored by the queued engine.
+            const engine = this._isCronExpression(schedule) ? 'queued' : 'spawn'
+            return { every: schedule, engine }
+        }
         if (typeof schedule === 'object') {
-            const engine = schedule.engine || 'spawn'
+            const isCron = this._isCronExpression(schedule.every)
+            const engine = schedule.engine || (isCron ? 'queued' : 'spawn')
             if (engine !== 'spawn' && engine !== 'queued') {
                 throw new Error(
                     `addPipeline: unknown schedule.engine='${engine}' for pipeline '${pipelineName}'. ` +
@@ -836,6 +1520,13 @@ class DataPipelineService extends cds.Service {
                 throw new Error(
                     `addPipeline: schedule.every is required when schedule is an object ` +
                     `for pipeline '${pipelineName}'.`
+                )
+            }
+            if (engine === 'spawn' && isCron) {
+                throw new Error(
+                    `addPipeline: cron expression '${schedule.every}' for pipeline '${pipelineName}' ` +
+                    `requires schedule.engine='queued'. The 'spawn' engine only supports fixed ` +
+                    `intervals (milliseconds / time strings).`
                 )
             }
             return { every: schedule.every, engine }

@@ -6,8 +6,6 @@ const { getPipelineService, waitForConsumerFixturePipelines } = require('../supp
 const consumerRoot = path.join(__dirname, '../fixtures/consumer')
 
 describe('Multi-source origin stamping (ADR 0008)', () => {
-    const { expect } = require('@jest/globals')
-
     beforeAll(async () => {
         await startProvider()
     }, 60000)

@@ -45,7 +45,7 @@ describe('TenantRunCoordinator', () => {
         setTenantListProvider(async () => ['a', 'b'])
         const calls = []
         const mockSrv = {
-            execute: jest.fn(async (name, opts) => {
+            execute: vi.fn(async (name, opts) => {
                 calls.push({ tenant: opts?.tenant, name, opts })
                 return { runId: 'r1', name }
             }),

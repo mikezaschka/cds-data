@@ -1,4 +1,5 @@
 const cds = require('./runtime-cds')
+const { isManagementInspectEnabled } = require('../lib/config-normalizer')
 
 // Whitelist of trigger values accepted on the wire. Aligned with the
 // `RunTrigger` enum in db/index.cds. Any other value (including `undefined`)
@@ -18,12 +19,17 @@ const PIPELINE_RUN_TRIGGERS = [
     { code: 'event', name: 'Event' },
 ]
 
+async function resolveDefaultRunMode(srv, name) {
+    const pipeline = srv.pipelines?.get(name)
+    return pipeline?.config?.mode || 'delta'
+}
+
 async function runPipelineExecute(req, name, data) {
     const { mode } = data
     const trigger = ALLOWED_TRIGGERS.has(data.trigger) ? data.trigger : 'manual'
-    const runMode = mode || 'delta'
     const isAsync = data.async === true
     const srv = await cds.connect.to('DataPipelineService')
+    const runMode = mode || await resolveDefaultRunMode(srv, name)
 
     try {
         const result = await srv.execute(name, { mode: runMode, trigger, async: isAsync })
@@ -71,12 +77,117 @@ class DataPipelineManagementService extends cds.ApplicationService {
 
         this.on('setSchedule', 'Pipelines', async (req) => {
             const { name } = req.params[0]
-            const { every } = req.data
+            const { every, cron, engine } = req.data || {}
             try {
                 const srv = await cds.connect.to('DataPipelineService')
-                return await srv.setSchedule(name, { every })
+                return await srv.setSchedule(name, { every, cron, engine })
             } catch (err) {
                 req.error(500, `setSchedule for '${name}' failed: ${err.message}`)
+            }
+        })
+
+        this.on('setOverrides', 'Pipelines', async (req) => {
+            const { name } = req.params[0]
+            let patch = req.data?.overrides
+            try {
+                if (typeof patch === 'string') {
+                    patch = patch ? JSON.parse(patch) : {}
+                }
+                if (!patch || typeof patch !== 'object') {
+                    return req.error(400, 'setOverrides: overrides must be a JSON object')
+                }
+                const srv = await cds.connect.to('DataPipelineService')
+                return JSON.stringify(await srv.setOverrides(name, patch))
+            } catch (err) {
+                const status = /not overridable|must be/i.test(err.message) ? 400 : 500
+                req.error(status, `setOverrides for '${name}' failed: ${err.message}`)
+            }
+        })
+
+        this.on('clearOverrides', 'Pipelines', async (req) => {
+            const { name } = req.params[0]
+            const { keys } = req.data || {}
+            try {
+                const srv = await cds.connect.to('DataPipelineService')
+                return JSON.stringify(await srv.clearOverrides(name, keys))
+            } catch (err) {
+                req.error(500, `clearOverrides for '${name}' failed: ${err.message}`)
+            }
+        })
+
+        this.on('setEnabled', 'Pipelines', async (req) => {
+            const { name } = req.params[0]
+            const { enabled } = req.data || {}
+            try {
+                const srv = await cds.connect.to('DataPipelineService')
+                return JSON.stringify(await srv.setEnabled(name, enabled))
+            } catch (err) {
+                req.error(500, `setEnabled for '${name}' failed: ${err.message}`)
+            }
+        })
+
+        this.on('configView', 'Pipelines', async (req) => {
+            const { name } = req.params[0]
+            try {
+                const srv = await cds.connect.to('DataPipelineService')
+                return JSON.stringify(srv.getConfigView(name))
+            } catch (err) {
+                req.error(500, `configView for '${name}' failed: ${err.message}`)
+            }
+        })
+
+        this.on('inspectData', 'Pipelines', async (req) => {
+            if (!isManagementInspectEnabled(cds.env.requires)) {
+                return req.error(403, 'Pipeline data inspection is disabled (management.inspect: false)')
+            }
+            const { name } = req.params[0]
+            const { side, columnsJson, filters, top, skip } = req.data || {}
+            let columns = []
+            if (columnsJson) {
+                try {
+                    columns = JSON.parse(columnsJson)
+                } catch {
+                    columns = []
+                }
+            }
+            try {
+                const srv = await cds.connect.to('DataPipelineService')
+                const auditCtx = { user: req.user?.id || req.user }
+                return await srv.inspectData(name, { side, columns, filters, top, skip, auditCtx })
+            } catch (err) {
+                req.error(500, `inspectData for '${name}' failed: ${err.message}`)
+            }
+        })
+
+        this.on('inspectCapabilities', 'Pipelines', async (req) => {
+            if (!isManagementInspectEnabled(cds.env.requires)) {
+                return JSON.stringify({ source: 'none', target: 'none' })
+            }
+            const { name } = req.params[0]
+            try {
+                const srv = await cds.connect.to('DataPipelineService')
+                return await srv.inspectCapabilities(name)
+            } catch (err) {
+                req.error(500, `inspectCapabilities for '${name}' failed: ${err.message}`)
+            }
+        })
+
+        this.on('flowMetadata', 'Pipelines', async (req) => {
+            const { name } = req.params[0]
+            try {
+                const srv = await cds.connect.to('DataPipelineService')
+                return await srv.getFlowMetadata(name)
+            } catch (err) {
+                req.error(500, `flowMetadata for '${name}' failed: ${err.message}`)
+            }
+        })
+
+        this.on('landscapeMetadata', async (req) => {
+            try {
+                const srv = await cds.connect.to('DataPipelineService')
+                return await srv.getLandscapeMetadata()
+            } catch (err) {
+                req.error(500, `landscapeMetadata failed: ${err.message}`)
             }
         })
 

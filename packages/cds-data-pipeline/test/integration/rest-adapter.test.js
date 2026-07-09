@@ -6,8 +6,6 @@ const { getPipelineService, waitForConsumerFixturePipelines } = require('../supp
 const consumerRoot = path.join(__dirname, '../fixtures/consumer')
 
 describe('RestAdapter integration', () => {
-    const { expect } = require('@jest/globals')
-
     beforeAll(async () => {
         await Promise.all([startProvider(), startRestProvider()])
     }, 60000)
