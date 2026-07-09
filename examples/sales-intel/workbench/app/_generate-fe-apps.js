@@ -14,17 +14,16 @@ const path = require('path')
 
 // dataSource: which OData service the app talks to.
 //   'sales'    → /odata/v4/sales-intel/
-//   'pipeline' → /pipeline/   (cds-data-pipeline management service)
+// Pipeline monitoring is provided by the Pipeline Console (served at
+// /pipeline-console/ via management.reuse.console), not a Fiori Elements app.
 const APPS = [
     { dir: 'customer-notes',    id: 'sales.customernotes',    title: 'Customer Notes',    entity: 'CustomerNotes', dataSource: 'sales' },
     { dir: 'customers',         id: 'sales.customers',        title: 'Customers',         entity: 'Customers',     dataSource: 'sales' },
-    { dir: 'sales-analytics',   id: 'sales.salesanalytics',   title: 'Sales Analytics',   entity: 'SalesOrders',   dataSource: 'sales', template: 'alp' },
-    { dir: 'federation-monitor', id: 'sales.federationmonitor', title: 'Pipeline Monitor', entity: 'Pipelines', dataSource: 'pipeline' }
+    { dir: 'sales-analytics',   id: 'sales.salesanalytics',   title: 'Sales Analytics',   entity: 'SalesOrders',   dataSource: 'sales', template: 'alp' }
 ]
 
 const DATA_SOURCES = {
-    sales:    { uri: '/odata/v4/sales-intel/' },
-    pipeline: { uri: '/pipeline/' }
+    sales:    { uri: '/odata/v4/sales-intel/' }
 }
 
 function manifest({ id, title, entity, dataSource, template }) {

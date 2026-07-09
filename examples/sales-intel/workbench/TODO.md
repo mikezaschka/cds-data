@@ -11,7 +11,7 @@ Five tiles on a sandbox launchpad. Open http://localhost:4005/launchpage.html.
 - [x] **Customers** — List Report over delegated `Customers` (Master Data)
 - [x] **Customer 360** — Object Page over `Customers` with facets for notes + tasks + risk (Intelligence). Reuses the `customers` app — the launchpad tile frames it as a 360° view.
 - [x] **Sales Analytics** — ALP over replicated `SalesOrders` with Chart + `$apply/groupby` (Intelligence)
-- [x] **Pipeline Monitor** — List Report over plugin's `DataPipelineManagementService.Pipelines` (Admin)
+- [x] **Pipeline Console** — plugin's Pipeline Console at `/pipeline-console/` via `management.reuse.console` (Admin)
 - [x] Sandbox launchpad with four groups (My Work / Master Data / Intelligence / Admin)
 - [x] `workbench/README.md` — narrative walkthrough of which strategy each entity uses and why
 
@@ -32,7 +32,7 @@ Five tiles on a sandbox launchpad. Open http://localhost:4005/launchpage.html.
 
 ### Intelligence
 - [ ] Order Tracker (Object Page mashup — order + Order_Details + shipment + FX conversion)
-- [ ] Pipeline Insights (ALP over `PipelineRuns`)
+- Pipeline run history / insights are covered by the Pipeline Console (`/pipeline-console/`) — no separate Fiori Elements tile.
 
 ## Out of scope for this example
 

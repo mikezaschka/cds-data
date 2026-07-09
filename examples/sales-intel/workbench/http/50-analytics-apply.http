@@ -1,6 +1,6 @@
 ### The teaching moment for "why replicate?". Run the Categories, SalesOrders,
 ### SalesOrderLines and SalesProducts replications first (either once up-front
-### or via the Federation Monitor tile).
+### or via the Pipeline Console tile).
 ###
 ### The queries below need `$apply` with `groupby` and `aggregate`. CAP
 ### rejects these for delegate entities (the remote OData service cannot

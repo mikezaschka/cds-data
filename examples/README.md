@@ -99,7 +99,7 @@ npm run examples:regen-csn
 | Reviews | `Reviews` | Local entity with assoc to delegated `Movies` | Cross-service expand: local → remote plus cross-service expand: remote → local backlink from `Movies(...)/reviews` |
 | Replicated Movies | `ReplicatedMovies` | `@federation.replicate` | Scheduled full sync of the studio catalog into local SQLite for analytics |
 | Box Office | `ReplicatedBoxOffice` | `@federation.replicate` with REST adapter | Offset pagination + `modifiedSince` delta param, `results` dataPath unwrap |
-| Replication Management | *(coming soon)* | Fiori Elements UI over `DataPipelineManagementService` | Placeholder tile; UI will follow |
+| Pipeline Console | `Pipelines` / `PipelineRuns` | Pipeline Console (`management.reuse.console`) | Plugin management UI at `/pipeline-console/` — runs, status, errors, data inspection |
 
 ## Triggering replications
 

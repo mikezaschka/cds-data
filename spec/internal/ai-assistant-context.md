@@ -288,7 +288,7 @@ examples/
       launchpage.html        sap.ushell sandbox shell
       _generate-fe-apps.js   regenerates the FE app skeletons
       <entity>/webapp/       one FE List Report / Object Page per entity
-      placeholder/webapp/    stub app for the "Replication Management (coming soon)" tile
+      (pipeline monitoring is the plugin's Pipeline Console at /pipeline-console/ via management.reuse.console — no local FE app)
   regen-csn.js               recompiles provider + inventory + licensing into external CSN
   start-all.sh               starts all four servers; Ctrl+C stops everything
 ```

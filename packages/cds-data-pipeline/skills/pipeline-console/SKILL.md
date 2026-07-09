@@ -69,10 +69,6 @@ Do not combine `cds add pipeline-console` with `management.reuse.console`.
 - `cds-data-pipeline` installed
 - Management API exposed via `management.reuse.api` or `using from 'cds-data-pipeline/index.cds'`
 
-## Fiori alternative
-
-The plugin ships `srv/monitor-annotations.cds` for Fiori Elements list/object pages on `/pipeline`. Generate a Fiori app in your project if you prefer Elements over the freestyle console.
-
 ## Anti-patterns
 
 ❌ **Wrong** — `management.reuse.console` + `cds add pipeline-console` (duplicate UI route).

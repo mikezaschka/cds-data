@@ -10,7 +10,6 @@ The console ships **inside the `cds-data-pipeline` npm package** at `app/pipelin
 |---|---|---|
 | **Pipeline Console** (this page) | `/pipeline-console/` | Freestyle FCL — list / detail / data inspector. Shipped with the plugin. |
 | **Management OData API** | `/pipeline/` | Opt in via `management.reuse.api` or manual CDS import. See [Management service](../reference/management-service.md). |
-| **Fiori Elements monitor** | — | Not bundled in the npm package. The plugin ships [`srv/monitor-annotations.cds`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-pipeline/srv/monitor-annotations.cds) for list/object pages; generate a Fiori app in your project if you prefer Elements over the console. |
 
 The console manifest binds its default OData model to `/pipeline/` (absolute URL). UI and API share the same CAP origin — no CORS or reverse-proxy path rewriting when both run on the same server.
 

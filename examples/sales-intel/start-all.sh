@@ -48,8 +48,8 @@ pids+=($!)
 
 echo ""
 echo "[sales-intel] All servers starting."
-echo "  Workbench OData:      http://localhost:$WORKBENCH_PORT/odata/v4/sales-intel/"
-echo "  Federation Monitor:   http://localhost:$WORKBENCH_PORT/pipeline/Pipelines"
+    echo "  Workbench OData:      http://localhost:$WORKBENCH_PORT/odata/v4/sales-intel/"
+    echo "  Pipeline Console:     http://localhost:$WORKBENCH_PORT/pipeline-console/"
 echo "  LogisticsService:     http://localhost:$LOGISTICS_PORT/odata/v4/logistics/"
 echo "  FXService:            http://localhost:$FX_PORT/api/rates"
 echo ""

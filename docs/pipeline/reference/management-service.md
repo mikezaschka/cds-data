@@ -204,7 +204,7 @@ GET /pipeline/Pipelines('ReplicatedPartners')/DataPipelineManagementService.conf
 
 `configView` returns JSON: `{ base, overrides, effective, fields[{ path, coded, override, effective, source, overridable }], meta:{ scheduleLiveChangeSupported, overridablePaths } }`.
 
-Fiori Elements: [`srv/monitor-annotations.cds`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-pipeline/srv/monitor-annotations.cds) adds **Enable / pause schedule**, **Set internal schedule**, **Clear internal schedule**, and **Reset overrides** to the `Pipelines` identification.
+These actions (**Enable / pause schedule**, **Set internal schedule**, **Clear internal schedule**, **Reset overrides**) are surfaced in the [Pipeline Console](../guide/pipeline-console.md).
 
 ### `inspectData` (bound to `Pipelines`)
 

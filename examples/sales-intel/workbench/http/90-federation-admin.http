@@ -1,4 +1,4 @@
-### Federation Monitor — all replications registered by the plugin
+### Pipeline management — all replications registered by the plugin
 GET http://localhost:4005/pipeline/Pipelines
 
 ### Run history (most recent first)

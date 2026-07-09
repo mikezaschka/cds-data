@@ -1,5 +1,8 @@
 using { consumer } from '../db/schema';
-using from 'cds-data-pipeline/srv/DataPipelineManagementService';
+
+// The pipeline management OData service (/pipeline/) and the Pipeline Console
+// (/pipeline-console/) are provided by cds-data-pipeline via
+// `management.reuse` in package.json — no manual `using` import needed.
 
 service ConsumerService {
 

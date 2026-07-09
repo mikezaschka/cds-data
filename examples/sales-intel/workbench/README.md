@@ -12,7 +12,7 @@ first for the overall architecture.
 - Base URL: http://localhost:4005
 - OData service: http://localhost:4005/odata/v4/sales-intel/
 - Launchpad: http://localhost:4005/launchpage.html
-- Federation Monitor: http://localhost:4005/pipeline/Pipelines
+- Pipeline Console: http://localhost:4005/pipeline-console/ (management OData at http://localhost:4005/pipeline/Pipelines)
 
 ---
 
@@ -86,7 +86,9 @@ same remote entity** so you can see the trade-off in one place.
 ## Tile catalogue — Phase 1 MVP
 
 The sandbox launchpad (`/launchpage.html`) ships five tiles across four
-groups. Each is a Fiori Elements app under [`app/`](app/).
+groups. The four business tiles are Fiori Elements apps under [`app/`](app/);
+the Admin tile opens the plugin's **Pipeline Console** (a standalone UI5 app
+served at `/pipeline-console/` via `management.reuse.console`).
 
 | Group | Tile | Floorplan | Entity | Demonstrates |
 |---|---|---|---|---|
@@ -94,7 +96,7 @@ groups. Each is a Fiori Elements app under [`app/`](app/).
 | Master Data | Customers | List Report | `Customers` | Live V4 delegation |
 | Intelligence | Customer 360 | Object Page | `Customers` | Object Page facets for notes / tasks / risk (cross-service expand: remote → local) |
 | Intelligence | Sales Analytics | ALP | `SalesOrders` | Chart + KPIs over replicated data (`$apply/groupby` works) |
-| Admin | Pipeline Monitor | List Report | `Pipelines` | Plugin management service with run history facet |
+| Admin | Pipeline Console | Pipeline Console | `Pipelines` / `PipelineRuns` | Plugin management UI — runs, status, errors, data inspection |
 
 The **Customer 360** tile points at the same `customers` app as **Customers**
 — the Object Page is already rich enough to serve as the 360° view. Click a

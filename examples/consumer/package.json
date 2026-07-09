@@ -4,7 +4,7 @@
   "private": true,
   "description": "Consumer app showcasing cds-data-federation against a movies-and-streaming demo topology (ProviderService + LicensingService on :4444, StreamingService on :4445, BoxOfficeRest on :4446).",
   "scripts": {
-    "deploy": "cds deploy db srv --to sqlite:db.sqlite",
+    "deploy": "cds deploy --to sqlite:db.sqlite",
     "start": "cds-serve --port 4004",
     "watch": "cds watch --port 4004"
   },
@@ -26,6 +26,15 @@
         "kind": "sqlite",
         "credentials": {
           "url": "db.sqlite"
+        }
+      },
+      "datapipeline": {
+        "impl": "cds-data-pipeline",
+        "management": {
+          "reuse": {
+            "api": true,
+            "console": true
+          }
         }
       },
       "ProviderService": {

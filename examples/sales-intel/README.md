@@ -56,7 +56,7 @@ kind a reader can absorb in one sitting. Full feature coverage lives in
 | `$expand` scenario B (local→remote) | `CustomerNotes?$expand=customer`, cross-provider `FollowUpTasks?$expand=customer,order` |
 | `$expand` scenario C (remote→local) | `Customers?$expand=notes,risk,tasks` |
 | Analytical `$apply` / `groupby` | `SalesOrderLines` aggregation in the ALP |
-| Federation Monitor | `/pipeline/Pipelines` + `/pipeline/run` |
+| Pipeline Console | `/pipeline-console/` (management OData at `/pipeline/Pipelines` + `/pipeline/run`) |
 
 ## Getting started
 
@@ -71,7 +71,7 @@ bash examples/sales-intel/start-all.sh
 Then:
 
 - **OData service** — <http://localhost:4005/odata/v4/sales-intel/$metadata>
-- **Federation Monitor** — <http://localhost:4005/pipeline/Pipelines>
+- **Pipeline Console** — <http://localhost:4005/pipeline-console/> (management OData at <http://localhost:4005/pipeline/Pipelines>)
 - **.http scenarios** — [workbench/http/](workbench/http/) (use the VS Code REST Client extension)
 
 Try this five-minute tour:
@@ -97,7 +97,6 @@ examples/sales-intel/
     │   └── data/*.csv         Seed data for local tables
     ├── srv/
     │   ├── sales-intel-service.cds   Public OData service wiring
-    │   ├── federation-monitor-service.cds   Pulls in plugin management service
     │   └── external/          CSN snapshots of the remote services
     └── http/                  Documented .http scenarios
 ```
@@ -105,10 +104,10 @@ examples/sales-intel/
 ## Delivery phases
 
 **Phase 1 (MVP) — this is the current state.** The OData surface, `.http`
-scenarios, replications, cache demo, and federation admin all work end to end
-against the public Northwind service. The five MVP Fiori Elements tiles
-(Customer Notes, Customers, Customer 360, Sales Analytics, Federation Monitor)
-and the sandbox launchpad are still to be built — see
+scenarios, replications, cache demo, and pipeline management all work end to
+end against the public Northwind service. The four MVP Fiori Elements tiles
+(Customer Notes, Customers, Customer 360, Sales Analytics) plus the Pipeline
+Console admin tile and the sandbox launchpad are wired up — see
 [workbench/TODO.md](workbench/TODO.md).
 
 **Phase 2** extends the tile set to the full catalogue listed in the plan.

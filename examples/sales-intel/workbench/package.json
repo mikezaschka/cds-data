@@ -27,6 +27,15 @@
           "url": ":memory:"
         }
       },
+      "datapipeline": {
+        "impl": "cds-data-pipeline",
+        "management": {
+          "reuse": {
+            "api": true,
+            "console": true
+          }
+        }
+      },
       "northwind_v4_metadata": {
         "kind": "odata",
         "model": "srv/external/northwind-v4-metadata",

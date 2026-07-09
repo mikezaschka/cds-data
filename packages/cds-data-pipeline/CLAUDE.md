@@ -10,7 +10,7 @@ See [README.md](README.md) for what the plugin does/doesn't do, and [.cursor/rul
 - `lib/config-normalizer.js`, `lib/plugin-roots.js` — `management.reuse.*` feature activation (cds-caching pattern).
 - `lib/add-pipeline-console.js` — `cds add pipeline-console` for BTP-owned UI.
 - `index.cds`, `index/index.cds` — manual import surface for management API + tracker.
-- `srv/` — service implementations + CDS. `DataPipelineService.js` is the engine; `DataPipelineManagementService.{cds,js}` is the OData management surface; `monitor-annotations.cds` drives the shared Fiori monitor.
+- `srv/` — service implementations + CDS. `DataPipelineService.js` is the engine; `DataPipelineManagementService.{cds,js}` is the OData management surface. Monitoring UI is the Pipeline Console (`app/pipeline-console/`), served via `management.reuse.console`.
 - `srv/adapters/` — source adapters (`RemoteCqnAdapter`, `RestAdapter`, `CqnAdapter`, `BaseSourceAdapter`) + `targets/` (DB, OData, Base). `factory.js` picks the adapter from config.
 - `srv/lib/` — `Pipeline.js` (per-run state machine), retry, view-mapping extraction, key-read helpers.
 - `db/index.cds` — tracker schema in namespace `plugin.data_pipeline`. Uses **String** keys (e.g. pipeline `name`) — do not refactor to UUIDs (see `.cursor/rules/mcp.mdc`).

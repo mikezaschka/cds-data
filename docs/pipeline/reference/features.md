@@ -48,7 +48,6 @@ Pre-built UI5 freestyle app shipped in the npm package (`app/pipeline-console/`)
 | **Config reuse** | `management.reuse.console: true` serves static UI from the plugin package at `/pipeline-console/` — no local copy, no `server.js` changes. |
 | **BTP scaffold** | `cds add pipeline-console` copies UI into `app/pipeline-console/` with HTML5 deploy scaffolding. |
 | **Same-origin OData** | Console binds to `/pipeline/` on the CAP server that serves the UI. |
-| **Fiori annotations** | `srv/monitor-annotations.cds` supports a separate Fiori Elements list/object app in your project (not bundled). |
 
 ## Observability
 
