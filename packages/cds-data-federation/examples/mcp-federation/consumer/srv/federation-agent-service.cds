@@ -1,5 +1,4 @@
 using { example } from '../db/schema';
-using from 'cds-data-pipeline/srv/DataPipelineManagementService';
 
 /**
  * Agent-facing service: federated remote data exposed via MCP.

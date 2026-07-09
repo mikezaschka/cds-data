@@ -50,7 +50,11 @@ node packages/cds-data-federation/examples/mcp-federation/scripts/mcp-smoke.mjs
 |---|---|
 | http://localhost:4120/mcp/agent | MCP Streamable HTTP (tools: `describe`, `query`, `call_action`) |
 | http://localhost:4120/odata/v4/federation-agent/Customers | Same data via OData (compare) |
+| http://localhost:4120/launchpage.html | Launchpad — Pipeline Console tile |
+| http://localhost:4120/pipeline-console/ | Pipeline Console — runs, status, errors, data inspection |
 | http://localhost:4121/odata/v4/provider/Customers | Upstream remote provider |
+
+The **Pipeline Console** is served automatically by `cds-data-pipeline` via `management.reuse.console` (see the consumer's `package.json`). Use it to watch the `ReplicatedCustomers` preload run and inspect the replicated rows.
 
 Ports **4120** (consumer) and **4121** (provider) are chosen to avoid clashing with the main `examples/` launchpad on 4004/4444.
 
