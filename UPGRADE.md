@@ -4,6 +4,70 @@ This file tracks user-impacting upgrades for the `cds-data-pipeline` + `cds-data
 
 ---
 
+## Upgrading Pipeline Console / management activation (cds-caching pattern)
+
+Pipeline Console and management API activation now follow the same config-driven reuse pattern as [cds-caching](https://github.com/mikezaschka/cds-caching) (`metrics.reuse.*`).
+
+### What changed
+
+- **Removed:** `require('cds-data-pipeline/lib/mount-pipeline-console')` and `cds add data-pipeline-monitor`.
+- **Added:** `cds.requires.datapipeline.management.reuse.api` / `.console` and `cds add pipeline-console`.
+- **Added:** `using from 'cds-data-pipeline/index.cds'` as the single manual import for tracker + management service.
+- **Added:** `cds.connect.to('datapipeline')` as the canonical service name (`DataPipelineService` remains a kind alias).
+
+### Migrate from manual mount
+
+**Before:**
+
+```javascript
+const cds = require('@sap/cds')
+require('cds-data-pipeline/lib/mount-pipeline-console')
+module.exports = cds.server
+```
+
+**After** — add to `package.json`:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "datapipeline": {
+        "impl": "cds-data-pipeline",
+        "management": {
+          "reuse": {
+            "api": true,
+            "console": true
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Remove the `mount-pipeline-console` require from `server.js`.
+
+### Migrate from `cds add data-pipeline-monitor`
+
+Run `cds add pipeline-console` for BTP HTML5 repo deployments, or use `management.reuse.console` for local reuse. See [Feature activation](./docs/pipeline/guide/feature-activation.md).
+
+### Manual CDS imports
+
+You may replace separate imports:
+
+```cds
+using from 'cds-data-pipeline/db';
+using from 'cds-data-pipeline/srv/DataPipelineManagementService';
+```
+
+with:
+
+```cds
+using from 'cds-data-pipeline/index.cds';
+```
+
+---
+
 ## Upgrading to shape-based pipeline inference (ADR 0007)
 
 [ADR 0007](./spec/internal/decisions/0007-infer-pipeline-intent-from-config-shape.md) removes the `kind` discriminator from the **public** `addPipeline` API. The engine now **infers** pipeline intent (`replicate` / `materialize` / `move`) from the configuration shape — consumers no longer pass `kind`. The derived kind is still persisted on the `Pipelines` tracker row and returned on `GET /pipeline/Pipelines`; only the input side changed.

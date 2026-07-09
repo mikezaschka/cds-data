@@ -57,6 +57,53 @@ Prefer `@materialize.snapshot` on a CDS projection when the aggregate is declara
 
 **Do not pass `kind`** — intent is derived from shape.
 
+## Run retention (optional)
+
+When global housekeeping is enabled in `cds.requires.datapipeline.housekeeping`, override counts per pipeline:
+
+```javascript
+await pipelines.addPipeline({
+    name: 'HighVolumeOrders',
+    source: { service: 'OrdersService', entity: 'Orders' },
+    target: { entity: 'db.ArchivedOrders' },
+    retention: { retentionDays: 30, maxRuns: 200 },
+});
+```
+
+See [Run housekeeping](https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/housekeeping.html).
+
+## Initial load on startup (optional)
+
+`preload` runs one sync right after registration so the target is not empty
+between boot and the first scheduled tick. Independent of `schedule`.
+
+```javascript
+// Background initial load (does not block boot), uses the pipeline's mode.
+await pipelines.addPipeline({
+    name: 'LocalProducts',
+    source: { service: 'northwind', entity: 'northwind.Products' },
+    target: { entity: 'db.LocalProducts' },
+    schedule: 600_000,
+    preload: true,
+});
+
+// Force a full initial load and block boot until it finishes.
+await pipelines.addPipeline({
+    name: 'LocalProducts',
+    source: { service: 'northwind', entity: 'northwind.Products' },
+    target: { entity: 'db.LocalProducts' },
+    preload: { mode: 'full', wait: true },
+});
+```
+
+| `preload` | Behavior |
+|---|---|
+| `false` / omitted | No startup run (default). |
+| `true` | Background run (`async`), pipeline's effective mode, boot not blocked. |
+| `{ mode, wait }` | `mode` overrides the run mode; `wait: true` blocks `addPipeline` until the run finishes (failure propagates). |
+
+Preload runs record `trigger: 'preload'` in `PipelineRuns`. A disabled pipeline skips its preload.
+
 ## REST source
 
 ```javascript

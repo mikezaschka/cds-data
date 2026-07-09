@@ -7,17 +7,19 @@ Composable [SAP CAP](https://cap.cloud.sap/) plugins for integrating remote serv
 | Package | Docs |
 |---|---|
 | [cds-data-federation](https://www.npmjs.com/package/cds-data-federation) | [Federation guide](https://mikezaschka.github.io/cds-data/federation/) |
-| [cds-data-materialization](https://www.npmjs.com/package/cds-data-materialization) | [Materialization guide](https://mikezaschka.github.io/cds-data/materialization/) |
+| cds-data-materialization — **experimental, not yet released** | [Materialization guide](https://mikezaschka.github.io/cds-data/materialization/) |
 | [cds-data-pipeline](https://www.npmjs.com/package/cds-data-pipeline) | [Pipeline guide](https://mikezaschka.github.io/cds-data/pipeline/) |
 
-This repository is the monorepo for all three npm packages. Install from npm; use the docs site for guides, concepts, and reference.
+This repository is the monorepo for all three packages. `cds-data-federation` and `cds-data-pipeline` are published to npm; **`cds-data-materialization` is experimental and not yet released**. Use the docs site for guides, concepts, and reference.
+
+All three packages install on **both CDS 9 and CDS 10** (`@sap/cds >= 9`, Node >= 22).
 
 ## Overview
 
 Three packages compose in one CAP application:
 
 - **cds-data-federation** — `@federation.delegate` and `@federation.replicate` on consumption views. Delegate forwards reads (and optional writes) to remote services at query time, including cross-service `$expand` and navigation. Replicate registers scheduled sync jobs that copy remote data into your local database.
-- **cds-data-materialization** — `@materialize.snapshot` on `group by` projections. Persists scheduled rollups and aggregates locally for analytics and reporting.
+- **cds-data-materialization** *(experimental, not yet released)* — `@materialize.snapshot` on `group by` projections. Persists scheduled rollups and aggregates locally for analytics and reporting.
 - **cds-data-pipeline** — the shared `READ → MAP → WRITE` engine. Tracker, retry, management OData API, and event hooks. Federation and materialization peer-require it for scheduled runs; you can also register pipelines programmatically via `addPipeline({ source, target, … })`.
 
 **Delegate** is live and query-time. **Replicate** and **snapshot** move data through the pipeline on a schedule. Federation optionally layers [cds-caching](https://github.com/mikezaschka/cds-caching) on delegate or replicate.
@@ -48,7 +50,7 @@ Runnable demos live under [`examples/`](./examples/). See [`examples/README.md`]
 - [Documentation portal](https://mikezaschka.github.io/cds-data/)
 - [cds-data-federation on npm](https://www.npmjs.com/package/cds-data-federation)
 - [cds-data-pipeline on npm](https://www.npmjs.com/package/cds-data-pipeline)
-- [cds-data-materialization on npm](https://www.npmjs.com/package/cds-data-materialization)
+- cds-data-materialization — experimental, not yet published to npm
 - [cds-caching](https://github.com/mikezaschka/cds-caching) — optional peer for `cache.strategy: 'response'`; built-in `cache.strategy: 'entity'` uses `cds-data-pipeline` + SQLite
 - [CAP Service Integration guide](https://cap.cloud.sap/docs/guides/integration/calesi) — upstream delegation and federation reference
 
@@ -64,3 +66,4 @@ Internal references, primers, and the feature tracker live alongside the code. T
 - [CLAUDE.md](./CLAUDE.md) — deep architecture notes and project conventions.
 - [AGENTS.md](./AGENTS.md) — cross-tool entry point for AI coding assistants (Cursor, Claude Code, Codex, …).
 - [spec/internal/](./spec/internal/) — ADRs, research notes, plans, and the contributor canonical [`spec/concepts/`](./spec/concepts/) tree.
+- [spec/internal/releasing.md](./spec/internal/releasing.md) — how to publish `cds-data-pipeline` and `cds-data-federation` to npm (local `release-it` flow).

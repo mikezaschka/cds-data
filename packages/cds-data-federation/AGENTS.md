@@ -12,11 +12,11 @@ npm add cds-data-pipeline
 
 | Package | Required when |
 |---|---|
-| `@sap/cds` >= 8 | Always |
+| `@sap/cds` >= 9 | Always |
 | `@sap-cloud-sdk/http-client`, `@sap-cloud-sdk/resilience` | OData remote services |
 | `cds-data-pipeline` | `@federation.replicate`, `cache.strategy: 'entity'`, custom pipeline hooks |
 | `cds-caching` >= 1 | `cache.strategy: 'response'` (default cache strategy) |
-| `@cap-js/sqlite` >= 2 | `cache.strategy: 'entity'` with secondary SQLite datastore |
+| `@cap-js/sqlite` >= 2 (3.x on CDS 10) | `cache.strategy: 'entity'` with secondary SQLite datastore |
 
 The plugin auto-activates via `cds-plugin.js`. On boot, look for:
 

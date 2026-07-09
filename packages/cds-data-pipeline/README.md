@@ -30,6 +30,7 @@ It sits **above** ad-hoc `cds.spawn` scripts and **below** SAP Integration Suite
 - **Target adapters** — local DB, remote OData, or [custom](https://mikezaschka.github.io/cds-data/pipeline/guide/targets/custom).
 - **Delta modes** — polling-based `timestamp`, `key`, `datetime-fields`, or `full` refresh.
 - **Scheduling** — in-process timer, persistent queue, or external (BTP Job Scheduling Service, CronJob).
+- **Run housekeeping** — opt-in retention for `PipelineRuns` history (`retentionDays`, `maxRuns`); see [Run housekeeping](https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/housekeeping).
 - **Management API** — OData at `/pipeline` with tracker, run history, statistics, and `execute` action.
 
 ## Quick start
@@ -62,15 +63,27 @@ Step-by-step setup: [Get started](https://mikezaschka.github.io/cds-data/pipelin
 
 ## Pipeline Console
 
-Pre-built UI for `/pipeline` — mount from the npm package ([CAP reuse & compose](https://cap.cloud.sap/docs/guides/integration/reuse-and-compose#reuse-uis)):
+Pre-built UI for `/pipeline` — enable via config reuse or `cds add pipeline-console`:
 
-```javascript
-const cds = require('@sap/cds')
-require('cds-data-pipeline/lib/mount-pipeline-console')
-module.exports = cds.server
+```json
+{
+  "cds": {
+    "requires": {
+      "datapipeline": {
+        "impl": "cds-data-pipeline",
+        "management": {
+          "reuse": {
+            "api": true,
+            "console": true
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
-Or run `cds add data-pipeline-monitor`. Details: [Pipeline Console](https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console).
+Details: [Pipeline Console](https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console) · [Feature activation](https://mikezaschka.github.io/cds-data/pipeline/guide/feature-activation)
 
 ## Documentation
 

@@ -68,6 +68,7 @@ entity ReplicatedRestCustomers {
 |---|---|
 | `schedule` | Interval in ms for `cds.spawn`; omit for manual-only |
 | `mode` | `'delta'` (default) or `'full'` |
+| `preload` | `true` runs an initial load at startup (background). `{ mode, wait }` forces a mode / blocks boot until done |
 | `delta.field` | High-watermark field (default `modifiedAt`) |
 | `delta.mode` | `'timestamp'`, `'key'`, or `'datetime-fields'` |
 

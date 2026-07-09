@@ -1,6 +1,6 @@
 ---
 name: pipeline-setup
-description: Installs and configures cds-data-pipeline in a SAP CAP project. Use when adding the pipeline plugin, importing tracker schema, exposing the management OData service, or connecting to DataPipelineService.
+description: Installs and configures cds-data-pipeline in a SAP CAP project. Use when adding the pipeline plugin, importing tracker schema, exposing the management OData service, or connecting to the pipeline engine.
 ---
 
 # Pipeline setup
@@ -11,32 +11,66 @@ description: Installs and configures cds-data-pipeline in a SAP CAP project. Use
 npm add cds-data-pipeline
 ```
 
-Peer: `@sap/cds` >= 8 · Node >= 22
+Peer: `@sap/cds` >= 9 · Node >= 22
 
-## Required CDS imports
+## Engine access
 
-**Tracker schema** (in `db/schema.cds` or equivalent):
+```javascript
+const pipelines = await cds.connect.to('datapipeline');
+await pipelines.addPipeline({ name, source, target, ... });
+```
+
+`cds.connect.to('DataPipelineService')` remains supported as a kind alias.
+
+## Management API + tracker
+
+**Option A — reuse from plugin** (recommended for local dev):
+
+```json
+{
+  "cds": {
+    "requires": {
+      "datapipeline": {
+        "impl": "cds-data-pipeline",
+        "management": { "reuse": { "api": true } }
+      }
+    }
+  }
+}
+```
+
+**Option B — manual CDS imports**:
+
+Tracker schema:
 
 ```cds
 using from 'cds-data-pipeline/db';
 ```
 
-**Management OData** (in `srv/pipeline-mgmt.cds` or equivalent):
+Management OData (single import):
 
 ```cds
-using from 'cds-data-pipeline/srv/DataPipelineManagementService';
+using from 'cds-data-pipeline/index.cds';
 ```
 
 Served at `/pipeline/`. Add your own auth — the plugin ships no `@requires` annotations.
 
-## Programmatic access
+## Run housekeeping (optional)
 
-```javascript
-const pipelines = await cds.connect.to('DataPipelineService');
-await pipelines.addPipeline({ name, source, target, ... });
+Prune old `PipelineRuns` rows on a schedule:
+
+```json
+"datapipeline": {
+  "impl": "cds-data-pipeline",
+  "housekeeping": {
+    "retentionDays": 90,
+    "maxRuns": 1000,
+    "schedule": "0 3 * * *"
+  }
+}
 ```
 
-Register pipelines in `cds.on('served', ...)` or equivalent bootstrap.
+Per-pipeline override: `addPipeline({ ..., retention: { maxRuns: 200 } })`. See [Run housekeeping](https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/housekeeping).
 
 ## Verify
 
@@ -44,14 +78,11 @@ After boot, `/pipeline/Pipelines` should list registered pipelines. Log lines fr
 
 ## Anti-patterns
 
-❌ **Wrong** — forgetting `using from 'cds-data-pipeline/db'` → tracker tables missing.
+❌ **Wrong** — forgetting tracker schema when not using `management.reuse.api` → tables missing.
 
-✅ **Correct** — import tracker schema before first pipeline run.
-
-❌ **Wrong** — `require('@sap/cds')` in plugin-adjacent code when extending internals (workspace duplication risk in monorepos).
-
-✅ **Correct** — follow patterns in consumer `server.js`; use documented public APIs.
+✅ **Correct** — use reuse API or import `db` / `index.cds`.
 
 ## Docs
 
+- Feature activation: https://mikezaschka.github.io/cds-data/pipeline/guide/feature-activation.html
 - Get started: https://mikezaschka.github.io/cds-data/pipeline/guide/get-started.html

@@ -1,48 +1,73 @@
 ---
 name: pipeline-console
-description: Mounts the cds-data-pipeline Pipeline Console UI for the /pipeline management API. Use when adding pipeline monitoring, running pipelines manually, viewing run history, or scaffolding with cds add data-pipeline-monitor.
+description: Enables the cds-data-pipeline Pipeline Console UI for the /pipeline management API. Use when adding pipeline monitoring, running pipelines manually, viewing run history, inspecting source/target data, or scaffolding with cds add pipeline-console.
 ---
 
 # Pipeline Console
 
-Pre-built UI5 app shipped at `cds-data-pipeline/app/pipeline-console/`. Reads/writes management OData at `/pipeline/`.
+Pre-built SAPUI5 app shipped at `cds-data-pipeline/app/pipeline-console/`. Reads/writes management OData at `/pipeline/`.
 
-## Scaffold (recommended)
+## Layout
+
+| Column | Purpose |
+|---|---|
+| **Data Pipelines** (begin) | Searchable list with status, last run, errors |
+| **Detail** (mid) | Network graph, Overview / Runs / Health / Statistics tabs, pipeline actions |
+| **Data inspector** (end) | Source/target preview via `inspectData`, column picker, advanced filters |
+
+Adaptive polling: 30 s idle, 3 s while any pipeline is `running`.
+
+## Local reuse (recommended)
+
+Add to `package.json`:
+
+```json
+{
+  "cds": {
+    "requires": {
+      "datapipeline": {
+        "impl": "cds-data-pipeline",
+        "management": {
+          "reuse": {
+            "api": true,
+            "console": true
+          }
+        }
+      }
+    }
+  }
+}
+```
 
 ```bash
-cds add data-pipeline-monitor
+cds deploy
 cds watch
 ```
 
 Open `http://localhost:4004/pipeline-console/index.html`.
 
-## Manual mount
+## Customize the UI
 
-**Helper module:**
+Sources live in `packages/cds-data-pipeline/app/pipeline-console-src/`. Rebuild with:
 
-```javascript
-const cds = require('@sap/cds')
-require('cds-data-pipeline/lib/mount-pipeline-console')
-module.exports = cds.server
+```bash
+cd packages/cds-data-pipeline && npm run build:pipeline-console
 ```
 
-**Inline (CAP reuse pattern):**
+The app uses SAPUI5 (not OpenUI5) for `sap.suite.ui.commons.networkgraph`.
 
-```javascript
-const cds = require('@sap/cds')
+## BTP — project-owned UI
 
-cds.once('bootstrap', (app) => {
-    app.serve('/pipeline-console').from('cds-data-pipeline', 'app/pipeline-console')
-})
-
-module.exports = cds.server
+```bash
+cds add pipeline-console
 ```
+
+Do not combine `cds add pipeline-console` with `management.reuse.console`.
 
 ## Prerequisites
 
 - `cds-data-pipeline` installed
-- Tracker schema imported (`using from 'cds-data-pipeline/db'`)
-- Management service exposed (`using from 'cds-data-pipeline/srv/DataPipelineManagementService'`)
+- Management API exposed via `management.reuse.api` or `using from 'cds-data-pipeline/index.cds'`
 
 ## Fiori alternative
 
@@ -50,15 +75,20 @@ The plugin ships `srv/monitor-annotations.cds` for Fiori Elements list/object pa
 
 ## Anti-patterns
 
-❌ **Wrong** — editing files under `node_modules/cds-data-pipeline/app/pipeline-console/`.
+❌ **Wrong** — `management.reuse.console` + `cds add pipeline-console` (duplicate UI route).
 
-✅ **Correct** — mount as-is; customize via your CAP app's auth and routing.
+✅ **Correct** — pick reuse **or** own, not both.
 
 ❌ **Wrong** — expecting the console without exposing the management OData service.
 
-✅ **Correct** — import `DataPipelineManagementService` CDS.
+✅ **Correct** — set `management.reuse.api: true` or import `index.cds`.
+
+❌ **Wrong** — exposing `inspectData` without securing underlying entity read access.
+
+✅ **Correct** — apply the same authorization to `/pipeline` and source/target services as for production data reads.
 
 ## Docs
 
+- Feature activation: https://mikezaschka.github.io/cds-data/pipeline/guide/feature-activation.html
 - Pipeline Console: https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console.html
 - Management API: https://mikezaschka.github.io/cds-data/pipeline/reference/management-service.html

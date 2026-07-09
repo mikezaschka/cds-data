@@ -10,7 +10,7 @@ npm add cds-data-materialization cds-data-pipeline
 
 | Package | Required when |
 |---|---|
-| `@sap/cds` >= 8 | Always |
+| `@sap/cds` >= 9 | Always |
 | `cds-data-pipeline` >= 0.1.0 | Always — engine peer dependency |
 
 The plugin auto-activates via `cds-plugin.js`. Requires tracker schema from `cds-data-pipeline` in the consumer project.

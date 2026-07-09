@@ -30,4 +30,4 @@ This repository configures **CAP**, **Fiori**, and **UI5** MCP servers (see `.cu
 
 ## Project context
 
-- **`cds-data-pipeline`** is a CAP **plugin** (pipeline engine + `/pipeline` management OData). Examples under `examples/` embed the shared Pipeline Monitor FE; UI annotations for the monitor live in `srv/monitor-annotations.cds`.
+- **`cds-data-pipeline`** is a CAP **plugin** (pipeline engine + `/pipeline` management OData + optional Pipeline Console at `/pipeline-console/`). Examples under `examples/` enable `management.reuse.*` — they do not ship local UI5 apps.

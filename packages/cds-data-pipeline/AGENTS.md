@@ -1,6 +1,6 @@
 # cds-data-pipeline — Agent guide
 
-CAP plugin for declarative, scheduled `READ → MAP → WRITE` pipelines between one source and one target. Load this file when registering pipelines, choosing replicate vs materialize vs move, configuring event hooks, or mounting the Pipeline Console.
+CAP plugin for declarative, scheduled `READ → MAP → WRITE` pipelines between one source and one target. Load this file when registering pipelines, choosing replicate vs materialize vs move, configuring event hooks, or enabling the Pipeline Console.
 
 ## Install
 
@@ -8,16 +8,28 @@ CAP plugin for declarative, scheduled `READ → MAP → WRITE` pipelines between
 npm add cds-data-pipeline
 ```
 
-Peer dependency: `@sap/cds` >= 8 · Node >= 22
+Peer dependency: `@sap/cds` >= 9 · Node >= 22
 
-Include tracker schema and management service in your project:
+Connect: `cds.connect.to('datapipeline')` (`DataPipelineService` alias still supported).
 
-```cds
-using from 'cds-data-pipeline/db';
-using from 'cds-data-pipeline/srv/DataPipelineManagementService';
+## Management API + tracker
+
+**Reuse (config):**
+
+```json
+"datapipeline": {
+  "impl": "cds-data-pipeline",
+  "management": { "reuse": { "api": true, "console": true } }
+}
 ```
 
-The plugin auto-registers `DataPipelineService` via `cds-plugin.js`.
+**Manual:**
+
+```cds
+using from 'cds-data-pipeline/index.cds';
+```
+
+See [Feature activation](https://mikezaschka.github.io/cds-data/pipeline/guide/feature-activation.html).
 
 ## When to use which surface
 
@@ -28,33 +40,6 @@ Need data movement?
 └─ Programmatic / custom adapters → addPipeline({ source, target, ... })
 ```
 
-## Inference (no kind field)
-
-Behavior is **inferred from config shape** — do not pass `kind` to `addPipeline`.
-
-| Source shape | Inferred behavior |
-|---|---|
-| `source.entity` (or `rest.path`) | Entity-shape — paginated read, default `mode: 'delta'` |
-| `source.query` | Query-shape — single-shot aggregate/snapshot, default `mode: 'full'` |
-
-## Top anti-patterns
-
-❌ **Wrong** — passing `kind: 'replicate'` to `addPipeline`.
-
-✅ **Correct** — use entity + db target shape; engine infers replicate semantics.
-
-❌ **Wrong** — both `source.query` and `source.entity` set.
-
-✅ **Correct** — pick one source shape.
-
-❌ **Wrong** — `source.query` with `mode: 'delta'`.
-
-✅ **Correct** — query-shape snapshots use full refresh.
-
-❌ **Wrong** — `target.service` set to a remote name without a custom `target.adapter`.
-
-✅ **Correct** — db target uses `{ entity: 'db.MyTable' }` or implement a custom target adapter.
-
 ## Skills (task workflows)
 
 | Skill | Use when |
@@ -62,16 +47,10 @@ Behavior is **inferred from config shape** — do not pass `kind` to `addPipelin
 | [pipeline-setup](skills/pipeline-setup/SKILL.md) | Installing, tracker schema, management service |
 | [add-pipeline](skills/add-pipeline/SKILL.md) | `addPipeline` config, inference, delta, schedule |
 | [pipeline-hooks](skills/pipeline-hooks/SKILL.md) | `PIPELINE.*` event hooks |
-| [pipeline-console](skills/pipeline-console/SKILL.md) | Pipeline Console UI at `/pipeline-console` |
-
-## MCP recommendation
-
-Before proposing CDS or CAP runtime changes, configure [`@cap-js/mcp-server`](https://www.npmjs.com/package/@cap-js/mcp-server) and use `search_model` / `search_docs`.
+| [pipeline-console](skills/pipeline-console/SKILL.md) | Pipeline Console at `/pipeline-console` |
 
 ## Documentation
 
 - Pipeline guide: https://mikezaschka.github.io/cds-data/pipeline/
-- Get started: https://mikezaschka.github.io/cds-data/pipeline/guide/get-started.html
-- Inference rules: https://mikezaschka.github.io/cds-data/pipeline/guide/concepts/inference.html
-- Management API: https://mikezaschka.github.io/cds-data/pipeline/reference/management-service.html
+- Feature activation: https://mikezaschka.github.io/cds-data/pipeline/guide/feature-activation.html
 - Pipeline Console: https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console.html
