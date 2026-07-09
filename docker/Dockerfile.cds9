@@ -1,0 +1,17 @@
+# Isolated CDS 9 compatibility test runner (see ADR 0011).
+# Local development stays on CDS 10; run this image in CI or via:
+#   npm run test:cds9:docker
+FROM node:22-bookworm
+
+WORKDIR /app
+
+# better-sqlite3 (@cap-js/sqlite 2.x) may compile from source on Linux.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+RUN bash docker/install-cds9.sh
+
+CMD ["bash", "docker/run-tests.sh"]

@@ -1,0 +1,16 @@
+# Isolated CDS 10 test runner — reproducible install from the lockfile.
+# Usage: npm run test:cds10:docker
+FROM node:22-bookworm
+
+WORKDIR /app
+
+# Native addons (@cap-js/sqlite) may compile from source on Linux.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY . .
+
+RUN bash docker/install-cds10.sh
+
+CMD ["bash", "docker/run-tests.sh"]

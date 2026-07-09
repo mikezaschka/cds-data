@@ -1,0 +1,17 @@
+# Optional dockerized test runs — do not touch host node_modules.
+# Usage:
+#   npm run test:cds10:docker
+#   npm run test:cds9:docker
+#   npm run test:docker          (both majors)
+services:
+  test-cds10:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cds10
+    network_mode: bridge
+
+  test-cds9:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cds9
+    network_mode: bridge
