@@ -88,5 +88,28 @@ describe('Delegate Strategy', () => {
             expect(data.notes).to.be.an('array').with.length(1)
             expect(data.notes[0].note).to.equal('Select-from note for Laptop Pro')
         })
+
+        it('C: navigation path $filter on local to-one assoc (detail/Name)', async () => {
+            // Mirrors Products?$filter=LocalEntity/Name eq 'Product 3' — must not
+            // forward LocalEntity/detail to the remote.
+            const { data } = await GET`/odata/v4/consumer/SelectFromProducts?$filter=detail/Name eq 'Product 3'`
+            expect(data.value).to.have.length(1)
+            expect(data.value[0].productKey).to.equal('P003')
+        })
+
+        it('C: navigation path $filter + $expand on local to-one assoc', async () => {
+            const { data } = await GET`/odata/v4/consumer/SelectFromProducts?$expand=detail&$filter=detail/Name eq 'Product 3'`
+            expect(data.value).to.have.length(1)
+            expect(data.value[0].productKey).to.equal('P003')
+            expect(data.value[0].detail).to.be.an('object')
+            expect(data.value[0].detail.Name).to.equal('Product 3')
+        })
+
+        it('C: contains() on local to-one navigation path', async () => {
+            const { data } = await GET(`/odata/v4/consumer/SelectFromProducts?$filter=contains(detail/Name,'Detail')`)
+            expect(data.value).to.have.length(2)
+            const keys = data.value.map(p => p.productKey).sort()
+            expect(keys).to.deep.equal(['P001', 'P002'])
+        })
     })
 })

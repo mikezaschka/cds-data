@@ -239,9 +239,11 @@ Three functions in [`srv/delegation/expand-remote-to-local.js`](https://github.c
 
 The result: from the consumer's perspective, `$expand=bookmarks` "just works" on a remote entity.
 
+Top-level `$filter` through a local association (e.g. `Products?$filter=LocalEntity/Name eq 'X'`, or `contains(LocalEntity/Name,'…')`) is handled by [`resolveLocalNavigationFilters()`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/srv/delegation/local-navigation-filters.js): the plugin queries the local DB first, rewrites the filter to a source-key `IN` list, then forwards to the remote. Lambda filters on to-many local collections (`bookmarks/any(...)`) use `resolveLocalLambdaFilters()`.
+
 ### Status and test coverage
 
-**Supported.** Covered by the `C`-prefixed tests in [`packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js) (remote customer with local bookmarks, key and filtered access).
+**Supported.** Covered by the `C`-prefixed tests in [`packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js`](https://github.com/mikezaschka/cds-data/blob/main/packages/cds-data-federation/test/integration/expand-remote-to-local/cross-service-expand-remote-to-local.test.js) (remote customer with local bookmarks, key and filtered access, navigation-path `$filter` on local to-one assocs).
 
 ---
 

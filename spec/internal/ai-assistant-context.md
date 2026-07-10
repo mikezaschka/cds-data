@@ -51,6 +51,10 @@ srv/
     lambda-filters.js              Cross-service expand: remote → local filters:
                                    resolveLocalLambdaFilters().
                                    Pre-resolves local lambda/exists against local DB.
+    local-navigation-filters.js    Cross-service expand: remote → local filters:
+                                   resolveLocalNavigationFilters(). Pre-resolves
+                                   to-one nav path filters (LocalEntity/Name eq …)
+                                   against local DB, rewriting to sourceKey IN.
     navigation-translation.js      buildAssocTargetMappings(), translateNavigationFilters().
                                    Translates renamed assoc names in $filter nav paths.
     remote-navigation-filters.js   Cross-service expand: local → remote filters:

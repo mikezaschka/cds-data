@@ -1,5 +1,6 @@
 const cds = require('@sap/cds')
 const { translateNavigationFilters } = require('./navigation-translation')
+const { resolveLocalNavigationFilters } = require('./local-navigation-filters')
 const { resolveLocalLambdaFilters } = require('./lambda-filters')
 const { splitLocalExpands, resolveRemoteToLocalExpands } = require('./expand-remote-to-local')
 const { containsLambda, runDirectRemoteQuery, propagateRemoteError } = require('./remote-query')
@@ -55,9 +56,19 @@ function registerDelegateHandler(service, entityName, sourceServiceName, viewMap
 
             let query = translateNavigationFilters(req.query, viewMapping, assocTargets)
 
+            let localFilterRewritten = false
+            const navResult = resolveLocalNavigationFilters(query, localAssocsByName, service)
+            if (navResult instanceof Promise) {
+                query = (await navResult)._cqn
+                localFilterRewritten = true
+            } else {
+                query = navResult
+            }
+
             const lambdaResult = resolveLocalLambdaFilters(query, localAssocsByName, service)
             if (lambdaResult instanceof Promise) {
                 query = (await lambdaResult)._cqn
+                localFilterRewritten = true
             } else {
                 query = lambdaResult
             }
@@ -65,7 +76,7 @@ function registerDelegateHandler(service, entityName, sourceServiceName, viewMap
             const { localExpandItems, effectiveQuery } = splitLocalExpands(query, localAssocsByName)
             try {
                 let results
-                if (viewMapping.staticWhere || containsLambda(effectiveQuery?.SELECT?.where)) {
+                if (needsDirectRemoteQuery(viewMapping, effectiveQuery?.SELECT?.where, localFilterRewritten)) {
                     results = await runDirectRemoteQuery(remote, sourceServiceName, effectiveQuery, viewMapping)
                 } else {
                     results = await runPagedRemoteQuery(remote, effectiveQuery)
@@ -83,6 +94,23 @@ function registerDelegateHandler(service, entityName, sourceServiceName, viewMap
     })
     const ops = [writeFlags.create && 'CREATE', writeFlags.update && 'UPDATE', writeFlags.delete && 'DELETE'].filter(Boolean)
     LOG.info(`Registered delegate handler for ${entityName} -> ${sourceServiceName}${ops.length > 0 ? ` (write: ${ops.join(', ')})` : ''}${localAssocs.length > 0 ? ` (cross-service expand: remote → local via ${localAssocs.map(a => a.name).join(', ')})` : ''}`)
+}
+
+/**
+ * True when the remote query must bypass CAP's projection chain and use
+ * manual field-name translation via runDirectRemoteQuery.
+ *
+ * @param {boolean} localFilterRewritten - true when resolveLocalNavigationFilters
+ *   or resolveLocalLambdaFilters replaced a local-assoc predicate with a
+ *   sourceKey IN filter (local field names that CAP won't translate reliably)
+ */
+function needsDirectRemoteQuery(viewMapping, where, localFilterRewritten = false) {
+    if (viewMapping?.staticWhere) return true
+    if (containsLambda(where)) return true
+    if (localFilterRewritten && Object.keys(viewMapping?.localToRemote || {}).length > 0) {
+        return true
+    }
+    return false
 }
 
 function normalizeTags(entityName, cacheOptions = {}) {
@@ -146,9 +174,19 @@ async function registerCachedDelegateHandler(service, entityName, sourceServiceN
 
             let query = translateNavigationFilters(req.query, viewMapping, assocTargets)
 
+            let localFilterRewritten = false
+            const navResult = resolveLocalNavigationFilters(query, localAssocsByName, service)
+            if (navResult instanceof Promise) {
+                query = (await navResult)._cqn
+                localFilterRewritten = true
+            } else {
+                query = navResult
+            }
+
             const lambdaResult = resolveLocalLambdaFilters(query, localAssocsByName, service)
             if (lambdaResult instanceof Promise) {
                 query = (await lambdaResult)._cqn
+                localFilterRewritten = true
             } else {
                 query = lambdaResult
             }
@@ -156,7 +194,7 @@ async function registerCachedDelegateHandler(service, entityName, sourceServiceN
             const { localExpandItems, effectiveQuery } = splitLocalExpands(query, localAssocsByName)
             const delegateHandler = async () => {
                 try {
-                    if (viewMapping.staticWhere || containsLambda(effectiveQuery?.SELECT?.where)) {
+                    if (needsDirectRemoteQuery(viewMapping, effectiveQuery?.SELECT?.where, localFilterRewritten)) {
                         return await runDirectRemoteQuery(remote, sourceServiceName, effectiveQuery, viewMapping)
                     }
                     return await runPagedRemoteQuery(remote, effectiveQuery)
@@ -229,12 +267,16 @@ function registerEntityCachedDelegateHandler(
 
             registry.recordHit()
 
+            let localFilterRewritten = false
+
             async function fallbackRemote(innerQuery, expandItems = []) {
                 try {
-                    if (viewMapping.staticWhere || containsLambda(innerQuery?.SELECT?.where)) {
-                        return await runDirectRemoteQuery(remote, sourceServiceName, innerQuery, viewMapping)
+                    let res
+                    if (needsDirectRemoteQuery(viewMapping, innerQuery?.SELECT?.where, localFilterRewritten)) {
+                        res = await runDirectRemoteQuery(remote, sourceServiceName, innerQuery, viewMapping)
+                    } else {
+                        res = await runPagedRemoteQuery(remote, innerQuery)
                     }
-                    let res = await runPagedRemoteQuery(remote, innerQuery)
                     if (expandItems.length > 0 && res != null) {
                         await resolveRemoteToLocalExpands(res, expandItems, localAssocsByName, service)
                     }
@@ -272,15 +314,24 @@ function registerEntityCachedDelegateHandler(
 
             let query = translateNavigationFilters(req.query, viewMapping, assocTargets)
 
+            const navResult = resolveLocalNavigationFilters(query, localAssocsByName, service)
+            if (navResult instanceof Promise) {
+                query = (await navResult)._cqn
+                localFilterRewritten = true
+            } else {
+                query = navResult
+            }
+
             const lambdaResult = resolveLocalLambdaFilters(query, localAssocsByName, service)
             if (lambdaResult instanceof Promise) {
                 query = (await lambdaResult)._cqn
+                localFilterRewritten = true
             } else {
                 query = lambdaResult
             }
 
             const { localExpandItems, effectiveQuery } = splitLocalExpands(query, localAssocsByName)
-            if (localExpandItems.length > 0 || viewMapping.staticWhere || containsLambda(effectiveQuery?.SELECT?.where)) {
+            if (localExpandItems.length > 0 || viewMapping.staticWhere || containsLambda(effectiveQuery?.SELECT?.where) || localFilterRewritten) {
                 let q = effectiveQuery
                 if (!q) q = cds.ql.clone(req.query)
                 return fallbackRemote(q, localExpandItems)

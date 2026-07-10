@@ -57,6 +57,14 @@ entity SelectFromProductNotes {
         note    : String(500);
 }
 
+// To-one local backlink — mirrors Products.LocalEntity for navigation-path $filter
+// (remote → local): SelectFromProducts?$filter=detail/Name eq '...'
+entity SelectFromProductDetail {
+    key ID      : UUID;
+        Name    : String(100);
+        product : Association to SelectFromProducts;
+}
+
 // ─── Consumption views: OData V4 (delegate) ─────────────────────────────────
 
 // Wildcard projection + local backlink for Scenario C (remote→local expand).
@@ -90,6 +98,7 @@ entity SelectFromProducts as select from remote.Products {
     name  as Name,
     category,
     price as unitPrice,
+    detail : Association to SelectFromProductDetail on $self = detail.product,
     notes : Association to many SelectFromProductNotes on notes.product = $self
 };
 
