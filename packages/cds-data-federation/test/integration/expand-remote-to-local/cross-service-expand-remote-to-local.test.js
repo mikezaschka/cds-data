@@ -80,5 +80,13 @@ describe('Delegate Strategy', () => {
                 expect(c.bookmarks).to.be.an('array')
             }
         })
+
+        it('C: as select from renames — remote → local expand with backlink', async () => {
+            const { data } = await GET`/odata/v4/consumer/SelectFromProducts('P001')?$expand=notes`
+            expect(data.productKey).to.equal('P001')
+            expect(data.Name).to.equal('Laptop Pro')
+            expect(data.notes).to.be.an('array').with.length(1)
+            expect(data.notes[0].note).to.equal('Select-from note for Laptop Pro')
+        })
     })
 })

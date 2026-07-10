@@ -125,6 +125,51 @@ describe('Unit Tests', () => {
             expect(configs[0].options.cache).to.deep.equal({ ttl: 30000 })
         })
 
+        it('should extract renames from as select from (query.SELECT columns)', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const { configs } = scanAnnotations({
+                definitions: {
+                    Remote: { kind: 'service' },
+                    'Svc.Products': {
+                        '@federation.delegate': true,
+                        // CDS stores `as select from` under query.SELECT, not projection
+                        query: {
+                            SELECT: {
+                                from: { ref: ['Remote', 'Products'] },
+                                columns: [
+                                    { ref: ['ProductID'], as: 'ID' },
+                                    { ref: ['ProductName'], as: 'Name' },
+                                    { ref: ['UnitsInStock'] },
+                                    {
+                                        as: 'LocalEntity',
+                                        cast: {
+                                            type: 'cds.Association',
+                                            target: 'Svc.LocalEntity',
+                                            on: [{ ref: ['$self'] }, '=', { ref: ['LocalEntity', 'Product'] }]
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            })
+            expect(configs).to.have.length(1)
+            const { viewMapping } = configs[0]
+            expect(viewMapping.isWildcard).to.equal(false)
+            expect(viewMapping.localToRemote).to.deep.equal({
+                ID: 'ProductID',
+                Name: 'ProductName'
+            })
+            expect(viewMapping.remoteToLocal.ProductID).to.equal('ID')
+            expect(viewMapping.remoteToLocal.ProductName).to.equal('Name')
+            expect(viewMapping.projectedColumns).to.deep.equal([
+                { ref: ['ProductID'], as: 'ID' },
+                { ref: ['ProductName'], as: 'Name' },
+                'UnitsInStock'
+            ])
+        })
+
         it('should extract options from @federation.replicate annotation value', () => {
             const { scanAnnotations } = require('../../srv/annotation-scanner')
             const { configs } = scanAnnotations({

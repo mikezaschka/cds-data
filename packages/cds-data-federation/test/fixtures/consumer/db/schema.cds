@@ -50,6 +50,13 @@ entity ProductCategories {
         products    : Association to many Products on products.category = $self.category;
 }
 
+// Local backlink for SelectFromProducts (as select from + renames regression).
+entity SelectFromProductNotes {
+    key ID      : UUID;
+        product : Association to SelectFromProducts;
+        note    : String(500);
+}
+
 // ─── Consumption views: OData V4 (delegate) ─────────────────────────────────
 
 // Wildcard projection + local backlink for Scenario C (remote→local expand).
@@ -72,6 +79,18 @@ entity Products as projection on remote.Products {
     category,
     price as unitPrice,
     currency
+};
+
+// Same renames as Products, but written with `as select from` (CSN stores columns
+// under query.SELECT, not projection). Regression for scanner rename extraction
+// used by cross-service expand: local → remote.
+@federation.delegate
+entity SelectFromProducts as select from remote.Products {
+    ID    as productKey,
+    name  as Name,
+    category,
+    price as unitPrice,
+    notes : Association to many SelectFromProductNotes on notes.product = $self
 };
 
 // Field + association renames: enables Scenario A (remote→remote) expand tests

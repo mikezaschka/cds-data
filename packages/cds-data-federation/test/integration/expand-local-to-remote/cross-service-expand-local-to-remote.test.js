@@ -95,6 +95,26 @@ describe('Delegate Strategy', () => {
             expect(data.value.every(r => r.product !== null)).to.be.true
             expect(data.value[0].product).to.have.property('productName')
         })
+
+        it('B: as select from renames — local → remote expand uses remote key names', async () => {
+            // SelectFromProducts is declared with `as select from` (query.SELECT columns).
+            // Without scanner fallback, localToRemote is empty and the batch-fetch
+            // would send $filter=(productKey eq ...) to the remote (400).
+            const { data } = await GET`/odata/v4/consumer/SelectFromProductNotes?$expand=product`
+            expect(data.value).to.have.length(2)
+            expect(data.value[0]).to.have.property('product')
+            expect(data.value[0].product).to.have.property('productKey')
+            expect(data.value[0].product).to.have.property('Name')
+            const keys = data.value.map(n => n.product.productKey).sort()
+            expect(keys).to.deep.equal(['P001', 'P002'])
+        })
+
+        it('B: as select from renames — filter on renamed key', async () => {
+            const { data } = await GET`/odata/v4/consumer/SelectFromProducts?$filter=productKey eq 'P001'`
+            expect(data.value).to.have.length(1)
+            expect(data.value[0].productKey).to.equal('P001')
+            expect(data.value[0].Name).to.equal('Laptop Pro')
+        })
     })
 
     describe('$expand Scenario B: Cross-provider (InventoryReports)', () => {

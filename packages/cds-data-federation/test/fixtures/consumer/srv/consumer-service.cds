@@ -8,6 +8,8 @@ service ConsumerService {
     entity Customers as projection on consumer.Customers;
     @cds.redirection.target
     entity Products  as projection on consumer.Products;
+    entity SelectFromProducts     as projection on consumer.SelectFromProducts;
+    entity SelectFromProductNotes as projection on consumer.SelectFromProductNotes;
     @cds.redirection.target
     entity Orders    as projection on consumer.Orders;
     entity Suppliers as projection on consumer.Suppliers;

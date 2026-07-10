@@ -275,9 +275,14 @@ function buildConfigFromAnnotation(entityName, entityDef) {
  * - isWildcard: true if projection uses { * } (no column restriction)
  */
 function extractViewMapping(entityDef) {
-    const staticWhere = entityDef.projection?.where || null
-    const columns = entityDef.projection?.columns
-    const excluding = entityDef.projection?.excluding
+    // `as projection on` stores columns under `.projection`; `as select from`
+    // stores them under `.query.SELECT`. Infer source already falls back to
+    // query.SELECT — keep the same dual-shape handling here so renames are
+    // not silently dropped for select-from consumption views.
+    const proj = entityDef.projection || entityDef.query?.SELECT || {}
+    const staticWhere = proj.where || null
+    const columns = proj.columns
+    const excluding = proj.excluding
 
     if (!columns || columns.length === 0) {
         const excludedColumns = excluding
