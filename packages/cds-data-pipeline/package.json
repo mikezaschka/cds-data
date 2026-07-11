@@ -1,6 +1,6 @@
 {
   "name": "cds-data-pipeline",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A CAP application-layer plugin for declarative, traceable, scheduled data pipelines between CAP services. Each pipeline is a linear READ -> MAP -> WRITE job between exactly one source and one target, with built-in tracker, retry, concurrency guard, management OData API, and event hooks.",
   "repository": {
     "type": "git",
