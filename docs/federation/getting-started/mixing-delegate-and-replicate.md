@@ -110,6 +110,8 @@ The plugin detects the strategy per expand target; you don't pick the fetch path
 
 If you want the best of both: replicate and cache. But start simple — delegate until you have a concrete reason to copy the data.
 
+For the full decision matrix — including the two cache modes and delegation's OData-level limits — see [Choosing a Strategy](../reference/choosing-a-strategy.md).
+
 ## Gotchas
 
 - **Writes to a replicated entity don't flow back.** By default, replicated tables are read-only mirrors. A `POST /ReplicatedCustomers` writes to the local table, but the next replication run will treat the remote as the source of truth and may overwrite the change. If you need bidirectional sync, that's a different pattern and not yet supported.

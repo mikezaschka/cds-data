@@ -1,6 +1,6 @@
 # Features
 
-What `cds-data-federation` does today, grouped by capability. Every entry on this page is available in the current release. Annotation syntax and option reference are in [Annotations](annotations.md); scenario names follow [Cross-Service Scenarios](../concepts/cross-service-scenarios.md).
+What `cds-data-federation` does today, grouped by capability. Every entry on this page is available in the current release. Annotation syntax and option reference are in [Annotations](annotations.md); scenario names follow [Cross-Service Scenarios](../concepts/cross-service-scenarios.md). To decide *which* strategy fits a given entity — with limitations side by side — see [Choosing a Strategy](choosing-a-strategy.md).
 
 ## Consumption views
 

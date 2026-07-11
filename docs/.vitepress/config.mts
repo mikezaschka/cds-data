@@ -172,6 +172,7 @@ export default withMermaid(
             collapsed: true,
             items: [
               { text: 'Features', link: '/federation/reference/features' },
+              { text: 'Choosing a strategy', link: '/federation/reference/choosing-a-strategy' },
               { text: 'Annotations', link: '/federation/reference/annotations' },
               { text: 'Comparison with CAP', link: '/federation/reference/comparison' },
             ],

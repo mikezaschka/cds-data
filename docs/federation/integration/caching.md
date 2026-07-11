@@ -279,6 +279,8 @@ In most cases, replicate without caching is the right choice; the local DB is th
 
 For writable delegates, neither cache strategy auto-invalidates on CUD — plan manual invalidation or shorter TTL.
 
+For the full four-way decision — plain delegate, both cache modes, and replicate — side by side with their limitations, see [Choosing a Strategy](../reference/choosing-a-strategy.md).
+
 ## See also
 
 - [cds-caching documentation](https://github.com/mikezaschka/cds-caching) — response strategy backend.
