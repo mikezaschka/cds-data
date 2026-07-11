@@ -60,7 +60,18 @@ async function* entityShapeReadStream({ service, config, tracker, buildDeltaFilt
             await new Promise(r => setTimeout(r, sourceConfig.delay))
         }
 
-        const query = cds.ql.clone(baseQuery).limit(batchSize, skip)
+        // NB: cds.ql.clone() returns a prototype-linked clone — the source clauses
+        // (from, columns, where, ...) live on the prototype, not as own properties.
+        // A subsequent .limit() adds `limit` as the only OWN enumerable key. Wire
+        // serializers that iterate own-enumerable keys (e.g. HCQL's Object.entries)
+        // then drop `from`, so the remote receives a targetless SELECT and fails with
+        // "Cannot determine target entity of query." Spread the source clauses into a
+        // fresh, fully own-enumerable SELECT so `from` always survives serialization.
+        const query = cds.ql.clone(baseQuery)
+        query.SELECT = {
+            ...baseQuery.SELECT,
+            limit: { rows: { val: batchSize }, offset: { val: skip } },
+        }
         const batch = await withRetry(
             () => service.run(query),
             retry
