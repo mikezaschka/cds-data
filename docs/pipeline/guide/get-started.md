@@ -16,7 +16,9 @@ npm add cds-data-pipeline
 
 The plugin auto-registers the pipeline engine — no extra config needed for `addPipeline`. Connect with `cds.connect.to('data-pipeline')`.
 
-For AI coding assistants, the installed package also ships `node_modules/cds-data-pipeline/AGENTS.md` and task skills under `skills/` — see the package README § AI assistants.
+### AI assistants
+
+**Coming soon.** Agent guidance and task skills for coding assistants will ship in a future release.
 
 **Option A — reuse management API from the plugin** (no project CDS files):
 

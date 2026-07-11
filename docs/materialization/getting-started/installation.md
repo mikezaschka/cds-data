@@ -12,7 +12,9 @@ npm add cds-data-materialization cds-data-pipeline
 
 The plugin auto-activates on load via `cds-plugin.js` — no manual wiring in `server.js`.
 
-For AI coding assistants, the installed package also ships `node_modules/cds-data-materialization/AGENTS.md` and task skills under `skills/` — see the package README § AI assistants.
+### AI assistants
+
+**Coming soon.** Agent guidance and task skills for coding assistants will ship in a future release.
 
 ## Peer dependencies
 

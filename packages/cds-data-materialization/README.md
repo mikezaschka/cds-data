@@ -63,18 +63,7 @@ Install federation and materialization side by side when you need both remote sy
 
 ## AI assistants
 
-This package ships agent guidance in the npm tarball:
-
-- `node_modules/cds-data-materialization/AGENTS.md` — index, decision trees, anti-patterns
-- `node_modules/cds-data-materialization/skills/` — task skills ([Agent Skills](https://agentskills.io) format)
-
-To symlink skills into your agent workspace (Cursor, Claude Code, …):
-
-```bash
-npx skills-npm --include cds-data-materialization
-```
-
-For live CDS model introspection, configure [`@cap-js/mcp-server`](https://www.npmjs.com/package/@cap-js/mcp-server) in your project's MCP config.
+**Coming soon.** Agent guidance (`AGENTS.md`) and task skills for coding assistants will ship in a future release.
 
 ## Docs
 

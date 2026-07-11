@@ -7,8 +7,6 @@
 ![SAP CAP](https://img.shields.io/badge/SAP%20CAP-%E2%89%A5%209-0a6ed1)
 [![Documentation](https://img.shields.io/badge/docs-online-brightgreen)](https://mikezaschka.github.io/cds-data/pipeline/)
 
-> **Work in progress.** APIs, schema, and documentation may change before a stable release.
-
 [Documentation](https://mikezaschka.github.io/cds-data/pipeline/) · [npm](https://www.npmjs.com/package/cds-data-pipeline)
 
 **A CAP plugin for declarative, scheduled data pipelines between CAP services.** Each pipeline moves data from one source to one target in a linear `READ → MAP → WRITE` flow — with tracking, retry, delta support, and a management API out of the box.
@@ -98,18 +96,7 @@ Full docs — concepts, recipes, adapter references, management API — at **<ht
 
 ## AI assistants
 
-This package ships agent guidance in the npm tarball:
-
-- `node_modules/cds-data-pipeline/AGENTS.md` — index, decision trees, anti-patterns
-- `node_modules/cds-data-pipeline/skills/` — task skills ([Agent Skills](https://agentskills.io) format)
-
-To symlink skills into your agent workspace (Cursor, Claude Code, …):
-
-```bash
-npx skills-npm --include cds-data-pipeline
-```
-
-For live CDS model introspection, configure [`@cap-js/mcp-server`](https://www.npmjs.com/package/@cap-js/mcp-server) in your project's MCP config.
+**Coming soon.** Agent guidance (`AGENTS.md`) and task skills for coding assistants will ship in a future release.
 
 ---
 

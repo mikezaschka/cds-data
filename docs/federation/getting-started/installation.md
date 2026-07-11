@@ -8,7 +8,9 @@ npm add cds-data-federation
 
 The plugin auto-activates on load via `cds-plugin.js` — no manual wiring in your `server.js` or `package.json`.
 
-For AI coding assistants, the installed package also ships `node_modules/cds-data-federation/AGENTS.md` and task skills under `skills/` — see the package README § AI assistants.
+### AI assistants
+
+**Coming soon.** Agent guidance and task skills for coding assistants will ship in a future release.
 
 ## Peer dependencies
 
