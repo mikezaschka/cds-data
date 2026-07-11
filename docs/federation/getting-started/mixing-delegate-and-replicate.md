@@ -69,7 +69,7 @@ Content-Type: application/json
 Or programmatically from your own code:
 
 ```javascript
-const repl = await cds.connect.to('DataPipelineService');
+const repl = await cds.connect.to('data-pipeline');
 await repl.run('ReplicatedCustomers');
 ```
 

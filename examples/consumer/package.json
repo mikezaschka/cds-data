@@ -28,7 +28,7 @@
           "url": "db.sqlite"
         }
       },
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "management": {
           "reuse": {

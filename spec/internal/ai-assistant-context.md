@@ -95,7 +95,7 @@ srv/
                                    _defaults maps. `kind` is required (ADR 0005).
   pipeline-service.cds             Stub service definition (`service DataPipelineService;`)
                                    so CAP auto-wires the JS implementation and
-                                   `cds.connect.to('DataPipelineService')` works.
+                                   `cds.connect.to('data-pipeline')` works.
 
   lib/
     Pipeline.js                    Per-pipeline execution engine.

@@ -16,7 +16,7 @@ Route to this adapter via `source.kind: 'cqn'` on the `addPipeline` config. For 
 Row-preserving copy from a CQN-native source. The target entity's projection defines the schema — column restriction, renames, and `where` clauses declared on the projection flow through the view mapping exactly as they do for the OData adapter.
 
 ```javascript
-const pipelines = await cds.connect.to('DataPipelineService');
+const pipelines = await cds.connect.to('data-pipeline');
 
 await pipelines.addPipeline({
     name: 'ArchivedOrders',

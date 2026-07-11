@@ -4,7 +4,7 @@ const cds = require('@sap/cds')
 // `Shipments` pipeline config mirrors example 01 — the interesting code
 // is the hook registrations below.
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
     const log = cds.log('example-06')
 
     await pipelines.addPipeline({

@@ -10,10 +10,10 @@ With `cache.strategy: 'entity'`, declaring a dedicated SQLite datastore switches
 {
   "cds": {
     "requires": {
-      "federation-entity-cache": { "kind": "sqlite" },
-      "cds-data-federation": {
+      "data-federation-cache": { "kind": "sqlite" },
+      "data-federation": {
         "entityCache": {
-          "urlTemplate": "federation-entity-cache-{tenant}.sqlite",
+          "urlTemplate": "data-federation-cache-{tenant}.sqlite",
           "defaultTenant": "default",
           "baseDir": "."
         }
@@ -27,7 +27,7 @@ For the full storage-selection rules (default `db` vs dedicated files, custom se
 
 | Option | Default | Purpose |
 |---|---|---|
-| `entityCache.urlTemplate` | `federation-entity-cache-{tenant}.sqlite` | File name pattern per tenant |
+| `entityCache.urlTemplate` | `data-federation-cache-{tenant}.sqlite` | File name pattern per tenant |
 | `entityCache.defaultTenant` | `default` | Fallback when no request tenant (single-tenant dev) |
 | `entityCache.baseDir` | project root | Directory for SQLite files |
 
@@ -41,7 +41,8 @@ Scheduled cron / Job Scheduler runs fan out to all subscribed tenants when multi
 
 ```json
 {
-  "cds-data-pipeline": {
+  "data-pipeline": {
+    "impl": "cds-data-pipeline",
     "multitenancy": {
       "active": true,
       "fanOutScheduledRuns": true
@@ -54,7 +55,7 @@ Scheduled cron / Job Scheduler runs fan out to all subscribed tenants when multi
 
 ## Response cache tenant tags
 
-When `cds.requires.multitenancy === true` or `cds-data-federation.multitenancy.active === true`, delegate response caches automatically include a `tenant-{{tenant}}-entity-{{entity}}` tag (opt out with `cache.tenantScoped: false` on the annotation).
+When `cds.requires.multitenancy === true` or `data-federation.multitenancy.active === true`, delegate response caches automatically include a `tenant-{{tenant}}-entity-{{entity}}` tag (opt out with `cache.tenantScoped: false` on the annotation).
 
 ## MTX subscribe / unsubscribe hooks (optional)
 
@@ -76,7 +77,7 @@ Override mode or trigger per tenant under `cds.env`:
 
 ```json
 {
-  "cds-data-federation": {
+  "data-federation": {
     "multitenancy": {
       "tenants": {
         "t1": { "replicate": { "Movies": { "mode": "full" } } },

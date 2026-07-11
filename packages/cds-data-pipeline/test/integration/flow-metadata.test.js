@@ -49,7 +49,7 @@ describe('flowMetadata management functions', () => {
     })
 
     it('flowMetadata lists registered hooks', async () => {
-        const srv = await cds.connect.to('DataPipelineService')
+        const srv = await cds.connect.to('data-pipeline')
         srv.before('PIPELINE.MAP', 'ReplicatedCustomers', () => {})
 
         const { data } = await GET(

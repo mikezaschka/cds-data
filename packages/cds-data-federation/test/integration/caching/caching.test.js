@@ -261,7 +261,7 @@ describe('Delegate Strategy', () => {
 
     describe('Entity-level SQLite cache (cache.strategy: entity)', () => {
         const base = '/odata/v4/consumer'
-        const pipName = 'federation-entity-cache:consumer.EntityCachedCustomers'
+        const pipName = 'data-federation-cache:consumer.EntityCachedCustomers'
 
         const ecRunCount = async () => {
             const rows = await SELECT.from('plugin_data_pipeline_PipelineRuns')

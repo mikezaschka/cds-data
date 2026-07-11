@@ -326,12 +326,12 @@ GET /pipeline/status(name='ReplicatedPartners')
 
 ## Programmatic API
 
-`DataPipelineService` is a standard `cds.Service` — resolve it via `cds.connect.to('DataPipelineService')` and register hooks via the standard CAP API.
+`DataPipelineService` is a standard `cds.Service` — resolve it via `cds.connect.to('data-pipeline')` and register hooks via the standard CAP API.
 
 ```javascript
 const cds = require('@sap/cds');
 
-const pipelines = await cds.connect.to('DataPipelineService');
+const pipelines = await cds.connect.to('data-pipeline');
 
 // Filter records before MAP (before hooks receive the request only)
 pipelines.before('PIPELINE.MAP', 'ReplicatedPartners', async (req) => {

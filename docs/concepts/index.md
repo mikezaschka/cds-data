@@ -5,7 +5,7 @@
 | Plugin | You reach for it when… | Surface |
 |---|---|---|
 | **[cds-data-federation](/federation/)** | You have a **remote service** entity you want available in your app — live or synced. | `@federation.delegate` / `@federation.replicate` on consumption views. |
-| **[cds-data-pipeline](/pipeline/)** | You need a **scheduled, traceable `READ → MAP → WRITE`** job — from any source to any target, in code. | `cds.connect.to('datapipeline').addPipeline({ … })` + management API + Pipeline Console. |
+| **[cds-data-pipeline](/pipeline/)** | You need a **scheduled, traceable `READ → MAP → WRITE`** job — from any source to any target, in code. | `cds.connect.to('data-pipeline').addPipeline({ … })` + management API + Pipeline Console. |
 | **[cds-data-materialization](/materialization/)** <Badge type="warning" text="Experimental" /> | You want a **local aggregate snapshot** from a `group by` projection. | `@materialize.snapshot`. **Not yet released.** |
 
 ## How they compose

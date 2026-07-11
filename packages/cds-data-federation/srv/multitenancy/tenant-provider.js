@@ -5,7 +5,7 @@ const LOG = cds.log('cds-data-federation')
 const DEFAULT_TENANT = 'default'
 
 function _federationMultitenancyConfig() {
-    return cds.env?.requires?.['cds-data-federation']?.multitenancy || {}
+    return cds.env?.requires?.['data-federation']?.multitenancy || {}
 }
 
 function isMultitenancyConfigured() {

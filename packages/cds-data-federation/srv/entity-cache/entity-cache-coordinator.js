@@ -109,7 +109,7 @@ class EntityCacheCoordinator {
         }
         const tenantKey = cacheTenantKey(tenant, meta.resolved?.static)
         await this.ensureCapacity(tenantKey, entityFullName)
-        const ps = await cds.connect.to('DataPipelineService')
+        const ps = await cds.connect.to('data-pipeline')
         const execOpts = { mode: 'delta' }
         if (tenant != null && String(tenant) !== '' && !meta.resolved?.static) {
             execOpts.tenant = String(tenant)

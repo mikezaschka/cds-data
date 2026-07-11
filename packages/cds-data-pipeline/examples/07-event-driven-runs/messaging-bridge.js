@@ -12,7 +12,7 @@ cds.on('served', () => {
 
 async function run() {
     const messaging = await cds.connect.to('messaging')
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
     const log = cds.log(LOG)
 
     messaging.on(SHIPMENT_KEY_TEST, async (msg) => {

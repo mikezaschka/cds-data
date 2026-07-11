@@ -74,7 +74,7 @@ const cds = require('@sap/cds')
 
 cds.on('served', async () => {
     const messaging = await cds.connect.to('messaging')
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
 
     messaging.on('logistics.LogisticsService.ShipmentKeyTest', async (msg) => {
         const { ID } = msg.data

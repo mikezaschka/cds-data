@@ -21,7 +21,7 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-- **Engine** — `cds-data-pipeline` is a scheduled, traceable `READ → MAP → WRITE` primitive between one source and one target. It has no dependency on the annotation plugins and is fully usable standalone via `cds.connect.to('datapipeline').addPipeline({ … })`.
+- **Engine** — `cds-data-pipeline` is a scheduled, traceable `READ → MAP → WRITE` primitive between one source and one target. It has no dependency on the annotation plugins and is fully usable standalone via `cds.connect.to('data-pipeline').addPipeline({ … })`.
 - **Annotations** — `cds-data-federation` and `cds-data-materialization` scan your CDS model at startup and translate each annotated projection into an `addPipeline` registration through a small `pipeline-binding` seam. You never call `addPipeline` yourself when you use annotations.
 
 `@federation.delegate` is the exception: it is a **live proxy** and does not use the pipeline at all — reads are forwarded to the remote at request time.

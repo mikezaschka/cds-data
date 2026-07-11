@@ -27,7 +27,7 @@
       "caching": {
         "impl": "cds-caching"
       },
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline"
       },
       "ProviderService": {

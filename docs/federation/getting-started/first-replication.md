@@ -119,7 +119,7 @@ See the [cds-data-pipeline Management Service](/pipeline/reference/management-se
 Hook into the `PIPELINE.READ` / `PIPELINE.MAP` / `PIPELINE.WRITE` phases via the standard CAP service API:
 
 ```javascript
-const federation = await cds.connect.to('DataPipelineService');
+const federation = await cds.connect.to('data-pipeline');
 
 federation.before('PIPELINE.MAP', 'ReplicatedPartners', async (req) => {
     req.data.sourceRecords = req.data.sourceRecords.filter(r => !r.blocked);

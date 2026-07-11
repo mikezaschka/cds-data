@@ -7,7 +7,7 @@ const DEFAULT_CHECK = 60_000
 const DEFAULT_STATS = 300_000
 
 function _fedEntityCacheEnv() {
-    return cds.env?.requires?.['cds-data-federation']?.entityCache || {}
+    return cds.env?.requires?.['data-federation']?.entityCache || {}
 }
 
 function globalEntityCacheOptions() {
@@ -24,12 +24,12 @@ function globalEntityCacheOptions() {
         wait: ec.wait !== false,
         search: ec.search !== false,
         measure: ec.measure === true,
-        staticUrlTemplate: ec.staticUrlTemplate || 'federation-entity-cache-static.sqlite',
+        staticUrlTemplate: ec.staticUrlTemplate || 'data-federation-cache-static.sqlite',
     }
 }
 
 /**
- * Merge per-entity `cache` annotation options with global `cds-data-federation.entityCache`.
+ * Merge per-entity `cache` annotation options with global `data-federation.entityCache`.
  * @param {object} [cacheOpts] from `@federation.delegate.cache`
  */
 function resolveEntityCacheOptions(cacheOpts = {}) {

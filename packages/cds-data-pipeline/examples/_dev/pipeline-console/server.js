@@ -58,7 +58,7 @@ async function deployArchiveDb() {
 cds.on('served', async () => {
     await deployArchiveDb()
 
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
     const log = cds.log('pipeline-console-dev')
 
     await pipelines.addPipeline({

@@ -60,7 +60,7 @@ After each provider emit, allow ~1 s for file-based messaging to deliver before 
 Replace the test emit actions with your real subscription:
 
 ```javascript
-const pipelines = await cds.connect.to('DataPipelineService')
+const pipelines = await cds.connect.to('data-pipeline')
 
 someService.on('shipments.updated', async (event) => {
     await pipelines.executeEvent('Shipments', {

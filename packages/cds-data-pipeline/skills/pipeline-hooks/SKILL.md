@@ -18,7 +18,7 @@ Aliases: `PIPELINE.MAP` / `PIPELINE.WRITE` for batch handlers.
 Use CAP's standard handler API scoped by pipeline name:
 
 ```javascript
-const pipelines = await cds.connect.to('DataPipelineService');
+const pipelines = await cds.connect.to('data-pipeline');
 
 pipelines.before('PIPELINE.MAP', 'LocalProducts', async (req) => {
     req.data.sourceRecords = req.data.sourceRecords.filter(r => r.active);

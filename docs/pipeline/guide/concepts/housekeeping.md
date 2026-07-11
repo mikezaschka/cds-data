@@ -4,13 +4,13 @@
 
 ## Enable globally
 
-Configure `housekeeping` on your `cds.requires.datapipeline` entry (or any requires entry with `impl: "cds-data-pipeline"`):
+Configure `housekeeping` on your `cds.requires['data-pipeline']` entry (or any requires entry with `impl: "cds-data-pipeline"`):
 
 ```json
 {
   "cds": {
     "requires": {
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "housekeeping": {
           "retentionDays": 90,

@@ -14,7 +14,7 @@ Set up a single replicate pipeline using the public **[Northwind OData V4](https
 npm add cds-data-pipeline
 ```
 
-The plugin auto-registers the pipeline engine — no extra config needed for `addPipeline`. Connect with `cds.connect.to('datapipeline')` or the `DataPipelineService` alias.
+The plugin auto-registers the pipeline engine — no extra config needed for `addPipeline`. Connect with `cds.connect.to('data-pipeline')`.
 
 For AI coding assistants, the installed package also ships `node_modules/cds-data-pipeline/AGENTS.md` and task skills under `skills/` — see the package README § AI assistants.
 
@@ -24,7 +24,7 @@ For AI coding assistants, the installed package also ships `node_modules/cds-dat
 {
   "cds": {
     "requires": {
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "management": { "reuse": { "api": true } }
       }
@@ -112,7 +112,7 @@ In `server.js`, connect after CAP has served and call `addPipeline`. The engine 
 const cds = require('@sap/cds');
 
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('datapipeline');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'NorthwindProducts',
@@ -150,7 +150,7 @@ Enable reuse in `package.json`:
 {
   "cds": {
     "requires": {
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "management": {
           "reuse": {

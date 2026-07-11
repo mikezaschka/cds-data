@@ -18,7 +18,7 @@
       "exit_on_multi_install": false
     },
     "requires": {
-      "DataPipelineService": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline/srv/DataPipelineService.js"
       },
       "messaging": {

@@ -30,7 +30,7 @@
           "url": ":memory:"
         }
       },
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "management": {
           "reuse": {

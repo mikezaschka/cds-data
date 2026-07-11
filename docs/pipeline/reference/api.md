@@ -7,8 +7,7 @@ The engine itself has **no OData surface** (`@protocol: 'none'`) — for the HTT
 ## Connecting
 
 ```javascript
-const pipelines = await cds.connect.to('datapipeline')
-// 'DataPipelineService' is an accepted alias
+const pipelines = await cds.connect.to('data-pipeline')
 ```
 
 Connect inside `cds.on('served', …)` in `server.js`, after the model is loaded.
@@ -186,7 +185,7 @@ pipelines.after('PIPELINE.DONE', 'NorthwindProducts', (req) => { … })
 
 For worked examples, see [Event hooks](/pipeline/guide/recipes/event-hooks).
 
-## Plugin configuration (`cds.requires.datapipeline`)
+## Plugin configuration (`cds.requires['data-pipeline']`)
 
 Separate from `addPipeline` — this configures the plugin itself in `package.json`.
 

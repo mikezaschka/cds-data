@@ -16,11 +16,9 @@ Peer: `@sap/cds` >= 9 · Node >= 22
 ## Engine access
 
 ```javascript
-const pipelines = await cds.connect.to('datapipeline');
+const pipelines = await cds.connect.to('data-pipeline');
 await pipelines.addPipeline({ name, source, target, ... });
 ```
-
-`cds.connect.to('DataPipelineService')` remains supported as a kind alias.
 
 ## Management API + tracker
 
@@ -30,7 +28,7 @@ await pipelines.addPipeline({ name, source, target, ... });
 {
   "cds": {
     "requires": {
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "management": { "reuse": { "api": true } }
       }
@@ -60,7 +58,7 @@ Served at `/pipeline/`. Add your own auth — the plugin ships no `@requires` an
 Prune old `PipelineRuns` rows on a schedule:
 
 ```json
-"datapipeline": {
+"data-pipeline": {
   "impl": "cds-data-pipeline",
   "housekeeping": {
     "retentionDays": 90,

@@ -21,7 +21,7 @@ describe('createTargetAdapter (target factory)', () => {
     }
 
     it('rejects non-db target service without OData kind or custom adapter', async () => {
-        const srv = await cds.connect.to('DataPipelineService')
+        const srv = await cds.connect.to('data-pipeline')
         const err = await expectThrow(() => srv.addPipeline({
             name: `__tgt_rej_${Date.now()}`,
             source: { service: 'ProviderService', entity: 'Customers' },
@@ -31,7 +31,7 @@ describe('createTargetAdapter (target factory)', () => {
     })
 
     it('resolves DbTargetAdapter when target.service is db', async () => {
-        const srv = await cds.connect.to('DataPipelineService')
+        const srv = await cds.connect.to('data-pipeline')
         const name = `__tgt_db_${Date.now()}`
         await srv.addPipeline({
             name,

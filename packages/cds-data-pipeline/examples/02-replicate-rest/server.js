@@ -5,7 +5,7 @@ const cds = require('@sap/cds')
 // a tracker-driven `modifiedSince` query parameter, and `dataPath` for
 // extracting rows out of a `{ results: [...], total }` envelope.
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
 
     await pipelines.addPipeline({
         name: 'ExchangeRates',

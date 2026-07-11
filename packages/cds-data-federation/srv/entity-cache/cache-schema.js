@@ -138,7 +138,7 @@ function injectEntityCacheDefinitions(csn, configs) {
 }
 
 function pipelineDisplayName(cfg) {
-    return `federation-entity-cache:${cfg.entityFullName}`
+    return `data-federation-cache:${cfg.entityFullName}`
 }
 
 module.exports = {

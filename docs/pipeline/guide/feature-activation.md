@@ -4,7 +4,7 @@
 
 | Layer | What it does | Enabled by default? |
 |---|---|---|
-| **Pipeline runtime** | `cds.connect.to('datapipeline')`, `addPipeline`, adapters | Yes — `npm add cds-data-pipeline` |
+| **Pipeline runtime** | `cds.connect.to('data-pipeline')`, `addPipeline`, adapters | Yes — `npm add cds-data-pipeline` |
 | **Management API** | Tracker schema + `DataPipelineManagementService` at `/pipeline/` | No — opt in via `management.reuse.api` or manual `using` |
 | **Pipeline Console** | Pre-built UI5 FCL at `/pipeline-console/` | No — opt in via `management.reuse.console` or `cds add pipeline-console` |
 
@@ -33,7 +33,7 @@ Need pipeline engine only?
   └─ npm add cds-data-pipeline
 
 Need management OData at /pipeline/ (reuse from package)?
-  └─ "datapipeline": { "impl": "cds-data-pipeline", "management": { "reuse": { "api": true } } }
+  └─ "data-pipeline": { "impl": "cds-data-pipeline", "management": { "reuse": { "api": true } } }
 
 Need Pipeline Console locally (reuse UI from package)?
   └─ "management": { "reuse": { "api": true, "console": true } }
@@ -58,7 +58,7 @@ Optional explicit wiring (mirrors cds-caching):
 {
   "cds": {
     "requires": {
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline"
       }
     }
@@ -66,9 +66,7 @@ Optional explicit wiring (mirrors cds-caching):
 }
 ```
 
-Connect: `await cds.connect.to('datapipeline')`.
-
-`cds.connect.to('DataPipelineService')` remains supported as a kind alias.
+Connect: `await cds.connect.to('data-pipeline')`.
 
 ### Local development (reuse API + console)
 
@@ -76,7 +74,7 @@ Connect: `await cds.connect.to('datapipeline')`.
 {
   "cds": {
     "requires": {
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "management": {
           "reuse": {
@@ -112,7 +110,7 @@ cds deploy && cds watch
 ### SAP BTP production
 
 ```json
-"datapipeline": {
+"data-pipeline": {
   "impl": "cds-data-pipeline",
   "management": { "reuse": { "api": true } }
 }

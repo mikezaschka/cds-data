@@ -4,7 +4,7 @@ const cds = require('@sap/cds')
 // DataPipelineService is already instantiated by the plugin during
 // `loaded`, so `connect.to(...)` here resolves the live instance.
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
 
     // Entity-shape read from a remote OData V4 service → local DB table.
     // - Source adapter is resolved from the connected `LogisticsService`

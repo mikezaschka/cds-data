@@ -1,5 +1,5 @@
 /**
- * Normalize cds.requires datapipeline entries (management.reuse.*).
+ * Normalize cds.requires data-pipeline entries (management.reuse.*).
  * Mirrors cds-caching lib/config-normalizer.js.
  */
 

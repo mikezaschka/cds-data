@@ -8,7 +8,7 @@ async function bindMaterializeConfigs(configs) {
 
     let pipelineService
     try {
-        pipelineService = await cds.connect.to('DataPipelineService')
+        pipelineService = await cds.connect.to('data-pipeline')
     } catch (err) {
         throw new Error(
             `@materialize.snapshot requires 'cds-data-pipeline' to be installed. ` +

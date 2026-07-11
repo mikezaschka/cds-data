@@ -53,7 +53,7 @@ describe('DataPipelineService.addPipeline validation', () => {
     beforeAll(waitForConsumerFixturePipelines)
 
     async function getSrv() {
-        const srv = await cds.connect.to('DataPipelineService')
+        const srv = await cds.connect.to('data-pipeline')
         if (!srv) throw new Error('no pipeline service')
         return srv
     }

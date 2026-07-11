@@ -68,7 +68,7 @@ The aspect contributes a single element — `key source : String(100)` — which
 const cds = require('@sap/cds');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name:   'BP_DEV',

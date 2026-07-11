@@ -77,7 +77,7 @@ const cds = require('@sap/cds');
 const ReportingTargetAdapter = require('./adapters/ReportingTargetAdapter');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'OrdersToReporting',

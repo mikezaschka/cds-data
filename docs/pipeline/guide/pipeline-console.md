@@ -39,7 +39,7 @@ Add to your project's `package.json`:
 {
   "cds": {
     "requires": {
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "management": {
           "reuse": {
@@ -92,7 +92,7 @@ Feature examples (`01`–`07`) use the **built** console at `/pipeline-console/`
 For HTML5 Application Repository + approuter deployments:
 
 ```json
-"datapipeline": {
+"data-pipeline": {
   "impl": "cds-data-pipeline",
   "management": { "reuse": { "api": true } }
 }

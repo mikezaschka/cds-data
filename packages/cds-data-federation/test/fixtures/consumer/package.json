@@ -15,7 +15,7 @@
   },
   "cds": {
     "requires": {
-      "DataPipelineService": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline/srv/DataPipelineService.js"
       },
       "db": {

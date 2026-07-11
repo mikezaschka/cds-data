@@ -45,7 +45,7 @@ Peer dependency: `@sap/cds` >= 9.2 · Node >= 22
 const cds = require('@sap/cds');
 
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'BusinessPartners',
@@ -69,7 +69,7 @@ Pre-built UI for `/pipeline` — enable via config reuse or `cds add pipeline-co
 {
   "cds": {
     "requires": {
-      "datapipeline": {
+      "data-pipeline": {
         "impl": "cds-data-pipeline",
         "management": {
           "reuse": {

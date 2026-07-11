@@ -163,7 +163,7 @@ Status: **Implemented (timestamp, key, datetime-fields via adapter)**
 
 Status: **Implemented**
 
-- `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js` — [4.5.1] binding: registers replicate pipelines on DataPipelineService
+- `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js` — [4.5.1] binding: registers replicate pipelines on data-pipeline
 
 ### 4.6.1
 

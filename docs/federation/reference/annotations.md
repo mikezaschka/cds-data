@@ -177,7 +177,7 @@ These apply only to `strategy: 'entity'` and override the matching global [`enti
 
 Auto-applied tag: `federation:<entityName>` — use for entity-wide invalidation via `cache.deleteByTag('federation:Customers')`.
 
-If `cds-caching` is not installed, **`strategy: 'response'`** caching is silently ignored with a warning. **`strategy: 'entity'`** requires **`cds-data-pipeline`** (`@cap-js/sqlite` when you target SQLite): cache tables bind to **`db`** by default, or a **`cds.requires.'federation-entity-cache'`** secondary datastore once you declare one; reload/SQL failures fall back to live delegation.
+If `cds-caching` is not installed, **`strategy: 'response'`** caching is silently ignored with a warning. **`strategy: 'entity'`** requires **`cds-data-pipeline`** (`@cap-js/sqlite` when you target SQLite): cache tables bind to **`db`** by default, or a **`cds.requires.'data-federation-cache'`** secondary datastore once you declare one; reload/SQL failures fall back to live delegation.
 
 See [Integration → cds-caching](../integration/caching.md) for tag patterns, custom-cache-service setup, and the `response` vs. `entity` trade-off table.
 

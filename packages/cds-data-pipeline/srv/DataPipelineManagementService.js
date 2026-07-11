@@ -28,7 +28,7 @@ async function runPipelineExecute(req, name, data) {
     const { mode } = data
     const trigger = ALLOWED_TRIGGERS.has(data.trigger) ? data.trigger : 'manual'
     const isAsync = data.async === true
-    const srv = await cds.connect.to('DataPipelineService')
+    const srv = await cds.connect.to('data-pipeline')
     const runMode = mode || await resolveDefaultRunMode(srv, name)
 
     try {
@@ -68,7 +68,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
         this.on('clearSchedule', 'Pipelines', async (req) => {
             const { name } = req.params[0]
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return await srv.clearSchedule(name)
             } catch (err) {
                 req.error(500, `clearSchedule for '${name}' failed: ${err.message}`)
@@ -79,7 +79,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
             const { name } = req.params[0]
             const { every, cron, engine } = req.data || {}
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return await srv.setSchedule(name, { every, cron, engine })
             } catch (err) {
                 req.error(500, `setSchedule for '${name}' failed: ${err.message}`)
@@ -96,7 +96,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
                 if (!patch || typeof patch !== 'object') {
                     return req.error(400, 'setOverrides: overrides must be a JSON object')
                 }
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return JSON.stringify(await srv.setOverrides(name, patch))
             } catch (err) {
                 const status = /not overridable|must be/i.test(err.message) ? 400 : 500
@@ -108,7 +108,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
             const { name } = req.params[0]
             const { keys } = req.data || {}
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return JSON.stringify(await srv.clearOverrides(name, keys))
             } catch (err) {
                 req.error(500, `clearOverrides for '${name}' failed: ${err.message}`)
@@ -119,7 +119,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
             const { name } = req.params[0]
             const { enabled } = req.data || {}
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return JSON.stringify(await srv.setEnabled(name, enabled))
             } catch (err) {
                 req.error(500, `setEnabled for '${name}' failed: ${err.message}`)
@@ -129,7 +129,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
         this.on('configView', 'Pipelines', async (req) => {
             const { name } = req.params[0]
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return JSON.stringify(srv.getConfigView(name))
             } catch (err) {
                 req.error(500, `configView for '${name}' failed: ${err.message}`)
@@ -151,7 +151,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
                 }
             }
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 const auditCtx = { user: req.user?.id || req.user }
                 return await srv.inspectData(name, { side, columns, filters, top, skip, auditCtx })
             } catch (err) {
@@ -165,7 +165,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
             }
             const { name } = req.params[0]
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return await srv.inspectCapabilities(name)
             } catch (err) {
                 req.error(500, `inspectCapabilities for '${name}' failed: ${err.message}`)
@@ -175,7 +175,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
         this.on('flowMetadata', 'Pipelines', async (req) => {
             const { name } = req.params[0]
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return await srv.getFlowMetadata(name)
             } catch (err) {
                 req.error(500, `flowMetadata for '${name}' failed: ${err.message}`)
@@ -184,7 +184,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
 
         this.on('landscapeMetadata', async (req) => {
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return await srv.getLandscapeMetadata()
             } catch (err) {
                 req.error(500, `landscapeMetadata failed: ${err.message}`)
@@ -199,7 +199,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
         this.on('flush', async (req) => {
             const { name } = req.data
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 await srv.clear(name)
                 return `Pipeline '${name}' flushed successfully`
             } catch (err) {
@@ -210,7 +210,7 @@ class DataPipelineManagementService extends cds.ApplicationService {
         this.on('status', async (req) => {
             const { name } = req.data
             try {
-                const srv = await cds.connect.to('DataPipelineService')
+                const srv = await cds.connect.to('data-pipeline')
                 return await srv.getStatus(name)
             } catch (err) {
                 req.error(500, `Status check failed: ${err.message}`)

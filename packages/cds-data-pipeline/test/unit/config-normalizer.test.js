@@ -32,10 +32,10 @@ describe('config-normalizer', () => {
         expect(normalized.reuse.console).toBe(true)
     })
 
-    it('collects datapipeline requires entries by impl', () => {
+    it('collects data-pipeline requires entries by impl', () => {
         const entries = getPipelineRequiresEntries({
             db: { kind: 'sqlite' },
-            datapipeline: {
+            'data-pipeline': {
                 impl: 'cds-data-pipeline',
                 management: { reuse: { api: true } },
             },
@@ -43,7 +43,7 @@ describe('config-normalizer', () => {
         })
 
         expect(entries).toHaveLength(1)
-        expect(entries[0].name).toBe('datapipeline')
+        expect(entries[0].name).toBe('data-pipeline')
         expect(entries[0].normalized.reuse.api).toBe(true)
     })
 
@@ -67,13 +67,13 @@ describe('config-normalizer', () => {
         const { isManagementInspectEnabled } = require('../../lib/config-normalizer')
         expect(isManagementInspectEnabled({})).toBe(true)
         expect(isManagementInspectEnabled({
-            datapipeline: {
+            'data-pipeline': {
                 impl: 'cds-data-pipeline',
                 management: { inspect: false },
             },
         })).toBe(false)
         expect(isManagementInspectEnabled({
-            datapipeline: {
+            'data-pipeline': {
                 impl: 'cds-data-pipeline',
                 management: { inspect: true, reuse: { api: true } },
             },
@@ -83,7 +83,7 @@ describe('config-normalizer', () => {
     it('[4.13.9] normalizes housekeeping retention defaults', () => {
         const { getHousekeepingConfig } = require('../../lib/config-normalizer')
         expect(getHousekeepingConfig({
-            datapipeline: {
+            'data-pipeline': {
                 impl: 'cds-data-pipeline',
                 housekeeping: { retentionDays: 30 },
             },

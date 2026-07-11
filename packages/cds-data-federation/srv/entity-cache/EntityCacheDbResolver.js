@@ -3,8 +3,8 @@ const path = require('path')
 
 const LOG = cds.log('cds-data-federation')
 
-const DEFAULT_SERVICE = 'federation-entity-cache'
-const DEFAULT_TEMPLATE = 'federation-entity-cache-{tenant}.sqlite'
+const DEFAULT_SERVICE = 'data-federation-cache'
+const DEFAULT_TEMPLATE = 'data-federation-cache-{tenant}.sqlite'
 const DEFAULT_TENANT = 'default'
 
 /**
@@ -20,7 +20,7 @@ class EntityCacheDbResolver {
     }
 
     _entityCacheConfig() {
-        const fed = cds.env?.requires?.['cds-data-federation'] || {}
+        const fed = cds.env?.requires?.['data-federation'] || {}
         return fed.entityCache || {}
     }
 
@@ -39,7 +39,7 @@ class EntityCacheDbResolver {
 
     _staticUrlTemplate() {
         const ec = this._entityCacheConfig()
-        return ec.staticUrlTemplate || 'federation-entity-cache-static.sqlite'
+        return ec.staticUrlTemplate || 'data-federation-cache-static.sqlite'
     }
 
     _defaultTenant() {
@@ -181,15 +181,15 @@ function getEntityCacheDbResolver() {
 
 /**
  * Effective datastore service name for the entity cache: an explicit
- * `entityCache.serviceName`, otherwise the default `federation-entity-cache`.
+ * `entityCache.serviceName`, otherwise the default `data-federation-cache`.
  */
 function resolveConfiguredServiceName() {
-    const ec = cds.env?.requires?.['cds-data-federation']?.entityCache || {}
+    const ec = cds.env?.requires?.['data-federation']?.entityCache || {}
     return ec.serviceName || DEFAULT_SERVICE
 }
 
 function usesPerTenantSqliteFiles() {
-    const ec = cds.env?.requires?.['cds-data-federation']?.entityCache || {}
+    const ec = cds.env?.requires?.['data-federation']?.entityCache || {}
     if (ec.urlTemplate) return true
     const svc = ec.serviceName || DEFAULT_SERVICE
     return !!cds.env?.requires?.[svc]

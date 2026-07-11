@@ -36,7 +36,7 @@ See the engine site's [inference rules](/pipeline/guide/concepts/inference) page
 
 **Federation** is the declarative, remote-service integration layer: consumption views, `@federation.*` annotations, cross-service `$expand` and navigation, CUD forwarding. **The pipeline engine** is the underlying scheduled job runtime — source adapters, delta tracking, retry, the `Pipelines` / `PipelineRuns` tracker, and the management service.
 
-The federation plugin (`cds-data-federation`) composes the pipeline engine (`cds-data-pipeline`) to implement `@federation.replicate` — each annotated entity becomes one entity-shape `addPipeline({ ... })` call via `packages/cds-data-federation/srv/pipeline-binding.js`, and the engine derives `kind: 'replicate'` from the config. The engine does not depend on federation and can be used standalone — either programmatically via `cds.connect.to('DataPipelineService').addPipeline({ ... })` or from any other plugin layered on top of it.
+The federation plugin (`cds-data-federation`) composes the pipeline engine (`cds-data-pipeline`) to implement `@federation.replicate` — each annotated entity becomes one entity-shape `addPipeline({ ... })` call via `packages/cds-data-federation/srv/pipeline-binding.js`, and the engine derives `kind: 'replicate'` from the config. The engine does not depend on federation and can be used standalone — either programmatically via `cds.connect.to('data-pipeline').addPipeline({ ... })` or from any other plugin layered on top of it.
 
 ---
 

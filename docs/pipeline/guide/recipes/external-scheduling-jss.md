@@ -19,7 +19,7 @@ Omit `schedule` entirely. Everything else about the pipeline is unchanged.
 const cds = require('@sap/cds');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'BusinessPartners',

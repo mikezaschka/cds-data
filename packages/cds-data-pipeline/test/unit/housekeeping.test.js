@@ -34,9 +34,9 @@ describe('getHousekeepingConfig', () => {
         expect(getHousekeepingConfig({})).toEqual({ enabled: false })
     })
 
-    it('reads retention defaults from datapipeline requires entry', () => {
+    it('reads retention defaults from data-pipeline requires entry', () => {
         expect(getHousekeepingConfig({
-            datapipeline: {
+            'data-pipeline': {
                 impl: 'cds-data-pipeline',
                 housekeeping: {
                     retentionDays: 90,

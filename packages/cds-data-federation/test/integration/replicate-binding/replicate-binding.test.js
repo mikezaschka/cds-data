@@ -19,11 +19,11 @@ describe('Replicate binding (@federation.replicate → pipeline)', () => {
         await stopProvider()
     })
 
-    it('[4.5.1] binding: registers replicate pipelines on DataPipelineService', async () => {
+    it('[4.5.1] binding: registers replicate pipelines on data-pipeline', async () => {
         const rows = await SELECT.from('plugin_data_pipeline_Pipelines')
         const names = rows.map(r => r.name)
         expect(names).to.include.members([
-            'federation-entity-cache:consumer.EntityCachedCustomers',
+            'data-federation-cache:consumer.EntityCachedCustomers',
             'ReplicatedCustomers',
             'ReplicatedProducts',
             'ReplicatedPagedCustomers',

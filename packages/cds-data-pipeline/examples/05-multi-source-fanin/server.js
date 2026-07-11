@@ -15,7 +15,7 @@ const cds = require('@sap/cds')
 //
 // No custom hooks needed.
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
 
     const shared = {
         target: { entity: 'example05.Shipments' },

@@ -69,7 +69,7 @@ describe('MCP + federation', () => {
         const { data } = await GET('/odata/v4/federation-agent/Customers?$top=1')
         expect(data.value).to.have.length.greaterThan(0)
 
-        const pipeline = await cds.connect.to('DataPipelineService')
+        const pipeline = await cds.connect.to('data-pipeline')
         await pipeline.execute('ReplicatedCustomers', { mode: 'full', trigger: 'event' })
     }, 120000)
 

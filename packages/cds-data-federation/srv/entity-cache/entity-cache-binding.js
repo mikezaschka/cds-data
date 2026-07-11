@@ -37,8 +37,8 @@ function registerSanitizeWrites(dataPipelineSrv, pipName, storageFqn) {
 /**
  * Binds federation entity-cache pipelines (SQLite target, truncate-before-refresh).
  *
- * Per-tenant isolation uses separate SQLite files when `federation-entity-cache` (or
- * `cds-data-federation.entityCache.urlTemplate`) is configured (ADR 0010).
+ * Per-tenant isolation uses separate SQLite files when `data-federation-cache` (or
+ * `data-federation.entityCache.urlTemplate`) is configured (ADR 0010).
  * Otherwise cache tables attach to the primary `db` (tenant-scoped under CAP MTX).
  */
 function stripEntityCacheMetadata(configs) {
@@ -91,7 +91,7 @@ async function bindEntityCachePipelines(configs, options = {}) {
 
     let dataPipelineSrv
     try {
-        dataPipelineSrv = await cds.connect.to('DataPipelineService')
+        dataPipelineSrv = await cds.connect.to('data-pipeline')
     } catch (err) {
         LOG.warn(`cds-data-pipeline not available — disabling entity caches: ${err.message}`)
         stripEntityCacheMetadata(configs)

@@ -79,7 +79,7 @@ entity ReplicatedRestCustomers {
 Consumers rarely call `addPipeline` directly for replicate, but pipeline hooks work:
 
 ```javascript
-const pipelines = await cds.connect.to('DataPipelineService');
+const pipelines = await cds.connect.to('data-pipeline');
 pipelines.before('PIPELINE.MAP', 'ReplicatedProducts', async (req) => {
     req.data.sourceRecords = req.data.sourceRecords.filter(r => !r.blocked);
 });

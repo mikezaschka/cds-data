@@ -33,7 +33,7 @@ Then register a pipeline against it:
 const cds = require('@sap/cds');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'BusinessPartners',

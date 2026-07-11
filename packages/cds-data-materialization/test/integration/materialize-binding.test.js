@@ -13,7 +13,7 @@ describe('Materialize binding (@materialize.snapshot → pipeline)', () => {
     })
 
     it('[M-7] binding: execute fills materialized target table', async () => {
-        const srv = await cds.connect.to('DataPipelineService')
+        const srv = await cds.connect.to('data-pipeline')
         const db = await cds.connect.to('db')
         await db.run(DELETE.from('consumer.DailyCustomerRevenue'))
         await srv.execute('DailyCustomerRevenue', { mode: 'full', trigger: 'manual' })

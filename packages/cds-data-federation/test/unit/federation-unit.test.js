@@ -511,7 +511,7 @@ describe('Unit Tests', () => {
             const prior = cds.env.requires
             cds.env.requires = {
                 ...prior,
-                'cds-data-federation': { multitenancy: { active: true } },
+                'data-federation': { multitenancy: { active: true } },
             }
             const { normalizeTags } = require('../../srv/delegation/handler-registration')
             const tags = normalizeTags('Products', { ttl: 60000 })
@@ -526,7 +526,7 @@ describe('Unit Tests', () => {
             const prior = cds.env.requires
             cds.env.requires = {
                 ...prior,
-                'cds-data-federation': {
+                'data-federation': {
                     entityCache: {
                         urlTemplate: 'cache-{tenant}.sqlite',
                         baseDir: '/tmp/fed-cache',
@@ -545,7 +545,7 @@ describe('Unit Tests', () => {
             const prior = cds.env.requires
             cds.env.requires = {
                 ...prior,
-                'cds-data-federation': {
+                'data-federation': {
                     entityCache: {
                         staticUrlTemplate: 'shared-static.sqlite',
                         baseDir: '/tmp/fed-cache',
@@ -564,7 +564,7 @@ describe('Unit Tests', () => {
             cds.env.requires = {
                 ...prior,
                 'my-cache': { kind: 'sqlite' },
-                'cds-data-federation': {
+                'data-federation': {
                     entityCache: { serviceName: 'my-cache' },
                 },
             }
@@ -579,12 +579,12 @@ describe('Unit Tests', () => {
             const prior = cds.env.requires
             cds.env.requires = {
                 ...prior,
-                'federation-entity-cache': { kind: 'sqlite' },
-                'cds-data-federation': { entityCache: {} },
+                'data-federation-cache': { kind: 'sqlite' },
+                'data-federation': { entityCache: {} },
             }
             const { resolveConfiguredServiceName, usesPerTenantSqliteFiles, DEFAULT_SERVICE } = require('../../srv/entity-cache/EntityCacheDbResolver')
-            expect(DEFAULT_SERVICE).to.equal('federation-entity-cache')
-            expect(resolveConfiguredServiceName()).to.equal('federation-entity-cache')
+            expect(DEFAULT_SERVICE).to.equal('data-federation-cache')
+            expect(resolveConfiguredServiceName()).to.equal('data-federation-cache')
             expect(usesPerTenantSqliteFiles()).to.equal(true)
             cds.env.requires = prior
         })
@@ -629,7 +629,7 @@ describe('Unit Tests', () => {
             const prior = cds.env.requires
             cds.env.requires = {
                 ...prior,
-                'cds-data-federation': {
+                'data-federation': {
                     entityCache: { wait: true, validate: true, size: 999 },
                 },
             }

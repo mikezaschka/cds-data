@@ -24,7 +24,7 @@ describe('HCQL flatten (delegate + replicate)', () => {
     })
 
     it.skip('[4.1.3] ReplicatedOrderFlat replicate over HCQL path SELECT (pending CAP HCQL batch read)', async () => {
-        const srv = await cds.connect.to('DataPipelineService')
+        const srv = await cds.connect.to('data-pipeline')
         await srv.clear('ReplicatedOrderFlat')
         await srv.execute('ReplicatedOrderFlat', { mode: 'full', trigger: 'manual' })
         const rows = await SELECT.from('consumer.ReplicatedOrderFlat')

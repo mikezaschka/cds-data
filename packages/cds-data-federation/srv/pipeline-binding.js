@@ -7,7 +7,7 @@ const LOG = cds.log('cds-data-federation')
  * `cds-data-pipeline` engine.
  *
  * For each scanned `@federation.replicate` entity, this module issues a
- * single `addPipeline(...)` call against the engine's `DataPipelineService`.
+ * single `addPipeline(...)` call against the engine's `data-pipeline` service.
  * The engine infers entity-shape pipeline intent from the absence of
  * `source.query` (ADR 0007 §"Inference rules"). This is the only place
  * where federation-side knowledge (annotations, view mappings) is
@@ -22,7 +22,7 @@ async function bindReplicateConfigs(configs) {
 
     let pipelineService
     try {
-        pipelineService = await cds.connect.to('DataPipelineService')
+        pipelineService = await cds.connect.to('data-pipeline')
     } catch (err) {
         throw new Error(
             `@federation.replicate requires 'cds-data-pipeline' to be installed. ` +

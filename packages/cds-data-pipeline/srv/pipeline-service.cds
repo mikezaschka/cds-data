@@ -1,6 +1,6 @@
 // Stub service definition for typer / optional `cds.serve` wiring. Runtime
-// resolution for `cds.connect.to('DataPipelineService')` is provided by this
-// package's `package.json` → `cds.requires.DataPipelineService.impl` (see CAPire
+// resolution for `cds.connect.to('data-pipeline')` is provided by this
+// package's `package.json` → `cds.requires.kinds['data-pipeline'].impl` (see CAPire
 // “CDS Plugin Packages” / “Connecting to Required Services”).
 //
 // This service has no entities or actions — it is a code-only orchestrator

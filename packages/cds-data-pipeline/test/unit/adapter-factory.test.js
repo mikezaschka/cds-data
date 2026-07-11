@@ -17,7 +17,7 @@ describe('createAdapter (source factory)', () => {
     beforeAll(waitForConsumerFixturePipelines)
 
     it('prefers source.adapter class reference', async () => {
-        const srv = await cds.connect.to('DataPipelineService')
+        const srv = await cds.connect.to('data-pipeline')
         const name = `__src_ad_${Date.now()}`
         await srv.addPipeline({
             name,
@@ -29,7 +29,7 @@ describe('createAdapter (source factory)', () => {
     })
 
     it('honours explicit source.kind rest via RestAdapter', async () => {
-        const srv = await cds.connect.to('DataPipelineService')
+        const srv = await cds.connect.to('data-pipeline')
         const name = `__src_rest_${Date.now()}`
         await srv.addPipeline({
             name,

@@ -37,7 +37,7 @@ entity DailyCustomerRevenue {
 const cds = require('@sap/cds');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'DailyCustomerRevenue',
@@ -68,7 +68,7 @@ module.exports = async () => {
 const cds = require('@sap/cds');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'DailyCustomerRevenue',

@@ -15,7 +15,7 @@ function registerReplicatePipelineNames(names) {
 }
 
 function _multitenancyConfig() {
-    return cds.env?.requires?.['cds-data-federation']?.multitenancy || {}
+    return cds.env?.requires?.['data-federation']?.multitenancy || {}
 }
 
 /**
@@ -64,9 +64,9 @@ async function _syncReplicatePipelinesForTenant(tenant) {
     if (!_replicatePipelineNames.length) return
     let ps
     try {
-        ps = await cds.connect.to('DataPipelineService')
+        ps = await cds.connect.to('data-pipeline')
     } catch (err) {
-        LOG.warn(`MTX subscribe sync skipped — DataPipelineService unavailable: ${err.message}`)
+        LOG.warn(`MTX subscribe sync skipped — data-pipeline unavailable: ${err.message}`)
         return
     }
     for (const name of _replicatePipelineNames) {

@@ -36,7 +36,7 @@ group by customerId;
 Trigger a run manually:
 
 ```js
-const pipelines = await cds.connect.to('DataPipelineService')
+const pipelines = await cds.connect.to('data-pipeline')
 await pipelines.execute('DailyCustomerRevenue', { mode: 'full', trigger: 'manual' })
 ```
 

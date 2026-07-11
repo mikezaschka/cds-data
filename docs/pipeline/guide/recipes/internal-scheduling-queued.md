@@ -45,7 +45,7 @@ For SQLite / local dev, `cds deploy` picks it up automatically. If you see *"Mes
 const cds = require('@sap/cds');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'BusinessPartners',
@@ -87,7 +87,7 @@ Independently, every pipeline run produces a `PipelineRuns` row via the usual tr
 The same queued engine is available for one-off runs through the programmatic API, without registering a `schedule`:
 
 ```javascript
-const pipelines = await cds.connect.to('DataPipelineService');
+const pipelines = await cds.connect.to('data-pipeline');
 await pipelines.execute('BusinessPartners', { async: true, engine: 'queued' });
 ```
 

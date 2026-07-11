@@ -8,7 +8,7 @@ async function waitForConsumerFixturePipelines() {
 }
 
 async function getPipelineService() {
-    const srv = await cds.connect.to('DataPipelineService')
+    const srv = await cds.connect.to('data-pipeline')
     if (!srv) throw new Error('DataPipelineService not initialized')
     return srv
 }

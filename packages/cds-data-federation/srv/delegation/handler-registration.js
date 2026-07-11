@@ -123,7 +123,7 @@ function normalizeTags(entityName, cacheOptions = {}) {
     )
     const tags = [autoTag, ...userTags]
 
-    const fed = cds.env?.requires?.['cds-data-federation'] || {}
+    const fed = cds.env?.requires?.['data-federation'] || {}
     const mt = fed.multitenancy || {}
     const mtActive =
         mt.active === true ||
@@ -359,7 +359,7 @@ function registerEntityCachedDelegateHandler(
 
             async function runPipelineReload() {
                 await coordinator.ensureCapacity(tenantKey, entityFullName)
-                const ps = await cds.connect.to('DataPipelineService')
+                const ps = await cds.connect.to('data-pipeline')
                 const execOpts = { mode: 'delta' }
                 if (tenantString && !isStatic) execOpts.tenant = tenantString
                 await ps.execute(entityCacheMeta.pipelineName, execOpts)

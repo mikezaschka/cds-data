@@ -6,7 +6,7 @@ The vocabulary `cds-data-pipeline` uses. For how these engine terms relate to th
 
 ## Pipeline
 
-A **pipeline** is a linear `READ → MAP → WRITE` job between exactly one source and one target, with built-in tracker, retry, concurrency guard, and event hooks. Pipelines are registered programmatically via `cds.connect.to('DataPipelineService').addPipeline({ ... })` and scheduled (periodic) or triggered (one-shot).
+A **pipeline** is a linear `READ → MAP → WRITE` job between exactly one source and one target, with built-in tracker, retry, concurrency guard, and event hooks. Pipelines are registered programmatically via `cds.connect.to('data-pipeline').addPipeline({ ... })` and scheduled (periodic) or triggered (one-shot).
 
 Pipeline behaviour — row-preserving copy vs. aggregated snapshot vs. cross-service move — is **inferred from the config shape**. See [Inference rules](inference.md) for the full table and the configs that are rejected at registration. The three recipe names (**replicate**, **materialize**, **move-to-service**) are doc-level use-case labels — they describe common combinations of read shape and target destination, but they are not a field on `addPipeline(...)` or a column on the tracker.
 

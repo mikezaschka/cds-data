@@ -60,7 +60,7 @@ Prefer `@materialize.snapshot` on a CDS projection when the aggregate is declara
 
 ## Run retention (optional)
 
-When global housekeeping is enabled in `cds.requires.datapipeline.housekeeping`, override counts per pipeline:
+When global housekeeping is enabled in `cds.requires['data-pipeline'].housekeeping`, override counts per pipeline:
 
 ```javascript
 await pipelines.addPipeline({

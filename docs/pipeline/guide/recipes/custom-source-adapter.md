@@ -91,7 +91,7 @@ const cds = require('@sap/cds');
 const CsvFileAdapter = require('./adapters/CsvFileAdapter');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'ImportCustomers',

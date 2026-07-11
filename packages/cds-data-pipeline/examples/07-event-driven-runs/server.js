@@ -3,7 +3,7 @@ const cds = require('@sap/cds')
 require('./messaging-bridge')
 
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
 
     // Same entity-shape replicate as example 01 — batch runs use readStream +
     // delta watermark; event micro-runs reuse MAP/WRITE without advancing lastSync.

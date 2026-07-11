@@ -58,10 +58,7 @@
     },
     "requires": {
       "kinds": {
-        "datapipeline": {
-          "impl": "cds-data-pipeline"
-        },
-        "DataPipelineService": {
+        "data-pipeline": {
           "impl": "cds-data-pipeline"
         }
       }

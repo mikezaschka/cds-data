@@ -49,7 +49,7 @@ You call `addPipeline(...)` directly, or let an annotation-driven layer like [cd
 ```javascript
 const cds = require('@sap/cds');
 
-const pipelines = await cds.connect.to('DataPipelineService');
+const pipelines = await cds.connect.to('data-pipeline');
 
 await pipelines.addPipeline({
     name: 'BusinessPartners',

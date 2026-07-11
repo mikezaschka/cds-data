@@ -14,7 +14,7 @@ function setTenantListProvider(fn) {
 }
 
 function _pipelineMultitenancyConfig() {
-    return cds.env?.requires?.['cds-data-pipeline']?.multitenancy || {}
+    return cds.env?.requires?.['data-pipeline']?.multitenancy || {}
 }
 
 function isMultitenancyActive() {
@@ -38,7 +38,7 @@ async function listTenants() {
         const list = await _listTenantsFn()
         if (Array.isArray(list) && list.length > 0) return list.map(String)
     }
-    const fed = cds.env?.requires?.['cds-data-federation']?.multitenancy || {}
+    const fed = cds.env?.requires?.['data-federation']?.multitenancy || {}
     if (typeof fed.listTenants === 'function') {
         const list = await fed.listTenants()
         if (Array.isArray(list) && list.length > 0) return list.map(String)
@@ -48,7 +48,7 @@ async function listTenants() {
     }
     const defaultTenant =
         fed.defaultTenant ||
-        cds.env?.requires?.['cds-data-federation']?.entityCache?.defaultTenant ||
+        cds.env?.requires?.['data-federation']?.entityCache?.defaultTenant ||
         'default'
     return [String(defaultTenant)]
 }
@@ -57,7 +57,7 @@ async function listTenants() {
  * Resolve per-tenant execute options (4.15.2 v1 — cds.env overrides).
  */
 function resolveTenantExecuteOpts(tenant, pipelineName, baseOpts = {}) {
-    const fed = cds.env?.requires?.['cds-data-federation']?.multitenancy || {}
+    const fed = cds.env?.requires?.['data-federation']?.multitenancy || {}
     const tenants = fed.tenants || {}
     const tCfg = tenants[tenant] || {}
     const repl = tCfg.replicate || {}

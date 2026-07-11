@@ -10,14 +10,14 @@ npm add cds-data-pipeline
 
 Peer dependency: `@sap/cds` >= 9 · Node >= 22
 
-Connect: `cds.connect.to('datapipeline')` (`DataPipelineService` alias still supported).
+Connect: `cds.connect.to('data-pipeline')`.
 
 ## Management API + tracker
 
 **Reuse (config):**
 
 ```json
-"datapipeline": {
+"data-pipeline": {
   "impl": "cds-data-pipeline",
   "management": { "reuse": { "api": true, "console": true } }
 }

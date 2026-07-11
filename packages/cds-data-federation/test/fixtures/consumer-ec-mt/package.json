@@ -19,8 +19,12 @@
       "srv": "../consumer/srv"
     },
     "requires": {
-      "DataPipelineService": {
-        "impl": "cds-data-pipeline/srv/DataPipelineService.js"
+      "data-pipeline": {
+        "impl": "cds-data-pipeline/srv/DataPipelineService.js",
+        "multitenancy": {
+          "active": true,
+          "fanOutScheduledRuns": true
+        }
       },
       "auth": {
         "kind": "mocked",
@@ -49,16 +53,16 @@
           "url": ":memory:"
         }
       },
-      "federation-entity-cache": {
+      "data-federation-cache": {
         "kind": "sqlite",
         "schema_evolution": "auto",
         "credentials": {
-          "url": "federation-entity-cache.sqlite"
+          "url": "data-federation-cache.sqlite"
         }
       },
-      "cds-data-federation": {
+      "data-federation": {
         "entityCache": {
-          "urlTemplate": "federation-entity-cache-{tenant}.sqlite",
+          "urlTemplate": "data-federation-cache-{tenant}.sqlite",
           "baseDir": ".entity-cache-mt"
         },
         "multitenancy": {
@@ -67,12 +71,6 @@
             "t1",
             "t2"
           ]
-        }
-      },
-      "cds-data-pipeline": {
-        "multitenancy": {
-          "active": true,
-          "fanOutScheduledRuns": true
         }
       },
       "ProviderService": {

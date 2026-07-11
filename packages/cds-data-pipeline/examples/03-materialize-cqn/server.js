@@ -8,7 +8,7 @@ const cds = require('@sap/cds')
 // runs so you can compare the shapes side by side without ever running
 // them concurrently (see http/10-run-and-query.http).
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
 
     // ── Full refresh ──────────────────────────────────────────────────
     // The closure returns a CQN; when the runtime calls it, the query is

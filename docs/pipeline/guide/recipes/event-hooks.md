@@ -2,7 +2,7 @@
 
 **When to pick this recipe:** you need to customize a pipeline's behaviour in one or two lines — filter source rows, enrich mapped rows, stamp an audit column, publish a message after a successful write, react to run completion — and a full custom adapter would be overkill. `DataPipelineService` is a standard `cds.Service`, so the CAP-native `srv.before / on / after(event, pipelineName, handler)` API plugs straight into every phase.
 
-This is the classic CAP pattern applied to the `PIPELINE.*` namespace — the lightest-weight extension point, with no class and no registration beyond `cds.connect.to('DataPipelineService')`.
+This is the classic CAP pattern applied to the `PIPELINE.*` namespace — the lightest-weight extension point, with no class and no registration beyond `cds.connect.to('data-pipeline')`.
 
 ## Hook surface at a glance
 
@@ -157,7 +157,7 @@ This is the original motivation for surfacing write hooks: a one-off forwarding 
 const cds = require('@sap/cds');
 
 module.exports = async () => {
-    const pipelines = await cds.connect.to('DataPipelineService');
+    const pipelines = await cds.connect.to('data-pipeline');
 
     await pipelines.addPipeline({
         name: 'OrdersToReportingInline',

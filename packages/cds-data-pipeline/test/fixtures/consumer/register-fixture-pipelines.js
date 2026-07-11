@@ -114,7 +114,7 @@ const pipelines = [
 async function registerPipelines() {
     let srv
     for (let i = 0; i < 100; i++) {
-        srv = await cds.connect.to('DataPipelineService')
+        srv = await cds.connect.to('data-pipeline')
         if (srv) break
         await new Promise(r => setTimeout(r, 20))
     }

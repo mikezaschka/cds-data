@@ -11,19 +11,19 @@ describe('TenantRunCoordinator', () => {
 
     afterEach(() => {
         setTenantListProvider(null)
-        delete cds.env.requires['cds-data-federation']
-        delete cds.env.requires['cds-data-pipeline']
+        delete cds.env.requires['data-federation']
+        delete cds.env.requires['data-pipeline']
     })
 
     it('[4.15.1] lists configured tenant ids from federation multitenancy config', async () => {
-        cds.env.requires['cds-data-federation'] = {
+        cds.env.requires['data-federation'] = {
             multitenancy: { tenantIds: ['t1', 't2'] },
         }
         await expect(listTenants()).resolves.toEqual(['t1', 't2'])
     })
 
     it('[4.15.2] merges per-tenant replicate overrides into execute opts', () => {
-        cds.env.requires['cds-data-federation'] = {
+        cds.env.requires['data-federation'] = {
             multitenancy: {
                 tenants: {
                     t1: { replicate: { Movies: { mode: 'full' } } },

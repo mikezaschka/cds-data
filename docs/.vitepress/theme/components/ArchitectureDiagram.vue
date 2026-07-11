@@ -3,7 +3,7 @@ const ariaLabel =
   'Architecture: CAP consumption views connect to cds-data-federation ' +
   '(@federation.delegate live proxy, @federation.replicate scheduled sync) and ' +
   'cds-data-materialization (@materialize.snapshot). Replicate and snapshot bind to ' +
-  'cds-data-pipeline DataPipelineService (READ, MAP, WRITE). Delegate reads remote ' +
+  'cds-data-pipeline data-pipeline (READ, MAP, WRITE). Delegate reads remote ' +
   'services at request time; the pipeline reads remote services and writes the local database.'
 </script>
 
@@ -44,7 +44,7 @@ const ariaLabel =
               <span class="arch-flow-desc">scheduled entity sync</span>
             </div>
             <span class="arch-flow-arrow" aria-hidden="true">→</span>
-            <span class="arch-flow-target">DataPipelineService</span>
+            <span class="arch-flow-target">data-pipeline</span>
             <span class="arch-tag">pipeline-binding</span>
           </li>
         </ul>
@@ -59,7 +59,7 @@ const ariaLabel =
               <span class="arch-flow-desc">scheduled query-shape rollups</span>
             </div>
             <span class="arch-flow-arrow" aria-hidden="true">→</span>
-            <span class="arch-flow-target">DataPipelineService</span>
+            <span class="arch-flow-target">data-pipeline</span>
             <span class="arch-tag">pipeline-binding</span>
           </li>
         </ul>
@@ -76,7 +76,7 @@ const ariaLabel =
     <div class="arch-layer">
       <div class="arch-card arch-card--engine">
         <p class="arch-kicker">cds-data-pipeline</p>
-        <p class="arch-title">DataPipelineService</p>
+        <p class="arch-title">data-pipeline</p>
         <p class="arch-pipeline">
           <span class="arch-phase">READ</span>
           <span class="arch-phase-sep">→</span>

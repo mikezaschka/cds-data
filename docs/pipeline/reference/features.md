@@ -41,7 +41,7 @@ An OData service for operating pipelines at runtime. See [Management Service](ma
 
 ## Pipeline Console UI
 
-Pre-built UI5 freestyle app shipped in the npm package (`app/pipeline-console/`). Enable locally with `management.reuse.console` in `cds.requires.datapipeline`, or own the UI on BTP with `cds add pipeline-console`. Full walkthrough: [Pipeline Console](../guide/pipeline-console.md) and [Feature activation](../guide/feature-activation.md).
+Pre-built UI5 freestyle app shipped in the npm package (`app/pipeline-console/`). Enable locally with `management.reuse.console` in `cds.requires['data-pipeline']`, or own the UI on BTP with `cds add pipeline-console`. Full walkthrough: [Pipeline Console](../guide/pipeline-console.md) and [Feature activation](../guide/feature-activation.md).
 
 | Capability | What it does |
 |---|---|

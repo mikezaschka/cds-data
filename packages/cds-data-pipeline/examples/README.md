@@ -60,7 +60,7 @@ Contributors editing the TypeScript UI use the dedicated dev backend at [`_dev/p
 Every example's `package.json` includes:
 
 ```json
-"datapipeline": {
+"data-pipeline": {
   "impl": "cds-data-pipeline",
   "management": {
     "reuse": {

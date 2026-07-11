@@ -111,7 +111,7 @@ All options are declared inline on the annotation: `@federation.<strategy>: { ..
 ```
 
 - **`response` strategy** relies on [`cds-caching`](https://github.com/mikezaschka/cds-caching). Auto-tag `federation:<entityName>`, invalidate via tags / `clear()`. Missing peer → warning + bypass.
-- **`entity` strategy** requires `cds-data-pipeline`. Without `cds.requires.'federation-entity-cache'`, cache tables attach to **`db`**; add the secondary SQLite datasource when you need physical isolation plus your own migrate/deploy tooling.
+- **`entity` strategy** requires `cds-data-pipeline`. Without `cds.requires.'data-federation-cache'`, cache tables attach to **`db`**; add the secondary SQLite datasource when you need physical isolation plus your own migrate/deploy tooling.
 
 ### Replicate options
 
@@ -194,7 +194,7 @@ If `cds-data-pipeline` is not installed and a `@federation.replicate` config is 
 Consumers never interact with the pipeline engine directly when using `@federation.replicate` — the annotation is the surface. For custom MAP transformations on a federation-bound pipeline, use CAP hooks against `DataPipelineService`:
 
 ```javascript
-const pipelines = await cds.connect.to('DataPipelineService');
+const pipelines = await cds.connect.to('data-pipeline');
 pipelines.before('PIPELINE.MAP', 'ReplicatedPartners', async (req) => {
     req.data.sourceRecords = req.data.sourceRecords.filter(r => !r.blocked);
 });
@@ -204,7 +204,7 @@ See the [`cds-data-pipeline` README](https://www.npmjs.com/package/cds-data-pipe
 
 ## Multi-tenancy (CAP MTX)
 
-When running with `@sap/cds-mtxs`, entity-cache storage uses **one SQLite file per tenant** (configure `federation-entity-cache` + `cds-data-federation.entityCache.urlTemplate`). Scheduled `@federation.replicate` runs fan out per subscribed tenant; optional MTX subscribe hooks trigger initial sync. See [Multi-Tenancy](/federation/integration/multitenancy.md) in the docs site.
+When running with `@sap/cds-mtxs`, entity-cache storage uses **one SQLite file per tenant** (configure `data-federation-cache` + `data-federation.entityCache.urlTemplate`). Scheduled `@federation.replicate` runs fan out per subscribed tenant; optional MTX subscribe hooks trigger initial sync. See [Multi-Tenancy](/federation/integration/multitenancy.md) in the docs site.
 
 ## AI assistants
 

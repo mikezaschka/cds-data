@@ -8,7 +8,7 @@ const cds = require('@sap/cds')
 // via CAP's connected remote service ($batch change sets where the
 // backend supports them).
 cds.on('served', async () => {
-    const pipelines = await cds.connect.to('DataPipelineService')
+    const pipelines = await cds.connect.to('data-pipeline')
 
     await pipelines.addPipeline({
         name: 'ShipmentArchive',
