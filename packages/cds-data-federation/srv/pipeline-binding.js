@@ -34,6 +34,9 @@ async function bindReplicateConfigs(configs) {
     for (const config of configs) {
         await pipelineService.addPipeline({
             name: config.options.name || config.entityName,
+            description:
+                config.options.description ||
+                `Federation replication of '${config.sourceService}.${config.sourceEntity}' into '${config.entityFullName}'`,
             source: {
                 service: config.sourceService,
                 entity: config.sourceEntity,

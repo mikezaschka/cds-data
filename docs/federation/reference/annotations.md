@@ -62,6 +62,8 @@ entity Orders as projection on remote.Orders { ... };
 
 | Option | Type | Description |
 |---|---|---|
+| `name` | string | Pipeline name shown in the management API / monitor. Defaults to the entity name. |
+| `description` | string | Human-readable pipeline description shown in the management API / monitor. Defaults to `Federation replication of '<source>' into '<target>'`. |
 | `mode` | `'full'` \| `'delta'` | Default `'full'`. Set `'delta'` for incremental sync. |
 | `schedule` | number (ms) | Interval for `cds.spawn`. Omit for manual-only mode. |
 | `preload` | boolean \| object | Run an initial sync at server startup. See [Initial load on startup](#initial-load-on-startup). |

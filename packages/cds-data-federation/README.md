@@ -117,6 +117,8 @@ All options are declared inline on the annotation: `@federation.<strategy>: { ..
 
 | Option | Type | Description |
 |---|---|---|
+| `name` | string | Pipeline name shown in the management API / monitor. Defaults to the entity name. |
+| `description` | string | Pipeline description shown in the management API / monitor. Defaults to `Federation replication of '<source>' into '<target>'`. |
 | `mode` | `'full'` \| `'delta'` | Default `'full'`. Set `'delta'` for incremental sync. |
 | `schedule` | number (ms) | Interval for `cds.spawn`. Omit for manual-only. |
 | `delta` | object | `{ field, mode }`. Used only when `mode: 'delta'`. Defaults: `field: 'modifiedAt'`, `mode: 'timestamp'` (also `'key'`, `'datetime-fields'`). |
