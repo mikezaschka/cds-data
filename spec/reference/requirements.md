@@ -176,7 +176,7 @@ From this single CDS definition, the plugin infers everything:
 |---|---|---|---|---|---|
 | 4.1 Consumption Views | 7 | 7 | 0 | 0 | 0 |
 | 4.2 Delegate Strategy | 13 | 11 | 0 | 1 | 1 |
-| 4.3 Caching | 8 | 7 | 0 | 1 | 0 |
+| 4.3 Caching | 9 | 7 | 0 | 1 | 1 |
 | 4.4 Replicate Strategy | 7 | 4 | 0 | 3 | 0 |
 | 4.5 Annotation Config | 5 | 4 | 0 | 1 | 0 |
 | 4.6 Source Adapters | 7 | 6 | 0 | 1 | 0 |
@@ -191,7 +191,7 @@ From this single CDS definition, the plugin infers everything:
 | 4.15 Multi-Tenancy | 2 | 2 | 0 | 0 | 0 |
 | 4.16 Example Apps | 5 | 4 | 0 | 0 | 1 |
 | 4.17 Target Adapters (Pipeline WRITE Phase) | 8 | 5 | 2 | 1 | 0 |
-| **Total** | **109** | **78** | **6** | **19** | **6** |
+| **Total** | **110** | **78** | **6** | **19** | **7** |
 
 ### 4.1 Consumption View Processing
 
@@ -311,6 +311,7 @@ Caching options on `@federation.delegate` combine **response-level** caches ([`c
 | 4.3.6 | **Graceful degradation** -- if `cds-caching` not installed, silently skip caching and log a warning | P0 | Implemented |
 | 4.3.7 | **Configurable cache service** -- `service` option to target a specific `cds.requires` entry (default: `'caching'`), enables multiple cache backends per app | P1 | Implemented |
 | 4.3.8 | **Entity-level delegate cache** (`cache.strategy: 'entity'`) — on TTL miss run `cds-data-pipeline` (`delta` with OData `delta.mode: 'none'`) to refill a secondary SQLite service (default `federation-entity-cache`); **one SQLite file per tenant** when `federation-entity-cache` / `entityCache.urlTemplate` is configured (ADR 0010 — no `tenantId` column). Subsequent READ CQNs (`$filter`, `$orderby`, …) query SQLite. Default `strategy: 'response'` keeps prior cds-caching behavior. Fallback to live delegate on pipeline/cache errors. REST sources without CDS entity model skipped at scan time until explicit support. Cross-service expands that fetch delegated associations still hit the delegate path in MVP. Tests: `[4.3.8] EC1`, `[4.3.8] EC2`. | P1 | Implemented |
+| 4.3.9 | **~~Scheduled entity-cache refresh~~** — proactively refresh the `strategy: 'entity'` snapshot on a fixed cadence so no read pays the reload wait. Rejected: a raw pipeline `schedule` bypasses `markFresh` (double reload), multi-instance timers duplicate remote load without leader election, cold entities get fetched needlessly, and the always-warm-local-copy use case converges on `@federation.replicate`. Existing `cache: { wait: false }` / `preload: true` / `ttl` already cover "no user hits the wait." See [ADR 0015](../internal/decisions/0015-no-scheduled-entity-cache-refresh.md). | -- | Not supported (by design) |
 
 ### 4.4 Replicate Strategy (Core Engine)
 

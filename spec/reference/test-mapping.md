@@ -21,7 +21,7 @@ See [`spec/reference/requirements.md`](./requirements.md) for the requirement de
 | 4.3.3 | Implemented | 5 |
 | 4.3.7 | Implemented | 2 |
 | 4.3.8 | Implemented | 2 |
-| 4.4.1 | Implemented | 4 |
+| 4.4.1 | Implemented | 6 |
 | 4.4.2 | Implemented (timestamp, key, datetime-fields via adapter) | 2 |
 | 4.5.1 | Implemented | 1 |
 | 4.6.1 | Implemented | 3 |
@@ -149,6 +149,8 @@ Status: **Implemented**
 - `packages/cds-data-pipeline/test/integration/full-vs-delta.test.js` — [4.4.1] R3: delta UPSERT does not duplicate rows
 - `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js` — [4.4.1] binding: replicate target is exposed on consumer OData
 - `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js` — [4.4.1] binding: replicated products entity exposes consumption-view renames
+- `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js` — [4.4.1] binding: replicate defaults to full mode without delta config
+- `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js` — [4.4.1] binding: delta config without mode is ignored (full mode)
 
 ### 4.4.2
 
@@ -264,7 +266,7 @@ These rows are marked `Implemented` but no test carries the `[<id>]` prefix. Eit
 - 4.2.2 — Implemented
 - 4.2.3 — Implemented
 - 4.2.4 — Implemented
-- 4.2.7 — Implemented (same-service + Scenario B to-one + Scenario B lambda)
+- 4.2.7 — Implemented (same-service + Scenario B to-one + Scenario B lambda + Scenario C to-one + Scenario C lambda)
 - 4.2.8 — Implemented (V4+V2)
 - 4.2.8a — Implemented
 - 4.2.10 — Implemented
