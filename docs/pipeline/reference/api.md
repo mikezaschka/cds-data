@@ -37,8 +37,8 @@ You do **not** pass a `kind` — the engine derives the shape (replicate / mater
 | `description` | `string?` (max 1024 chars) | Stored on the tracker; shown in the console. |
 | `source` | `object` **(required)** | Read side — see [`source`](#source). |
 | `target` | `object` **(required)** | Write side — see [`target`](#target). |
-| `mode` | `'delta' \| 'full' \| 'partial-refresh'` | Default: `'delta'` for entity-shape, `'full'` for query-shape. |
-| `delta` | `object` | Delta detection — see [`delta`](#delta). |
+| `mode` | `'delta' \| 'full' \| 'partial-refresh'` | Default: `'full'`. Set `'delta'` for incremental sync (requires `delta` config; defaults apply when omitted). |
+| `delta` | `object` | Delta detection — only used when `mode: 'delta'`. See [`delta`](#delta). |
 | `schedule` | `number \| string \| object \| null` | Internal schedule — see [`schedule`](#schedule). Omit for manual/external runs. |
 | `viewMapping` | `object` | Column/rename mapping. Inferred from the target consumption view if omitted. |
 | `refresh` | `'full' \| { mode: 'partial', slice }` | Query-shape rebuild strategy; `slice` is required for partial refresh. |
@@ -76,7 +76,7 @@ You do **not** pass a `kind` — the engine derives the shape (replicate / mater
 
 | Field | Default | Notes |
 |---|---|---|
-| `mode` | `'timestamp'` (entity) / `'full'` (query) | `'timestamp'`, `'key'`, or `'datetime-fields'`. Row-delta modes apply to entity-shape reads only. |
+| `mode` | `'timestamp'` when `mode: 'delta'` | `'timestamp'`, `'key'`, or `'datetime-fields'`. Ignored unless pipeline `mode` is `'delta'`. |
 | `field` | `'modifiedAt'` | Timestamp or key field carrying the high-watermark. |
 | `dateField`, `timeField` | — | For `'datetime-fields'` mode (OData V2 pattern). |
 

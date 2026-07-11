@@ -147,6 +147,7 @@ describe('DataPipelineService.addPipeline validation', () => {
             name: `__v_cap6_${Date.now()}`,
             source: { service: 'ProviderService', entity: 'Customers' },
             target: { entity: 'consumer.ReplicatedCustomers', adapter: NoUpsertTarget },
+            mode: 'delta',
         }))
         expect(err.message).toMatch(/keyAddressableUpsert/)
     })

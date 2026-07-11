@@ -35,9 +35,38 @@ service ExternalService {
 - `delta: { field: 'LastChangeDateTime' }` — only fetch records modified since the last successful run.
 - The plugin turns this projection into a **local table** (`@cds.persistence.skip: false`, `@cds.persistence.table`).
 
-## 2. Let the plugin create the tracker tables
+## 2. Activate the tracker tables
 
-The `cds-data-pipeline` engine ships CDS for its own tracking tables (`plugin.data_pipeline.Pipelines`, `plugin.data_pipeline.PipelineRuns`) under `packages/cds-data-pipeline/db/index.cds`. Include the engine in your consumer build (add `cds-data-pipeline` to `dependencies` alongside `cds-data-federation`) and deploy via `cds deploy` (local / SQLite) or your HDI container (HANA). The plugin does no runtime DDL.
+`@federation.replicate` is backed by the `cds-data-pipeline` engine, which persists its run state in two tracking tables (`plugin.data_pipeline.Pipelines`, `plugin.data_pipeline.PipelineRuns`). Adding `cds-data-pipeline` to your `dependencies` loads the *engine*, but the tracker **schema** is opt-in. Without it, boot fails on the first pipeline run with:
+
+```
+Error: no such table: plugin_data_pipeline_Pipelines
+```
+
+Pick one of these to bring the schema into your model:
+
+- **Tracker tables only** — add to any `.cds` file in your model (e.g. `db/schema.cds`):
+
+```cds
+using from 'cds-data-pipeline/db';
+```
+
+- **Tracker tables + `/pipeline` management API** — set `management.reuse.api` on the engine's `cds.requires` entry:
+
+```json title="package.json"
+{
+  "cds": {
+    "requires": {
+      "data-pipeline": {
+        "impl": "cds-data-pipeline",
+        "management": { "reuse": { "api": true } }
+      }
+    }
+  }
+}
+```
+
+Then deploy the schema via `cds deploy` (local / SQLite) or your HDI container (HANA). The plugin does no runtime DDL. See [Feature activation](/pipeline/guide/feature-activation) for the full matrix and the "do not combine" rules.
 
 ## 3. Boot the app
 

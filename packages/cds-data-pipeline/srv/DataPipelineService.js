@@ -100,13 +100,14 @@ class DataPipelineService extends cds.Service {
         // scheduled-schedule path (`_scheduleQueued`) reuses this handler
         // via `cds.queued(this).schedule('PIPELINE.TICK', { name })`.
         this.on('PIPELINE.TICK', async (req) => {
-            const { name, mode = 'delta', trigger = 'scheduled', runId, tenant } = req.data || {}
+            const { name, mode: modeOpt, trigger = 'scheduled', runId, tenant } = req.data || {}
             if (!name) return
             const pipeline = this.pipelines.get(name)
             if (!pipeline) {
                 LOG.warn(`PIPELINE.TICK received for unknown pipeline '${name}'`)
                 return
             }
+            const mode = modeOpt ?? pipeline.config.mode
             if (tenant) {
                 const { runInTenantContext } = require('./lib/tenant-context')
                 const { resolveTenantExecuteOpts } = require('./lib/TenantRunCoordinator')
@@ -276,7 +277,7 @@ class DataPipelineService extends cds.Service {
      *
      *   @param {string} name
      *   @param {object} [opts]
-     *   @param {'full'|'delta'|'partial-refresh'} [opts.mode='delta']
+     *   @param {'full'|'delta'|'partial-refresh'} [opts.mode]  defaults to the pipeline's configured mode
      *   @param {'manual'|'scheduled'|'external'|'event'} [opts.trigger='manual']
      *   @param {boolean} [opts.async=false]   true = fire-and-forget, false = block
      *   @param {'spawn'|'queued'} [opts.engine='spawn']  only honored when async=true
@@ -298,7 +299,7 @@ class DataPipelineService extends cds.Service {
      */
     async execute(name, opts = {}) {
         const {
-            mode = 'delta',
+            mode: modeOpt,
             trigger: triggerOpt = 'manual',
             async: isAsync = false,
             engine = 'spawn',
@@ -309,6 +310,8 @@ class DataPipelineService extends cds.Service {
         if (!pipeline) {
             throw new Error(`Unknown pipeline: ${name}`)
         }
+
+        const mode = modeOpt ?? pipeline.config.mode
 
         if (eventBlock != null) {
             this._validateEventExecute(pipeline.config, eventBlock, name)
@@ -988,7 +991,7 @@ class DataPipelineService extends cds.Service {
             try {
                 const pip = this.pipelines.get(name)
                 if (!pip) return
-                await this._runScheduledPipeline(name, 'delta', 'scheduled', undefined, pip)
+                await this._runScheduledPipeline(name, pip.config.mode, 'scheduled', undefined, pip)
             } catch (err) {
                 LOG._error && LOG.error(`Scheduled pipeline failed for ${name}:`, err)
             }
@@ -1364,10 +1367,10 @@ class DataPipelineService extends cds.Service {
     }
 
     /**
-     * Fill adapter-facing defaults. Shape-driven: the presence or absence
-     * of `source.query` decides the pipeline mode, delta mode, and refresh
-     * default. No derived-enum fields — dispatch runs off the source /
-     * target adapter factories, not off a stored discriminator.
+     * Fill adapter-facing defaults. Entity-shape and query-shape pipelines
+     * default to `mode: 'full'` unless the caller sets `mode: 'delta'`.
+     * Delta config is built only when `mode === 'delta'`. Query-shape
+     * pipelines also default `refresh: 'full'`.
      */
     _normalizeConfig(config) {
         const isQueryShape = !!(config.source && config.source.query)
@@ -1378,6 +1381,8 @@ class DataPipelineService extends cds.Service {
             String(config.description).trim() !== ''
                 ? String(config.description).trim()
                 : null
+
+        const mode = config.mode || 'full'
 
         const normalized = {
             name: config.name,
@@ -1392,12 +1397,7 @@ class DataPipelineService extends cds.Service {
             target: {
                 ...config.target,
             },
-            mode: config.mode || (isQueryShape ? 'full' : 'delta'),
-            delta: {
-                mode: isQueryShape ? 'full' : 'timestamp',
-                field: 'modifiedAt',
-                ...config.delta,
-            },
+            mode,
             rest: config.rest,
             schedule: this._normalizeSchedule(config.schedule, config.name),
             viewMapping: {
@@ -1409,6 +1409,18 @@ class DataPipelineService extends cds.Service {
                 staticWhere: null,
                 ...(config.viewMapping || {}),
             },
+        }
+
+        if (mode === 'delta') {
+            normalized.delta = {
+                mode: 'timestamp',
+                field: 'modifiedAt',
+                ...config.delta,
+            }
+        } else if (config.delta && Object.keys(config.delta).length > 0) {
+            LOG.warn(
+                `addPipeline: delta config ignored for pipeline '${config.name}' — delta requires mode: 'delta'`
+            )
         }
 
         if (config.refresh !== undefined) {

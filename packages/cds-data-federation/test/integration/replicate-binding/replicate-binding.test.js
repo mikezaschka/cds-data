@@ -46,6 +46,22 @@ describe('Replicate binding (@federation.replicate → pipeline)', () => {
         expect(entity.elements.name).to.be.undefined
     })
 
+    it('[4.4.1] binding: replicate defaults to full mode without delta config', async () => {
+        const row = await SELECT.one.from('plugin_data_pipeline_Pipelines').where({ name: 'ReplicatedCustomers' })
+        expect(row).to.exist
+        const base = JSON.parse(row.baseConfig)
+        expect(base.mode).to.equal('full')
+        expect(base.delta).to.be.undefined
+    })
+
+    it('[4.4.1] binding: delta config without mode is ignored (full mode)', async () => {
+        const row = await SELECT.one.from('plugin_data_pipeline_Pipelines').where({ name: 'ReplicatedProducts' })
+        expect(row).to.exist
+        const base = JSON.parse(row.baseConfig)
+        expect(base.mode).to.equal('full')
+        expect(base.delta).to.be.undefined
+    })
+
     it('[4.4.2] binding: derived read models query as views over replicated tables', async () => {
         const available = cds.model.definitions['consumer.AvailableProducts']
         const stats = cds.model.definitions['consumer.CategoryStats']

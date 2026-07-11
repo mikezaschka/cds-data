@@ -115,7 +115,7 @@ class Pipeline {
      * `DataPipelineService#execute(name, opts?)`, which mints the runId
      * and threads it into here.
      *
-     *   @param {string} [mode='delta']
+     *   @param {string} [mode='full']
      *   @param {string} [trigger='manual']
      *   @param {string} [runId]   caller-supplied correlation id; minted
      *                             here if omitted so scheduler / TICK
@@ -126,7 +126,7 @@ class Pipeline {
      *                             `Pipelines.lastSync` / cumulative stats.
      *   @returns {Promise<{ runId, status, statistics }>}
      */
-    async _run(mode = 'delta', trigger = 'manual', runId, eventPayload = null) {
+    async _run(mode = 'full', trigger = 'manual', runId, eventPayload = null) {
         const affected = await UPDATE(PIPELINES)
             .set({ status: 'running' })
             .where({ name: this.name, status: { '!=': 'running' } })

@@ -20,6 +20,7 @@ using { ProviderService as remote } from '../srv/external/ProviderService';
 
 @federation.replicate: {
     schedule: 600000,
+    mode: 'delta',
     delta: { field: 'modifiedAt', mode: 'timestamp' }
 }
 entity ReplicatedProducts as projection on remote.Products {
@@ -47,6 +48,7 @@ Or annotate a projection as above — the pipeline writes to the local table.
 @federation.replicate: {
     source: 'RestProvider',
     schedule: 300000,
+    mode: 'delta',
     delta: { field: 'modifiedAt' },
     rest: {
         path: '/api/customers',
@@ -67,10 +69,10 @@ entity ReplicatedRestCustomers {
 | Option | Purpose |
 |---|---|
 | `schedule` | Interval in ms for `cds.spawn`; omit for manual-only |
-| `mode` | `'delta'` (default) or `'full'` |
+| `mode` | `'full'` (default) or `'delta'` for incremental sync |
 | `preload` | `true` runs an initial load at startup (background). `{ mode, wait }` forces a mode / blocks boot until done |
-| `delta.field` | High-watermark field (default `modifiedAt`) |
-| `delta.mode` | `'timestamp'`, `'key'`, or `'datetime-fields'` |
+| `delta.field` | High-watermark field when `mode: 'delta'` (default `modifiedAt`) |
+| `delta.mode` | `'timestamp'`, `'key'`, or `'datetime-fields'` when `mode: 'delta'` |
 
 ## Custom MAP hooks
 

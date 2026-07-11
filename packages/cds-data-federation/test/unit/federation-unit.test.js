@@ -289,6 +289,21 @@ describe('Unit Tests', () => {
             })
             expect(configs[0].strategy).to.equal('replicate')
             expect(configs[0].options.preload).to.equal(true)
+            expect(configs[0].options.mode).to.be.undefined
+        })
+
+        it('should not infer mode or delta from preload-only replicate options', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const { configs } = scanAnnotations({
+                definitions: {
+                    'Remote': { kind: 'service' },
+                    'Svc.Ent': {
+                        '@federation.replicate': { preload: true },
+                        projection: { from: { ref: ['Remote', 'Ent'] } }
+                    }
+                }
+            })
+            expect(configs[0].options).to.deep.equal({ preload: true })
         })
 
         it('should reconstruct flattened @federation.replicate.preload.* options', () => {

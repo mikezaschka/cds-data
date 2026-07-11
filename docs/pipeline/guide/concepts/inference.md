@@ -10,8 +10,8 @@
 
 | Config | Read shape | Inferred defaults |
 |---|---|---|
-| `source.query` present | **Query-shape** — single-shot read of the closure's SELECT CQN result. | `mode: 'full'`, `delta.mode: 'full'`, `refresh: 'full'` |
-| `source.entity` (or `rest.path`) present, `source.query` absent | **Entity-shape** — paginated `readStream(tracker)` via the source adapter. | `mode: 'delta'`, `delta.mode: 'timestamp'`, `delta.field: 'modifiedAt'` |
+| `source.query` present | **Query-shape** — single-shot read of the closure's SELECT CQN result. | `mode: 'full'`, `refresh: 'full'` |
+| `source.entity` (or `rest.path`) present, `source.query` absent | **Entity-shape** — paginated `readStream(tracker)` via the source adapter. | `mode: 'full'` (no delta config). Add `mode: 'delta'` for incremental sync with default `delta.mode: 'timestamp'`, `delta.field: 'modifiedAt'`. |
 | Both present | Error — ambiguous source shape. |  |
 | Neither present | Error — missing source shape. |  |
 
@@ -66,9 +66,10 @@ await pipelines.addPipeline({
     name: 'OrdersCopy',
     source: { service: 'reporting', entity: 'reporting.Orders' },
     target: { entity: 'db.ArchivedOrders' },
+    mode: 'delta',
     delta: { mode: 'timestamp', field: 'modifiedAt' },
 });
-// Inferred: mode=delta, delta.mode=timestamp, target adapter=DbTargetAdapter.
+// Inferred: entity-shape, mode=delta(timestamp modifiedAt), target adapter=DbTargetAdapter.
 ```
 
 ### Query-shape materialize
@@ -103,7 +104,7 @@ await pipelines.addPipeline({
         adapter: ReportingTargetAdapter,
     },
 });
-// Inferred: mode=delta, target adapter=ReportingTargetAdapter. The custom
+// Inferred: mode=full, target adapter=ReportingTargetAdapter. The custom
 // adapter's capabilities() decides which modes are accepted.
 ```
 
@@ -114,7 +115,7 @@ See [Custom target adapter](../targets/custom.md) for how to implement `Reportin
 At registration the plugin logs one line per pipeline so the inference is visible in the startup log:
 
 ```
-[cds-data-pipeline] registered 'OrdersCopy' — entity-shape from reporting.reporting.Orders → db.db.ArchivedOrders, mode=delta(timestamp modifiedAt)
+[cds-data-pipeline] registered 'OrdersCopy' — entity-shape from reporting.reporting.Orders → db.db.ArchivedOrders, mode=full
 ```
 
 The line names the read shape, source and target references, and the effective mode + delta mode.

@@ -467,7 +467,7 @@ For **delegation**, no adapters are needed -- CAP's `remote.run(req.query)` hand
 | 4.14.2 | **`cds.env` config** -- `cds.requires.cds-data-federation` in package.json/.cdsrc.json | P0 | In progress (basic config works, full option surface incomplete) |
 | 4.14.3 | **Programmatic API** -- `addPipeline()` for dynamic runtime configuration | P1 | Implemented |
 | 4.14.4 | **Profile-based config** -- `[development]` / `[production]` overrides. Implemented via CAP's native `cds.env` profile mechanism. | P1 | Implemented |
-| 4.14.5 | **Sensible defaults** -- delegate strategy, batch size 1000, delta mode for replicate, 10-min schedule, auto-retry 3x | P0 | Implemented |
+| 4.14.5 | **Sensible defaults** -- delegate strategy, batch size 1000, full mode for replicate (delta opt-in via `mode: 'delta'`), 10-min schedule, auto-retry 3x | P0 | Implemented |
 
 ### 4.15 Multi-Tenancy
 

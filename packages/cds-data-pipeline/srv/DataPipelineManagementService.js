@@ -21,7 +21,7 @@ const PIPELINE_RUN_TRIGGERS = [
 
 async function resolveDefaultRunMode(srv, name) {
     const pipeline = srv.pipelines?.get(name)
-    return pipeline?.config?.mode || 'delta'
+    return pipeline?.config?.mode || 'full'
 }
 
 async function runPipelineExecute(req, name, data) {

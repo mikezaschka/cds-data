@@ -42,12 +42,8 @@ async function bindReplicateConfigs(configs) {
             target: {
                 entity: config.entityFullName,
             },
-            mode: config.options.mode || 'delta',
-            delta: {
-                mode: config.options.delta?.mode || 'timestamp',
-                field: config.options.delta?.field || 'modifiedAt',
-                ...config.options.delta,
-            },
+            mode: config.options.mode,
+            delta: config.options.delta,
             rest: config.options.rest,
             schedule: config.options.schedule,
             preload: config.options.preload,

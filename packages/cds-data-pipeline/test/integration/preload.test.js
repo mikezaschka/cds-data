@@ -65,6 +65,7 @@ describe('Initial load on startup (preload)', () => {
             preloadRuns = (await runsFor(name)).filter((r) => r.trigger === 'preload')
         }
         expect(preloadRuns.length).toBeGreaterThan(0)
+        expect(preloadRuns[0].mode).toBe('full')
     }, 20_000)
 
     it('no preload option means no startup run', async () => {

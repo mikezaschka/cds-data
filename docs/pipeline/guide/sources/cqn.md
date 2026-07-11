@@ -95,7 +95,7 @@ await pipelines.addPipeline({
 
 :::
 
-The presence of `source.query` marks this pipeline as query-shape. The inferred defaults are `mode: 'full'` and `delta.mode: 'full'`.
+The presence of `source.query` marks this pipeline as query-shape. The inferred defaults are `mode: 'full'` and `refresh: 'full'`.
 
 ::: warning Don't `await` the query inside the closure
 `cds.ql` builders are *thenable* — `await`ing one executes it against the ambient `cds.context` and returns rows, not a CQN. Keep `source.query` a plain (non-`async`) closure that *returns* the builder; the pipeline runs the SELECT against the configured source service.

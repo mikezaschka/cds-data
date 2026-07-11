@@ -104,7 +104,7 @@ The OData target adapter routes writes through CAP's remote runtime (POST / PUT 
 
 - `source.entity` (or `rest.path` for REST sources) is required.
 - `source.query` is not allowed — that signal switches into query-shape (materialize) mode. See [Built-in materialize](built-in-materialize.md).
-- `mode` defaults to `'delta'`; pass `mode: 'full'` to force a wipe + full replay.
+- `mode` defaults to `'full'`; pass `mode: 'delta'` with a `delta` block for incremental sync.
 
 ## See also
 

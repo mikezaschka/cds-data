@@ -81,10 +81,12 @@ WRITE flow
       user-supplied writeBatch (REST), adapter-defined (custom targets).
 
 MODE defaults (when mode is omitted)
-  entity-shape source + target adapter advertises supportsKeyAddressableWrites
-                           → default mode: 'delta'
-  query-shape source       → default mode: 'full'
-  otherwise                → mode must be stated explicitly.
+  any source shape             → default mode: 'full'
+
+DELTA config (when delta block is present)
+  mode !== 'delta'             → delta config is ignored (warn at registration)
+  mode === 'delta'             → delta defaults: { mode: 'timestamp', field: 'modifiedAt' }
+                                 merged with caller-supplied delta fields
 ```
 
 ### Registration-time validation matrix
@@ -106,9 +108,9 @@ Each cell maps 1:1 to a tested error in `_validateConfig`. The matrix is finite 
 
 Users still have the vocabulary for what they're doing:
 
-- "I'm replicating `Orders` to a local table" — `source.entity: 'Orders'`, `target.service: 'db'`, default `mode: 'delta'`.
+- "I'm replicating `Orders` to a local table" — `source.entity: 'Orders'`, `target.service: 'db'`, default `mode: 'full'`. Add `mode: 'delta'` for incremental sync.
 - "I'm materializing a nightly revenue snapshot" — `source.query: (tracker) => SELECT...groupBy(...)`, `target.service: 'db'`, default `mode: 'full'`.
-- "I'm moving orders to a sibling tenant" — `source.entity: 'Orders'`, `target.service: 'sibling-tenant'`, default `mode: 'delta'`.
+- "I'm moving orders to a sibling tenant" — `source.entity: 'Orders'`, `target.service: 'sibling-tenant'`, default `mode: 'full'`. Add `mode: 'delta'` when the target supports keyed UPSERT.
 
 These are **recipe names** documented under [`docs/pipeline/recipes/`](../../../docs/pipeline/) (rename of today's `kinds/`). Each recipe page shows the config that produces that behavior and the engine's inferred defaults. Users continue to think and talk in those categories; the API simply stops requiring them to name the category.
 
@@ -126,7 +128,8 @@ These are **recipe names** documented under [`docs/pipeline/recipes/`](../../../
 Because behavior is now implicit in config, the engine emits a one-line startup-log summary per registration so the inference is visible without requiring users to re-derive it:
 
 ```
-[cds-data-pipeline] registered 'OrdersCopy' — entity-shape from reporting.Orders → db.ArchivedOrders, mode=delta(timestamp modifiedAt), adapter=CqnAdapter
+[cds-data-pipeline] registered 'OrdersCopy' — entity-shape from reporting.Orders → db.ArchivedOrders, mode=full, adapter=CqnAdapter
+[cds-data-pipeline] registered 'OrdersDelta' — entity-shape from reporting.Orders → db.ArchivedOrders, mode=delta(timestamp modifiedAt), adapter=CqnAdapter
 ```
 
 This replaces the current `Added pipeline 'X' (kind=replicate)` line with information that is strictly more useful.

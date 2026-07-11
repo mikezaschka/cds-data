@@ -12,6 +12,7 @@ await pipelines.addPipeline({
     name: 'LocalProducts',
     source: { service: 'northwind', entity: 'northwind.Products' },
     target: { entity: 'db.LocalProducts' },
+    mode: 'delta',
     delta: { field: 'modifiedAt', mode: 'timestamp' },
     schedule: 600_000,
 });
@@ -50,8 +51,8 @@ Prefer `@materialize.snapshot` on a CDS projection when the aggregate is declara
 
 | Config | Read shape | Defaults |
 |---|---|---|
-| `source.query` only | Query-shape | `mode: 'full'` |
-| `source.entity` or `rest.path` | Entity-shape | `mode: 'delta'`, `delta.field: 'modifiedAt'` |
+| `source.query` only | Query-shape | `mode: 'full'`, `refresh: 'full'` |
+| `source.entity` or `rest.path` | Entity-shape | `mode: 'full'`; add `mode: 'delta'` + `delta` for incremental sync |
 | Both query and entity | Error | — |
 | Neither | Error | — |
 

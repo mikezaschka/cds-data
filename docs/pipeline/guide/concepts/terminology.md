@@ -31,7 +31,7 @@ Every pipeline has **one source** and **one target**.
 | `delta` | Read only rows changed since the last successful run (using the source adapter's delta strategy). | Upsert the delta batch. No truncate. |
 | `partial-refresh` | Read a query-shaped slice of rows. | Replace the slice, leave other rows alone. |
 
-Entity-shape pipelines default to `delta`; query-shape pipelines default to `full`. See [Inference rules](inference.md) for the full defaults table.
+Entity-shape and query-shape pipelines default to `mode: 'full'`. Set `mode: 'delta'` for incremental sync. See [Inference rules](inference.md) for the full defaults table.
 
 ---
 

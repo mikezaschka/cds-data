@@ -7,26 +7,37 @@ describe('DataPipelineService config normalization', () => {
         srv = new DataPipelineService('DataPipelineService')
     })
 
-    it('entity-shape defaults: mode delta, delta.timestamp modifiedAt', () => {
+    it('entity-shape defaults: mode full, no delta config', () => {
         const n = srv._normalizeConfig({
             name: 'p',
             source: { service: 'S', entity: 'E' },
             target: { entity: 'db.T' },
         })
-        expect(n.mode).toBe('delta')
-        expect(n.delta.mode).toBe('timestamp')
-        expect(n.delta.field).toBe('modifiedAt')
+        expect(n.mode).toBe('full')
+        expect(n.delta).toBeUndefined()
         expect(n.source.batchSize).toBe(1000)
     })
 
-    it('query-shape defaults: mode full, delta.mode full', () => {
+    it('entity-shape + mode delta: applies timestamp delta defaults', () => {
+        const n = srv._normalizeConfig({
+            name: 'p',
+            source: { service: 'S', entity: 'E' },
+            target: { entity: 'db.T' },
+            mode: 'delta',
+        })
+        expect(n.mode).toBe('delta')
+        expect(n.delta.mode).toBe('timestamp')
+        expect(n.delta.field).toBe('modifiedAt')
+    })
+
+    it('query-shape defaults: mode full, refresh full, no delta config', () => {
         const n = srv._normalizeConfig({
             name: 'p',
             source: { service: 'db', query: () => ({}) },
             target: { entity: 'db.T' },
         })
         expect(n.mode).toBe('full')
-        expect(n.delta.mode).toBe('full')
+        expect(n.delta).toBeUndefined()
         expect(n.refresh).toBe('full')
     })
 

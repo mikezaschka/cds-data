@@ -117,9 +117,9 @@ All options are declared inline on the annotation: `@federation.<strategy>: { ..
 
 | Option | Type | Description |
 |---|---|---|
-| `mode` | `'full'` \| `'delta'` | Default `'delta'`. |
+| `mode` | `'full'` \| `'delta'` | Default `'full'`. Set `'delta'` for incremental sync. |
 | `schedule` | number (ms) | Interval for `cds.spawn`. Omit for manual-only. |
-| `delta` | object | `{ field, mode }`. `field` defaults to `'modifiedAt'`; `mode` to `'timestamp'` (also `'key'`, `'datetime-fields'`). |
+| `delta` | object | `{ field, mode }`. Used only when `mode: 'delta'`. Defaults: `field: 'modifiedAt'`, `mode: 'timestamp'` (also `'key'`, `'datetime-fields'`). |
 | `rest` | object | REST adapter config: `{ path, pagination: { type, pageSize }, deltaParam, dataPath }`. `type` is `offset` \| `cursor` \| `page`. |
 
 ### Examples
@@ -138,7 +138,7 @@ entity Customers as projection on remote.Customers { * };
 entity Partners as projection on remote.Partners { ... };
 
 // Scheduled replicate with delta
-@federation.replicate: { schedule: 600000, delta: { field: 'modifiedAt' } }
+@federation.replicate: { mode: 'delta', schedule: 600000, delta: { field: 'modifiedAt' } }
 entity ReplicatedProducts as projection on remote.Products { ... };
 
 // REST replicate (explicit source, no CDS model)
@@ -185,7 +185,7 @@ Query features handled transparently by the delegate handler:
 At `cds.on('loaded')`, the federation plugin scans CSN for `@federation.*` annotations. At `cds.once('served')` it:
 
 1. Registers delegation handlers for `@federation.delegate` entities.
-2. Resolves `DataPipelineService` from `cds-data-pipeline` and calls `addPipeline({ ... })` for each `@federation.replicate` entity via `srv/pipeline-binding.js`. The entity-shape config (`source.entity` + db target) lets the engine infer `kind: 'replicate'` and `mode: 'delta'`.
+2. Resolves `DataPipelineService` from `cds-data-pipeline` and calls `addPipeline({ ... })` for each `@federation.replicate` entity via `srv/pipeline-binding.js`. The entity-shape config (`source.entity` + db target) lets the engine infer `kind: 'replicate'` and default `mode: 'full'`.
 
 If `cds-data-pipeline` is not installed and a `@federation.replicate` config is present, boot fails fast with an actionable error message.
 

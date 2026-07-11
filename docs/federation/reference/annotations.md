@@ -62,10 +62,10 @@ entity Orders as projection on remote.Orders { ... };
 
 | Option | Type | Description |
 |---|---|---|
-| `mode` | `'full'` \| `'delta'` | Default `'delta'`. `'full'` truncates and re-reads everything each run. |
+| `mode` | `'full'` \| `'delta'` | Default `'full'`. Set `'delta'` for incremental sync. |
 | `schedule` | number (ms) | Interval for `cds.spawn`. Omit for manual-only mode. |
 | `preload` | boolean \| object | Run an initial sync at server startup. See [Initial load on startup](#initial-load-on-startup). |
-| `delta` | object | `{ field, mode }`. `field` defaults to `'modifiedAt'`; `mode` to `'timestamp'`. |
+| `delta` | object | `{ field, mode }`. Used only when `mode: 'delta'`. Defaults: `field: 'modifiedAt'`, `mode: 'timestamp'`. |
 | `batchSize` | number | Rows to request per remote page (OData adapter). Default `1000`. The adapter keeps paging via `$skip` until the remote returns empty, so if the remote enforces a smaller cap (e.g. Northwind's 20-row default) all rows are still captured — `batchSize` is a *requested* page size, not a hard upper bound. |
 | `rest` | object | REST adapter config. See [REST config](#rest-config). |
 
@@ -98,7 +98,7 @@ entity ReplicatedProducts as projection on remote.Products;
 
 | Field | Type | Description |
 |---|---|---|
-| `preload` | boolean | `true` runs a background initial load at startup using the replicate `mode`. |
+| `preload` | boolean | `true` runs a background initial load at startup using the pipeline's effective `mode` (default `'full'`). |
 | `preload.mode` | `'full'` \| `'delta'` | Override the run mode for the initial load only. |
 | `preload.wait` | boolean | `true` blocks startup until the initial load completes; a failure then fails boot. Default `false` (background, non-blocking). |
 
@@ -207,6 +207,7 @@ service MyService {
 
     // Scheduled replicate with delta
     @federation.replicate: {
+        mode: 'delta',
         schedule: 600000,
         delta: { field: 'modifiedAt', mode: 'timestamp' }
     }

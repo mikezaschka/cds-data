@@ -83,7 +83,7 @@ Three ways to drive a pipeline. Pick the one that matches your operational model
 |---|---|
 | **Programmatic API** | `addPipeline()` for dynamic runtime configuration. |
 | **Profile-based overrides** | Different settings per CAP environment profile (`[development]`, `[production]`, …) via the native `cds.env` mechanism. |
-| **Sensible defaults** | Batch size 1000, 10-minute schedule, `delta` mode for entity-shape reads, `full` mode for query-shape reads, auto-retry 3×. |
+| **Sensible defaults** | Batch size 1000, 10-minute schedule, `full` mode unless `mode: 'delta'` is set, auto-retry 3×. |
 
 ## Security
 
