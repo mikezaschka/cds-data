@@ -557,6 +557,37 @@ describe('Unit Tests', () => {
             expect(resolver.resolveStaticUrl()).to.equal('/tmp/fed-cache/shared-static.sqlite')
             cds.env.requires = prior
         })
+
+        it('should honour a custom entityCache.serviceName (regression: binding ignored serviceName)', () => {
+            const cds = require('@sap/cds')
+            const prior = cds.env.requires
+            cds.env.requires = {
+                ...prior,
+                'my-cache': { kind: 'sqlite' },
+                'cds-data-federation': {
+                    entityCache: { serviceName: 'my-cache' },
+                },
+            }
+            const { resolveConfiguredServiceName, usesPerTenantSqliteFiles } = require('../../srv/entity-cache/EntityCacheDbResolver')
+            expect(resolveConfiguredServiceName()).to.equal('my-cache')
+            expect(usesPerTenantSqliteFiles()).to.equal(true)
+            cds.env.requires = prior
+        })
+
+        it('should use the kebab-case default service name', () => {
+            const cds = require('@sap/cds')
+            const prior = cds.env.requires
+            cds.env.requires = {
+                ...prior,
+                'federation-entity-cache': { kind: 'sqlite' },
+                'cds-data-federation': { entityCache: {} },
+            }
+            const { resolveConfiguredServiceName, usesPerTenantSqliteFiles, DEFAULT_SERVICE } = require('../../srv/entity-cache/EntityCacheDbResolver')
+            expect(DEFAULT_SERVICE).to.equal('federation-entity-cache')
+            expect(resolveConfiguredServiceName()).to.equal('federation-entity-cache')
+            expect(usesPerTenantSqliteFiles()).to.equal(true)
+            cds.env.requires = prior
+        })
     })
 
     describe('EntityCacheRegistry', () => {

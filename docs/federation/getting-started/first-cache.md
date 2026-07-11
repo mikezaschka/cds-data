@@ -49,7 +49,7 @@ npm add cds-data-pipeline @cap-js/sqlite
 Register the pipeline service in `cds.requires` (same as [First Replication](first-replication.md)). For production, declare a **secondary** SQLite datastore so cache tables stay out of your application `db`:
 
 ```json
-"FederationEntityCache": { "kind": "sqlite" }
+"federation-entity-cache": { "kind": "sqlite" }
 ```
 
 Declaring this service is all it takes — the plugin then stores the cache in **one SQLite file per tenant** (`federation-entity-cache-{tenant}.sqlite`). Omit it to attach cache tables to the primary **`db`** service (fine for local dev and tests). For custom service names, file naming, and why `cache.service` doesn't apply to the entity strategy, see [Caching → Where the entity cache is stored](../integration/caching.md#where-the-entity-cache-is-stored).
@@ -77,7 +77,7 @@ After boot:
 2. Subsequent READs with **any** `$filter` / `$orderby` / `$select` → served from SQLite until TTL expires.
 3. Pipeline or SQLite errors → logged and the handler falls back to live delegation.
 
-Under multitenancy, each CAP tenant gets its **own** entity-cache SQLite file (when `cds.requires.FederationEntityCache` is configured) — there is no shared `tenantId` column. Single-tenant dev uses `entityCache.defaultTenant`. See [Integration → Multi-Tenancy](../integration/multitenancy.md).
+Under multitenancy, each CAP tenant gets its **own** entity-cache SQLite file (when `cds.requires.'federation-entity-cache'` is configured) — there is no shared `tenantId` column. Single-tenant dev uses `entityCache.defaultTenant`. See [Integration → Multi-Tenancy](../integration/multitenancy.md).
 
 ## Tag-based invalidation (response strategy)
 
@@ -130,5 +130,5 @@ When you need joinable local copies and analytics, use `@federation.replicate` i
 
 ## Next steps
 
-- [Integration → Caching](../integration/caching.md) — strategy comparison, `FederationEntityCache` setup, MVP limitations.
+- [Integration → Caching](../integration/caching.md) — strategy comparison, `federation-entity-cache` setup, MVP limitations.
 - [Reference → Annotations](../reference/annotations.md) — full `cache` option schema.

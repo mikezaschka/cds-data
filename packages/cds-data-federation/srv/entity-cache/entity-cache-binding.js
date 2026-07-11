@@ -4,7 +4,7 @@ const { registerEntityCacheTargetDb } = require('cds-data-pipeline/srv/lib/entit
 const LOG = cds.log('cds-data-federation')
 const { pipelineDisplayName, usesEntityCacheAnnotation } = require('./cache-schema')
 const { resolveEntityCacheOptions } = require('./entity-cache-options')
-const { getEntityCacheDbResolver, usesPerTenantSqliteFiles, DEFAULT_SERVICE } = require('./EntityCacheDbResolver')
+const { getEntityCacheDbResolver, usesPerTenantSqliteFiles, resolveConfiguredServiceName } = require('./EntityCacheDbResolver')
 
 /** Build allowed payload keys per storage entity definition (omit associations). */
 function allowedWriteKeys(storageFqn) {
@@ -37,7 +37,7 @@ function registerSanitizeWrites(dataPipelineSrv, pipName, storageFqn) {
 /**
  * Binds federation entity-cache pipelines (SQLite target, truncate-before-refresh).
  *
- * Per-tenant isolation uses separate SQLite files when `FederationEntityCache` (or
+ * Per-tenant isolation uses separate SQLite files when `federation-entity-cache` (or
  * `cds-data-federation.entityCache.urlTemplate`) is configured (ADR 0010).
  * Otherwise cache tables attach to the primary `db` (tenant-scoped under CAP MTX).
  */
@@ -49,7 +49,7 @@ function stripEntityCacheMetadata(configs) {
 
 function resolveEntityCacheDbService(opts) {
     if (opts.dbService) return opts.dbService
-    if (usesPerTenantSqliteFiles()) return DEFAULT_SERVICE
+    if (usesPerTenantSqliteFiles()) return resolveConfiguredServiceName()
     return 'db'
 }
 

@@ -10,7 +10,7 @@ With `cache.strategy: 'entity'`, declaring a dedicated SQLite datastore switches
 {
   "cds": {
     "requires": {
-      "FederationEntityCache": { "kind": "sqlite" },
+      "federation-entity-cache": { "kind": "sqlite" },
       "cds-data-federation": {
         "entityCache": {
           "urlTemplate": "federation-entity-cache-{tenant}.sqlite",

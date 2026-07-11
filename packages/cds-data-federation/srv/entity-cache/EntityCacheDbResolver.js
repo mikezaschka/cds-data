@@ -3,7 +3,7 @@ const path = require('path')
 
 const LOG = cds.log('cds-data-federation')
 
-const DEFAULT_SERVICE = 'FederationEntityCache'
+const DEFAULT_SERVICE = 'federation-entity-cache'
 const DEFAULT_TEMPLATE = 'federation-entity-cache-{tenant}.sqlite'
 const DEFAULT_TENANT = 'default'
 
@@ -25,7 +25,7 @@ class EntityCacheDbResolver {
     }
 
     _serviceName() {
-        return this._entityCacheConfig().serviceName || DEFAULT_SERVICE
+        return resolveConfiguredServiceName()
     }
 
     _urlTemplate() {
@@ -179,18 +179,27 @@ function getEntityCacheDbResolver() {
     return _singleton
 }
 
+/**
+ * Effective datastore service name for the entity cache: an explicit
+ * `entityCache.serviceName`, otherwise the default `federation-entity-cache`.
+ */
+function resolveConfiguredServiceName() {
+    const ec = cds.env?.requires?.['cds-data-federation']?.entityCache || {}
+    return ec.serviceName || DEFAULT_SERVICE
+}
+
 function usesPerTenantSqliteFiles() {
     const ec = cds.env?.requires?.['cds-data-federation']?.entityCache || {}
     if (ec.urlTemplate) return true
     const svc = ec.serviceName || DEFAULT_SERVICE
-    if (cds.env?.requires?.[svc]) return true
-    return !!cds.env?.requires?.FederationEntityCache
+    return !!cds.env?.requires?.[svc]
 }
 
 module.exports = {
     EntityCacheDbResolver,
     getEntityCacheDbResolver,
     usesPerTenantSqliteFiles,
+    resolveConfiguredServiceName,
     DEFAULT_SERVICE,
     DEFAULT_TEMPLATE,
     DEFAULT_TENANT,

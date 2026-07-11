@@ -45,7 +45,7 @@ The snapshot table needs a datastore. You do **not** pick it on the annotation �
 
 The plugin switches to per-tenant files as soon as **any** of these is present in your config (existence is the trigger — there is no on/off flag):
 
-- `cds.requires.FederationEntityCache`, **or**
+- `cds.requires.'federation-entity-cache'`, **or**
 - `cds.requires.<name>` where `<name>` is `cds-data-federation.entityCache.serviceName`, **or**
 - `cds-data-federation.entityCache.urlTemplate`.
 
@@ -54,7 +54,7 @@ The plugin switches to per-tenant files as soon as **any** of these is present i
 **Option A — conventional name (simplest).** Declaring the service is all it takes:
 
 ```json
-"FederationEntityCache": { "kind": "sqlite" }
+"federation-entity-cache": { "kind": "sqlite" }
 ```
 
 Files are named `federation-entity-cache-{tenant}.sqlite` in the project root.
@@ -70,7 +70,7 @@ Files are named `federation-entity-cache-{tenant}.sqlite` in the project root.
 }
 ```
 
-**Option C — control file naming / location** (keeps the default `FederationEntityCache` service name):
+**Option C — control file naming / location** (keeps the default `federation-entity-cache` service name):
 
 ```json
 "cds-data-federation": {
@@ -115,7 +115,7 @@ Storage-location options (`serviceName`, `urlTemplate`, `baseDir`, `defaultTenan
 ```json
 "cds": {
   "requires": {
-    "FederationEntityCache": { "kind": "sqlite" },
+    "federation-entity-cache": { "kind": "sqlite" },
     "cds-data-federation": {
       "entityCache": {
         "ttl": 900000,
@@ -150,7 +150,7 @@ entity Customers as projection on remote.Customers;
 | Initial cost | Remote call proportional to `$top`/params | Remote full-row read (projection columns) batches until drained |
 | Miss trigger | TTL or key eviction | TTL **or** failed SQLite READ (falls through to live delegate once) |
 
-**Tenant scope:** When `cds.requires.FederationEntityCache` (or `cds-data-federation.entityCache.urlTemplate`) is configured, each CAP tenant gets its **own SQLite file** — default pattern `federation-entity-cache-{tenant}.sqlite`. There is no shared `tenantId` column. Single-tenant dev uses `entityCache.defaultTenant` (default `'default'`). See [Integration → Multi-Tenancy](./multitenancy.md).
+**Tenant scope:** When `cds.requires.'federation-entity-cache'` (or `cds-data-federation.entityCache.urlTemplate`) is configured, each CAP tenant gets its **own SQLite file** — default pattern `federation-entity-cache-{tenant}.sqlite`. There is no shared `tenantId` column. Single-tenant dev uses `entityCache.defaultTenant` (default `'default'`). See [Integration → Multi-Tenancy](./multitenancy.md).
 
 **Fallback:** Any SQLite or pipeline failure is logged at `warn`; the delegate handler falls back to the normal `remote.run` path.
 
@@ -269,7 +269,7 @@ In most cases, replicate without caching is the right choice; the local DB is th
 
 | | `response` | `entity` | `@federation.replicate` |
 |---|---|---|---|
-| Storage | Memory / Redis / cache service | SQLite (`db` or `FederationEntityCache`) | Main application SQL table |
+| Storage | Memory / Redis / cache service | SQLite (`db` or `federation-entity-cache`) | Main application SQL table |
 | Cache hit | Exact same query | Any query on the entity | N/A — always local SQL |
 | First-access cost | One remote call for that query | One remote full-entity read | One bulk sync per schedule |
 | Joins with local data | No | No | Yes |

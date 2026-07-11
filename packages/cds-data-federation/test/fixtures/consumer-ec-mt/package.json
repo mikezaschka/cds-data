@@ -49,7 +49,7 @@
           "url": ":memory:"
         }
       },
-      "FederationEntityCache": {
+      "federation-entity-cache": {
         "kind": "sqlite",
         "schema_evolution": "auto",
         "credentials": {

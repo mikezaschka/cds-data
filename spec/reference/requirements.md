@@ -35,7 +35,7 @@ Caching is **not a strategy** — it covers **response caching** (`cds-caching`)
 
 **Scope:** Neither cache covers merged cross-entity/`$expand` results at the mashup stitch layer (`$expand`/Scenario B stitched responses). When caching applies, each federated READ path resolves independently (`cds-caching` per handler or entity-cache SQLite per delegated entity).
 
-**Dependency:** `cds-caching` is optional for `strategy: 'response'`. **`strategy: 'entity'`** requires `cds-data-pipeline`, `@cap-js/sqlite`, and a configured secondary SQLite service (default entry `cds.requires.FederationEntityCache`).
+**Dependency:** `cds-caching` is optional for `strategy: 'response'`. **`strategy: 'entity'`** requires `cds-data-pipeline`, `@cap-js/sqlite`, and a configured secondary SQLite service (default entry `cds.requires.'federation-entity-cache'`).
 
 ### 1.4 Design Principles
 
@@ -310,7 +310,7 @@ Caching options on `@federation.delegate` combine **response-level** caches ([`c
 | 4.3.5 | **Cache-aside on write** -- invalidate cache entries when remote data changes (e.g., after replication run or event) | P1 | Not started |
 | 4.3.6 | **Graceful degradation** -- if `cds-caching` not installed, silently skip caching and log a warning | P0 | Implemented |
 | 4.3.7 | **Configurable cache service** -- `service` option to target a specific `cds.requires` entry (default: `'caching'`), enables multiple cache backends per app | P1 | Implemented |
-| 4.3.8 | **Entity-level delegate cache** (`cache.strategy: 'entity'`) — on TTL miss run `cds-data-pipeline` (`delta` with OData `delta.mode: 'none'`) to refill a secondary SQLite service (default `FederationEntityCache`); **one SQLite file per tenant** when `FederationEntityCache` / `entityCache.urlTemplate` is configured (ADR 0010 — no `tenantId` column). Subsequent READ CQNs (`$filter`, `$orderby`, …) query SQLite. Default `strategy: 'response'` keeps prior cds-caching behavior. Fallback to live delegate on pipeline/cache errors. REST sources without CDS entity model skipped at scan time until explicit support. Cross-service expands that fetch delegated associations still hit the delegate path in MVP. Tests: `[4.3.8] EC1`, `[4.3.8] EC2`. | P1 | Implemented |
+| 4.3.8 | **Entity-level delegate cache** (`cache.strategy: 'entity'`) — on TTL miss run `cds-data-pipeline` (`delta` with OData `delta.mode: 'none'`) to refill a secondary SQLite service (default `federation-entity-cache`); **one SQLite file per tenant** when `federation-entity-cache` / `entityCache.urlTemplate` is configured (ADR 0010 — no `tenantId` column). Subsequent READ CQNs (`$filter`, `$orderby`, …) query SQLite. Default `strategy: 'response'` keeps prior cds-caching behavior. Fallback to live delegate on pipeline/cache errors. REST sources without CDS entity model skipped at scan time until explicit support. Cross-service expands that fetch delegated associations still hit the delegate path in MVP. Tests: `[4.3.8] EC1`, `[4.3.8] EC2`. | P1 | Implemented |
 
 ### 4.4 Replicate Strategy (Core Engine)
 
