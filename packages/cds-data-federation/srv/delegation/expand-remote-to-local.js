@@ -94,6 +94,11 @@ function parseOnCondition(on, assocName) {
  * Splits expand items in a query into local (cross-service: remote → local) and
  * remote (delegated expand). Returns the local expand items and a query with only
  * remote expands.
+ *
+ * Customers?$expand=bookmarks($select=label)
+ *   Input  CQN.columns: [*, { ref: ['bookmarks'], expand: [{ ref: ['label'] }] }]
+ *   Output effectiveQuery.columns: [*, ID]  (sourceKey injected)
+ *   Output localExpandItems: [{ ref: ['bookmarks'], expand: [...] }]
  */
 function splitLocalExpands(query, localAssocsByName) {
     const sel = query?.SELECT
@@ -108,6 +113,7 @@ function splitLocalExpands(query, localAssocsByName) {
         return { localExpandItems: [], effectiveQuery: query }
     }
 
+    LOG.debug(`Splitting ${sel.columns.filter(c => c.expand && localAssocsByName.has(c.ref?.[0])).length} local expand(s) from remote query`)
     const cloned = cds.ql.clone(query)
     const localExpandItems = []
     const remainingColumns = []
@@ -131,12 +137,17 @@ function splitLocalExpands(query, localAssocsByName) {
     }
 
     cloned.SELECT.columns = remainingColumns
+    LOG.debug(`Remote query retains ${remainingColumns.length} column(s); ${localExpandItems.length} local expand(s) deferred for stitching`)
     return { localExpandItems, effectiveQuery: cloned }
 }
 
 /**
  * Resolves cross-service expand: remote → local by querying the local DB
  * and stitching results into the remote entity data.
+ *
+ * Customers with bookmarks expand:
+ *   Local query: SELECT customer_ID, label FROM Bookmarks WHERE customer_ID in ['C001','C002']
+ *   Output: records[].bookmarks = [{ label: '...' }, ...]
  */
 async function resolveRemoteToLocalExpands(results, expandItems, localAssocsByName, service) {
     const records = Array.isArray(results) ? results : [results]
@@ -155,6 +166,8 @@ async function resolveRemoteToLocalExpands(results, expandItems, localAssocsByNa
 
         const targetShortName = assoc.target.split('.').pop()
         const q = SELECT.from(targetShortName).where({ [assoc.fkColumn]: { in: keyValues } })
+
+        LOG.debug(`Cross-service expand (remote → local) '${assocName}': querying ${targetShortName} for ${keyValues.length} source key(s)`)
 
         if (expandItem.expand && Array.isArray(expandItem.expand)) {
             const hasWildcard = expandItem.expand.some(c => c === '*' || c['*'])
@@ -176,6 +189,7 @@ async function resolveRemoteToLocalExpands(results, expandItems, localAssocsByNa
         }
 
         const localResults = await service.run(q)
+        LOG.debug(`Stitching '${assocName}': ${localResults.length} local row(s) into ${records.length} remote record(s)`)
 
         if (assoc.is2many) {
             const lookup = new Map()

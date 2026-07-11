@@ -76,9 +76,12 @@ function registerDelegateHandler(service, entityName, sourceServiceName, viewMap
             const { localExpandItems, effectiveQuery } = splitLocalExpands(query, localAssocsByName)
             try {
                 let results
-                if (needsDirectRemoteQuery(viewMapping, effectiveQuery?.SELECT?.where, localFilterRewritten)) {
+                const useDirect = needsDirectRemoteQuery(viewMapping, effectiveQuery?.SELECT?.where, localFilterRewritten)
+                if (useDirect) {
+                    LOG.debug(`Delegate READ ${entityName}: using direct remote query (bypass CAP projection chain)`)
                     results = await runDirectRemoteQuery(remote, sourceServiceName, effectiveQuery, viewMapping)
                 } else {
+                    LOG.debug(`Delegate READ ${entityName}: using CAP projection chain via paged remote query`)
                     results = await runPagedRemoteQuery(remote, effectiveQuery)
                 }
                 if (localExpandItems.length > 0 && results != null) {
@@ -194,9 +197,12 @@ async function registerCachedDelegateHandler(service, entityName, sourceServiceN
             const { localExpandItems, effectiveQuery } = splitLocalExpands(query, localAssocsByName)
             const delegateHandler = async () => {
                 try {
-                    if (needsDirectRemoteQuery(viewMapping, effectiveQuery?.SELECT?.where, localFilterRewritten)) {
+                    const useDirect = needsDirectRemoteQuery(viewMapping, effectiveQuery?.SELECT?.where, localFilterRewritten)
+                    if (useDirect) {
+                        LOG.debug(`Cached delegate READ ${entityName}: using direct remote query (bypass CAP projection chain)`)
                         return await runDirectRemoteQuery(remote, sourceServiceName, effectiveQuery, viewMapping)
                     }
+                    LOG.debug(`Cached delegate READ ${entityName}: using CAP projection chain via paged remote query`)
                     return await runPagedRemoteQuery(remote, effectiveQuery)
                 } catch (e) {
                     throw propagateRemoteError(e, sourceServiceName)
@@ -271,10 +277,13 @@ function registerEntityCachedDelegateHandler(
 
             async function fallbackRemote(innerQuery, expandItems = []) {
                 try {
+                    const useDirect = needsDirectRemoteQuery(viewMapping, innerQuery?.SELECT?.where, localFilterRewritten)
                     let res
-                    if (needsDirectRemoteQuery(viewMapping, innerQuery?.SELECT?.where, localFilterRewritten)) {
+                    if (useDirect) {
+                        LOG.debug(`Entity-cache READ ${entityName}: falling back to direct remote query`)
                         res = await runDirectRemoteQuery(remote, sourceServiceName, innerQuery, viewMapping)
                     } else {
+                        LOG.debug(`Entity-cache READ ${entityName}: falling back to paged remote query`)
                         res = await runPagedRemoteQuery(remote, innerQuery)
                     }
                     if (expandItems.length > 0 && res != null) {
@@ -332,12 +341,19 @@ function registerEntityCachedDelegateHandler(
 
             const { localExpandItems, effectiveQuery } = splitLocalExpands(query, localAssocsByName)
             if (localExpandItems.length > 0 || viewMapping.staticWhere || containsLambda(effectiveQuery?.SELECT?.where) || localFilterRewritten) {
+                const reasons = []
+                if (localExpandItems.length > 0) reasons.push('localExpand')
+                if (viewMapping.staticWhere) reasons.push('staticWhere')
+                if (containsLambda(effectiveQuery?.SELECT?.where)) reasons.push('lambda')
+                if (localFilterRewritten) reasons.push('localFilterRewritten')
+                LOG.debug(`Entity-cache READ ${entityName}: remote fallback (${reasons.join(', ')})`)
                 let q = effectiveQuery
                 if (!q) q = cds.ql.clone(req.query)
                 return fallbackRemote(q, localExpandItems)
             }
 
             if (!resolved.search && effectiveQuery?.SELECT?.search?.length > 0) {
+                LOG.debug(`Entity-cache READ ${entityName}: remote fallback ($search not supported on cache)`)
                 return fallbackRemote(effectiveQuery, [])
             }
 
@@ -363,6 +379,7 @@ function registerEntityCachedDelegateHandler(
             const fresh = registry.isFresh(entityFullName, tenantKey, ttl)
             if (!fresh) {
                 registry.recordMiss()
+                LOG.debug(`Entity-cache READ ${entityName}: cache stale (TTL ${ttl === Infinity ? 'never' : ttl + 'ms'}); reloading`)
                 if (resolved.wait === false) {
                     runPipelineReload().catch((e) => {
                         LOG.warn(`Entity-cache background reload failed for ${entityFullName}: ${e.message}`)
@@ -382,6 +399,7 @@ function registerEntityCachedDelegateHandler(
             try {
                 registry.touch(entityFullName, tenantKey)
                 registry.recordUsed()
+                LOG.debug(`Entity-cache READ ${entityName}: serving from SQLite storage ${entityCacheMeta.storageFqn}`)
                 const result = await readFromSqlite(effectiveQuery)
                 if (globalOpts.prune) {
                     coordinator.ensureCapacity(tenantKey, entityFullName).catch((e) => {

@@ -22,6 +22,10 @@ const LOG = cds.log('cds-data-federation')
  * queries the remote service for matching keys, and rewrites the navigation filters
  * to simple FK IN filters on the local table.
  *
+ * Reviews?$filter=product/productName eq 'Laptop Pro'
+ *   Input  CQN.where: [ { ref: ['product','productName'] }, '=', { val: 'Laptop Pro' } ]
+ *   Output CQN.where: [ { ref: ['product_ID'] }, 'in', { list: [{ val: 'P001' }, ...] } ]
+ *
  * @param {object} query - CQN query
  * @param {Map} fedAssocByName - Map of assoc name → { name, target, keys, federation }
  * @returns {object|Promise<{_cqn}>} original query or Promise wrapping modified query
@@ -31,6 +35,7 @@ function resolveRemoteNavigationFilters(query, fedAssocByName) {
     if (!where || fedAssocByName.size === 0) return query
     if (!containsRemoteNavRef(where, fedAssocByName)) return query
 
+    LOG.debug('Detected cross-service navigation filter (local → remote); pre-resolving via remote query')
     const cloned = cds.ql.clone(query)
     return rewriteRemoteNavFilters(cloned.SELECT.where, fedAssocByName)
         .then(() => ({ _cqn: cloned }))
@@ -122,6 +127,9 @@ function translateNavRef(node, assoc) {
 /**
  * Queries the remote service with a single translated condition, collects matching
  * keys, and returns the FK IN replacement for the local WHERE clause.
+ *
+ * Remote query: SELECT ID FROM Products WHERE name eq 'Laptop Pro'
+ *   Output CQN.where: [ { ref: ['product_ID'] }, 'in', { list: [{ val: 'P001' }, ...] } ]
  */
 async function resolveNavCondition(assoc, remoteWhereNodes) {
     const { sourceService, sourceEntity, viewMapping } = assoc.federation
@@ -140,6 +148,7 @@ async function resolveNavCondition(assoc, remoteWhereNodes) {
     const q = SELECT.from(remoteEntity).columns(keyDef.remote)
     q.SELECT.where = remoteWhereNodes
 
+    LOG.debug(`Resolving remote nav filter on '${assoc.name}' via ${sourceService}.${sourceEntity}`)
     let matchedKeys
     try {
         const results = await remote.run(q)
@@ -150,8 +159,10 @@ async function resolveNavCondition(assoc, remoteWhereNodes) {
     }
 
     if (matchedKeys.length === 0) {
+        LOG.debug(`Remote nav filter on '${assoc.name}': no matching keys; rewriting to always-false`)
         return [{ val: 1 }, '=', { val: 0 }]
     }
+    LOG.debug(`Remote nav filter on '${assoc.name}': ${matchedKeys.length} key(s) → ${keyDef.fk} in [...]`)
     return [{ ref: [keyDef.fk] }, 'in', { list: matchedKeys.map(k => ({ val: k })) }]
 }
 

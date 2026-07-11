@@ -1,5 +1,7 @@
 const cds = require('@sap/cds')
 
+const LOG = cds.log('cds-data-federation')
+
 // ─── Local Lambda Filter Resolution (cross-service filter: remote → local) ──────
 //
 // When a delegated entity has local associations (cross-service expand: remote → local),
@@ -16,6 +18,10 @@ const cds = require('@sap/cds')
  * local associations, pre-resolves them against the local DB, and returns a modified query.
  * Returns the original query unchanged if no local lambdas are found.
  *
+ * Customers?$filter=bookmarks/any(b:b/label eq 'Fav')
+ *   Input  CQN.where: [ 'exists', { ref: [{ id: 'bookmarks', where: [{ ref: ['label'] }, '=', { val: 'Fav' }] }] } ]
+ *   Output CQN.where: [ { ref: ['ID'] }, 'in', { val: ['C001', 'C002'] } ]
+ *
  * IMPORTANT: CQN query objects are "thenables" (they have a .then getter that executes the
  * query). Returning a CQN from an async function causes Promise resolution to follow the
  * thenable, re-executing the query and triggering infinite recursion through the handler chain.
@@ -27,6 +33,7 @@ function resolveLocalLambdaFilters(query, localAssocsByName, service) {
     if (!where || localAssocsByName.size === 0) return query
     if (!containsLocalLambda(where, localAssocsByName)) return query
 
+    LOG.debug('Detected local-association lambda filter (remote → local); pre-resolving via local DB query')
     const cloned = cds.ql.clone(query)
     return rewriteLocalLambdas(cloned.SELECT.where, localAssocsByName, service)
         .then(() => { return { _cqn: cloned } })
@@ -92,6 +99,8 @@ async function rewriteLocalLambdas(where, localAssocsByName, service) {
         const localResults = await service.run(q)
         const matchedKeys = [...new Set(localResults.map(r => r[assoc.fkColumn]).filter(v => v != null))]
 
+        LOG.debug(`Local lambda on '${assocName}': ${matchedKeys.length} matching ${assoc.sourceKey} value(s)`)
+
         let replacement
         if (matchedKeys.length === 0) {
             replacement = isNot
@@ -105,6 +114,7 @@ async function rewriteLocalLambdas(where, localAssocsByName, service) {
 
         const removeCount = isNot ? 3 : 2
         where.splice(i, removeCount, ...replacement)
+        LOG.debug(`Rewrote ${isNot ? 'not exists' : 'exists'} on '${assocName}' → ${assoc.sourceKey} ${isNot ? 'not in' : 'in'} filter`)
     }
 }
 

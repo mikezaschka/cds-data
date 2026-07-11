@@ -193,12 +193,17 @@ function translateExpandWhere(where, localToRemote) {
 // CAP parses this into an `exists` CQN expression referencing the federated association.
 // The local DB can't resolve it (no remote table). We pre-resolve by querying the
 // remote service, collecting matching join values, and rewriting to a local IN filter.
+//
+// ProductCategories?$filter=products/any(p:p/unitPrice gt 100)
+//   Input  CQN.where: [ 'exists', { ref: [{ id: 'products', where: [{ ref: ['unitPrice'] }, '>', { val: 100 }] }] } ]
+//   Output CQN.where: [ { ref: ['categoryId'] }, 'in', { list: [{ val: 'CAT1' }, ...] } ]
 
 function resolveRemoteLambdaFilters(query, fedAssocByName) {
     const where = query?.SELECT?.where
     if (!where || fedAssocByName.size === 0) return query
     if (!containsRemoteLambda(where, fedAssocByName)) return query
 
+    LOG.debug('Detected remote-association lambda filter (local → remote); pre-resolving via remote query')
     const cloned = cds.ql.clone(query)
     return rewriteRemoteLambdas(cloned.SELECT.where, fedAssocByName)
         .then(() => { return { _cqn: cloned } })
@@ -275,6 +280,7 @@ async function rewriteRemoteLambdas(where, fedAssocByName) {
         const matchedKeys = [...new Set(results.map(r => r[remoteFKColumn]).filter(v => v != null))]
 
         const localField = assoc.onJoin.localField
+        LOG.debug(`Remote lambda on '${assocName}': ${matchedKeys.length} matching ${localField} value(s) from ${sourceService}.${sourceEntity}`)
         let replacement
         const valList = { list: matchedKeys.map(v => ({ val: v })) }
         if (matchedKeys.length === 0) {
@@ -289,6 +295,7 @@ async function rewriteRemoteLambdas(where, fedAssocByName) {
 
         const removeCount = isNot ? 3 : 2
         where.splice(i, removeCount, ...replacement)
+        LOG.debug(`Rewrote ${isNot ? 'not exists' : 'exists'} on '${assocName}' → ${localField} ${isNot ? 'not in' : 'in'} filter`)
     }
 }
 
@@ -317,6 +324,11 @@ const BATCH_FETCH_CHUNK_SIZE = 100
  * Batch-fetches the target entity from the remote service for all foreign keys
  * collected from local records, then stitches the results back into each record.
  * Supports both single-key and composite-key associations (to-one).
+ *
+ * Reviews?$expand=product($select=productName)
+ *   Input  local query columns: [*, product_ID]  (FK injected)
+ *   Remote batch: SELECT name, ID FROM Products WHERE ID in ['P001','P002',...]
+ *   Output: records[].product = { productName: '...', productId: '...' }
  */
 async function resolveFederatedExpand(records, expandItem, assoc, viewMappingRegistry) {
     const { sourceService, sourceEntity, viewMapping } = assoc.federation
@@ -351,6 +363,8 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
         for (const rec of records) rec[assoc.name] = null
         return
     }
+
+    LOG.debug(`Cross-service expand (local → remote) to-one '${assoc.name}': batch-fetching ${fkTuples.length} FK tuple(s) from ${sourceService}.${sourceEntity}`)
 
     const remote = await cds.connect.to(sourceService)
     const remoteEntity = remote.entities[sourceEntity]
@@ -396,6 +410,7 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
         for (let i = 0; i < fkValues.length; i += BATCH_FETCH_CHUNK_SIZE) {
             chunks.push(fkValues.slice(i, i + BATCH_FETCH_CHUNK_SIZE))
         }
+        LOG.debug(`Batch-fetching '${assoc.name}' in ${chunks.length} chunk(s) of up to ${BATCH_FETCH_CHUNK_SIZE} keys`)
         for (const chunk of chunks) {
             const q = SELECT.from(remoteEntity).where({ [keyDefs[0].remote]: { in: chunk } })
             if (innerColumns.length > 0) q.columns(innerColumns)
@@ -450,12 +465,18 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
             : JSON.stringify(keyDefs.map(kd => rec[kd.fk]))
         rec[assoc.name] = lookup.get(lookupKey) || null
     }
+    LOG.debug(`Stitched to-one expand '${assoc.name}' into ${records.length} record(s); ${lookup.size} remote row(s) fetched`)
 }
 
 /**
  * Resolves a to-many cross-service expand: local → remote.
  * The FK lives on the remote entity; the local entity's field matches the remote FK value.
  * Queries remote with FK IN [local values], groups results into arrays, and stitches.
+ *
+ * ProductCategories?$expand=products($select=productName)
+ *   Input  local values: ['CAT1','CAT2']
+ *   Remote batch: SELECT name, categoryId FROM Products WHERE categoryId in ['CAT1','CAT2']
+ *   Output: records[].products = [{ productName: '...' }, ...]
  */
 async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMappingRegistry) {
     const { sourceService, sourceEntity, viewMapping } = assoc.federation
@@ -478,6 +499,8 @@ async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMapp
         for (const rec of records) rec[assoc.name] = []
         return
     }
+
+    LOG.debug(`Cross-service expand (local → remote) to-many '${assoc.name}': batch-fetching for ${localValues.length} local value(s) from ${sourceService}.${sourceEntity}`)
 
     const remote = await cds.connect.to(sourceService)
     const remoteEntity = remote.entities[sourceEntity]
@@ -523,6 +546,7 @@ async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMapp
     for (let i = 0; i < localValues.length; i += BATCH_FETCH_CHUNK_SIZE) {
         chunks.push(localValues.slice(i, i + BATCH_FETCH_CHUNK_SIZE))
     }
+    LOG.debug(`Batch-fetching to-many '${assoc.name}' in ${chunks.length} chunk(s) of up to ${BATCH_FETCH_CHUNK_SIZE} keys`)
     for (const chunk of chunks) {
         const q = SELECT.from(remoteEntity).where({ [remoteFKColumn]: { in: chunk } })
         if (innerColumns.length > 0) q.columns(innerColumns)
@@ -549,6 +573,7 @@ async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMapp
         }
         rec[assoc.name] = items
     }
+    LOG.debug(`Stitched to-many expand '${assoc.name}' into ${records.length} record(s); ${allResults.length} remote row(s) fetched`)
 }
 
 function findAssocKeyName(assocElem) {
@@ -615,6 +640,11 @@ function mapFlatWithFKs(row, remoteToLocal) {
 /**
  * Builds the column list for the inner (remote batch-fetch) query.
  * Handles explicit $select, nested $expand forwarding, projected columns, and key inclusion.
+ *
+ * $expand=product($select=productName,unitPrice)
+ *   Input  expand columns: [{ ref: ['productName'] }, { ref: ['unitPrice'] }]
+ *   Output remote columns: [{ ref: ['name'] }, { ref: ['price'] }]  (via localToRemote)
+ *
  * @param {Array|null} keyDefs - array of key definitions (null for to-many)
  */
 function buildInnerColumns(expandItem, localToRemote, viewMapping, keyDefs) {

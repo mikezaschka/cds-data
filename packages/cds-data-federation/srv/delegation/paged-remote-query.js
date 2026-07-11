@@ -19,6 +19,12 @@ const LOG = cds.log('cds-data-federation')
 // reads. It preserves the `$count` value from the first page (server-side total,
 // independent of paging) and re-attaches it to the final array so OData's
 // `@odata.count` continues to work.
+//
+// Products?$top=5000 (remote caps at 20 rows/page)
+//   Page 1: SELECT ... LIMIT 1000 OFFSET 0   → 20 rows
+//   Page 2: SELECT ... LIMIT 1000 OFFSET 20  → 20 rows
+//   ... until clientTop reached or empty batch
+//   Output: collected array with $count from first page preserved
 
 function getLimitSlice(limit) {
     if (!limit) return { rows: undefined, offset: 0 }
@@ -39,6 +45,8 @@ async function runPagedRemoteQuery(remote, query, { pageSize = 1000, maxPages = 
 
     const { rows: clientTop, offset: clientSkip } = getLimitSlice(sel.limit)
     const needed = typeof clientTop === 'number' ? clientTop : Infinity
+
+    LOG.debug(`Starting paged remote read: need ${needed === Infinity ? 'all' : needed} row(s), pageSize=${pageSize}, offset=${clientSkip || 0}`)
 
     const collected = []
     let serverCount
@@ -69,6 +77,8 @@ async function runPagedRemoteQuery(remote, query, { pageSize = 1000, maxPages = 
         collected.push(...arr)
         skip += arr.length
         page++
+
+        LOG.debug(`Paged remote read page ${page}: requested ${remaining}, got ${arr.length}, collected ${collected.length}/${needed === Infinity ? '∞' : needed}`)
 
         // If remote returned fewer than we asked for (and we weren't already capped by `needed`),
         // it's still possible the remote is simply exhausted — the next iteration will confirm

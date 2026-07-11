@@ -1,5 +1,7 @@
 const cds = require('@sap/cds')
 
+const LOG = cds.log('cds-data-federation')
+
 // ─── Navigation Path Translation ────────────────────────────────────────────────
 //
 // CAP's automatic query translation handles scalar field renames ($filter=unitPrice gt 100
@@ -31,6 +33,11 @@ function buildAssocTargetMappings(entityFullName, viewMappingRegistry) {
 /**
  * Translates navigation paths in a CQN WHERE clause from local to remote names.
  * Returns the original query if no translation is needed, or a cloned+modified query.
+ *
+ * Orders?$filter=buyer/name eq 'Acme'
+ *   Input  CQN.where: [ { ref: ['buyer','name'] }, '=', { val: 'Acme' } ]
+ *   Output CQN.where: [ { ref: ['customer','name'] }, '=', { val: 'Acme' } ]
+ * (assoc `buyer` → `customer` via localToRemote; deeper segments via assocTargets)
  */
 function translateNavigationFilters(query, viewMapping, assocTargets) {
     const where = query?.SELECT?.where
@@ -44,6 +51,7 @@ function translateNavigationFilters(query, viewMapping, assocTargets) {
     if (!needsTranslation) return query
 
     const cloned = cds.ql.clone(query)
+    LOG.debug('Translating navigation-path filters in WHERE clause (local → remote assoc/field names)')
     translateWhereClause(cloned.SELECT.where, localToRemote, assocTargets)
     return cloned
 }
@@ -86,6 +94,7 @@ function translateNode(node, localToRemote, assocTargets) {
         const localAssocName = node.ref[0]
         const remoteAssocName = localToRemote[localAssocName]
         if (remoteAssocName) {
+            const originalPath = node.ref.join('/')
             node.ref[0] = remoteAssocName
             const targetLocalToRemote = assocTargets?.[localAssocName]
             if (targetLocalToRemote) {
@@ -95,6 +104,7 @@ function translateNode(node, localToRemote, assocTargets) {
                     }
                 }
             }
+            LOG.debug(`Renamed navigation path: ${originalPath} → ${node.ref.join('/')}`)
         }
     }
 

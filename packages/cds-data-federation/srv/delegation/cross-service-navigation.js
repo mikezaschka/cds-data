@@ -20,9 +20,10 @@ const LOG = cds.log('cds-data-federation')
  * Source is a LOCAL entity, target is a REMOTE (delegated) entity.
  *
  * Example: GET /Reviews('id')/product
- *   from.ref = [{id:'ConsumerService.Reviews', where:[...]}, 'product']
- *   Products delegate handler fires, detects Reviews is local,
- *   reads review's FK, queries remote Products by key.
+ *   Input  CQN.from.ref: [{ id: 'ConsumerService.Reviews', where: [...] }, 'product']
+ *   Step 1: SELECT product_ID FROM Reviews WHERE ...
+ *   Step 2: SELECT.one name, ID FROM ProviderService.Products WHERE ID = fkValue
+ *   Output: { productName: '...', productId: '...' }
  *
  * @param {object} req - CAP request
  * @param {object} remote - connected remote service
@@ -54,6 +55,7 @@ async function resolveLocalToRemoteNavigation(req, remote, service, sourceServic
     const keyName = Array.isArray(assocElem.keys[0].ref) ? assocElem.keys[0].ref[0] : assocElem.keys[0]
     const fkColumn = `${navProp}_${keyName}`
 
+    LOG.debug(`Cross-service navigation (local → remote): reading ${fkColumn} from local ${sourceShortName}`)
     const sourceRecord = await service.run(
         SELECT.one.from(sourceShortName).columns(fkColumn).where(sourceWhere)
     )
@@ -66,6 +68,7 @@ async function resolveLocalToRemoteNavigation(req, remote, service, sourceServic
     const remoteKeyName = localToRemote[keyName] || keyName
     const remoteEntityFullName = `${sourceServiceName}.${sourceEntity}`
 
+    LOG.debug(`Cross-service navigation (local → remote): querying ${remoteEntityFullName} by ${remoteKeyName}=${fkValue}`)
     const q = SELECT.one.from(remoteEntityFullName).where({ [remoteKeyName]: fkValue })
 
     const columns = req.query.SELECT.columns
@@ -104,10 +107,9 @@ async function resolveLocalToRemoteNavigation(req, remote, service, sourceServic
  * Rewrites a cross-service navigation: remote → local CQN into a simple FK-filtered local query.
  *
  * Example: GET /Customers('C001')/bookmarks
- *   from.ref = [{id:'ConsumerService.Customers', where:[...]}, 'bookmarks']
- *   Bookmarks handler fires, detects Customers is federated.
- *   This function rewrites from.ref to [Bookmarks] and adds customer_ID = 'C001' filter.
- *   The caller then proceeds with next() to let the DB handler resolve it.
+ *   Input  CQN.from.ref: [{ id: 'ConsumerService.Customers', where: [...] }, 'bookmarks']
+ *   Output CQN.from.ref: ['Bookmarks']
+ *   Output CQN.where: [ { ref: ['customer_ID'] }, '=', { val: 'C001' } ]
  *
  * @param {object} query - CQN query (modified in-place)
  * @param {string} localEntityShortName - short name of this local entity
@@ -150,6 +152,7 @@ function rewriteRemoteToLocalNavigation(query, localEntityShortName, fedAssocByN
         sel.where = fkFilter
     }
 
+    LOG.debug(`Cross-service navigation (remote → local): rewrote from.ref to ${localEntityShortName} with ${fkColumn}=${keyValue}`)
     return true
 }
 

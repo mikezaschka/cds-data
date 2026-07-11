@@ -18,6 +18,10 @@ const LOG = cds.log('cds-data-federation')
  * entity, queries the local DB for matching FKs, and rewrites to a simple
  * source-key IN filter.
  *
+ * Products?$filter=LocalEntity/Name eq 'Product 3'
+ *   Input  CQN.where: [ { ref: ['LocalEntity','Name'] }, '=', { val: 'Product 3' } ]
+ *   Output CQN.where: [ { ref: ['ID'] }, 'in', { list: [{ val: 'P003' }, ...] } ]
+ *
  * @param {object} query - CQN query
  * @param {Map} localAssocsByName - Map of assoc name → { name, target, fkColumn, sourceKey, is2many }
  * @param {object} service - CAP application service (for local DB queries)
@@ -28,6 +32,7 @@ function resolveLocalNavigationFilters(query, localAssocsByName, service) {
     if (!where || !localAssocsByName || localAssocsByName.size === 0) return query
     if (!containsLocalNavRef(where, localAssocsByName)) return query
 
+    LOG.debug('Detected cross-service navigation filter (remote → local); pre-resolving via local DB query')
     const cloned = cds.ql.clone(query)
     return rewriteLocalNavFilters(cloned.SELECT.where, localAssocsByName, service)
         .then(() => ({ _cqn: cloned }))
@@ -113,11 +118,16 @@ function stripAssocPrefix(node) {
 /**
  * Queries the local association target with the stripped condition, collects
  * FK values, and returns a sourceKey IN replacement for the delegate WHERE.
+ *
+ * Local query: SELECT customer_ID FROM Bookmarks WHERE label eq 'Fav'
+ *   Output CQN.where: [ { ref: ['ID'] }, 'in', { list: [{ val: 'C001' }, ...] } ]
  */
 async function resolveLocalNavCondition(assoc, localWhereNodes, service) {
     const targetShortName = assoc.target.split('.').pop()
     const q = SELECT.from(targetShortName).columns(assoc.fkColumn)
     q.SELECT.where = localWhereNodes
+
+    LOG.debug(`Resolving local nav filter on '${assoc.name}' via ${targetShortName}`)
 
     let matchedKeys
     try {
@@ -129,8 +139,10 @@ async function resolveLocalNavCondition(assoc, localWhereNodes, service) {
     }
 
     if (matchedKeys.length === 0) {
+        LOG.debug(`Local nav filter on '${assoc.name}': no matching keys; rewriting to always-false`)
         return [{ val: 1 }, '=', { val: 0 }]
     }
+    LOG.debug(`Local nav filter on '${assoc.name}': ${matchedKeys.length} key(s) → ${assoc.sourceKey} in [...]`)
     return [{ ref: [assoc.sourceKey] }, 'in', { list: matchedKeys.map(k => ({ val: k })) }]
 }
 

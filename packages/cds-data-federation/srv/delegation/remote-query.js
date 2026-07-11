@@ -9,8 +9,11 @@
 // the remote entity (bypassing cds.ql.resolve), translate field names manually,
 // and map results back.
 
+const cds = require('@sap/cds')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
 const { projectedColumnToSelectArg } = require('cds-data-pipeline/srv/lib/columnRefPath')
+
+const LOG = cds.log('cds-data-federation')
 
 /**
  * Returns true if a CQN WHERE array contains `exists` or `not exists` expressions.
@@ -28,6 +31,10 @@ function containsLambda(where) {
 /**
  * Translates field refs inside a CQN WHERE clause using localToRemote mapping.
  * Handles nested xpr, func args, and lambda (exists) refs.
+ *
+ * Products?$filter=unitPrice gt 100
+ *   Input  CQN.where: [ { ref: ['unitPrice'] }, '>', { val: 100 } ]
+ *   Output CQN.where: [ { ref: ['price'] },      '>', { val: 100 } ]
  */
 function translateWhere(where, localToRemote) {
     if (!Array.isArray(where) || !localToRemote) return where
@@ -67,6 +74,11 @@ function translateWhere(where, localToRemote) {
  *     CAP's projection resolution to enter an infinite loop on circular refs
  *
  * Translates field names manually using the viewMapping dictionaries.
+ *
+ * Products?$filter=unitPrice gt 100&$select=productName
+ *   Input  from: ConsumerService.Products, where: unitPrice, columns: productName
+ *   Output from: ProviderService.Products, where: price,      columns: name
+ *   (bypasses projection chain; results mapped back via remoteToLocal)
  */
 async function runDirectRemoteQuery(remote, sourceServiceName, originalQuery, viewMapping) {
     const sel = originalQuery.SELECT
@@ -74,6 +86,11 @@ async function runDirectRemoteQuery(remote, sourceServiceName, originalQuery, vi
 
     const entityName = sourceEntity || sel.from?.ref?.[0]?.id || sel.from?.ref?.[0] || sel.from
     const remoteEntity = `${sourceServiceName}.${entityName}`
+
+    const reasons = []
+    if (staticWhere) reasons.push('staticWhere')
+    if (containsLambda(sel.where)) reasons.push('lambda')
+    LOG.debug(`Bypassing CAP projection chain for ${remoteEntity}${reasons.length ? ` (reason: ${reasons.join(', ')})` : ''}`)
 
     const remoteWhere = localToRemote
         ? translateWhere(sel.where, localToRemote)
