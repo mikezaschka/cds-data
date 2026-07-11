@@ -1,5 +1,12 @@
 # cds-data CAP plugins
 
+[![CI](https://github.com/mikezaschka/cds-data/actions/workflows/test.yml/badge.svg)](https://github.com/mikezaschka/cds-data/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+![SAP CAP](https://img.shields.io/badge/SAP%20CAP-%E2%89%A5%209-0a6ed1)
+[![Documentation](https://img.shields.io/badge/docs-online-brightgreen)](https://mikezaschka.github.io/cds-data/)
+[![cds-data-federation](https://img.shields.io/npm/v/cds-data-federation?label=cds-data-federation)](https://www.npmjs.com/package/cds-data-federation)
+[![cds-data-pipeline](https://img.shields.io/npm/v/cds-data-pipeline?label=cds-data-pipeline)](https://www.npmjs.com/package/cds-data-pipeline)
+
 Composable [SAP CAP](https://cap.cloud.sap/) plugins for integrating remote services, moving data between systems, and persisting local aggregate snapshots — declarative via CDS annotations, with a shared pipeline engine underneath.
 
 **Documentation:** [https://mikezaschka.github.io/cds-data/](https://mikezaschka.github.io/cds-data/)

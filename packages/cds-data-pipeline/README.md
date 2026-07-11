@@ -1,5 +1,12 @@
 # cds-data-pipeline
 
+[![npm version](https://img.shields.io/npm/v/cds-data-pipeline)](https://www.npmjs.com/package/cds-data-pipeline)
+[![monthly downloads](https://img.shields.io/npm/dm/cds-data-pipeline)](https://www.npmjs.com/package/cds-data-pipeline)
+[![CI](https://github.com/mikezaschka/cds-data/actions/workflows/test.yml/badge.svg)](https://github.com/mikezaschka/cds-data/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/mikezaschka/cds-data/blob/main/LICENSE)
+![SAP CAP](https://img.shields.io/badge/SAP%20CAP-%E2%89%A5%209-0a6ed1)
+[![Documentation](https://img.shields.io/badge/docs-online-brightgreen)](https://mikezaschka.github.io/cds-data/pipeline/)
+
 > **Work in progress.** APIs, schema, and documentation may change before a stable release.
 
 [Documentation](https://mikezaschka.github.io/cds-data/pipeline/) · [npm](https://www.npmjs.com/package/cds-data-pipeline)

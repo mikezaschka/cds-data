@@ -1,5 +1,12 @@
 # cds-data-materialization
 
+![status: experimental](https://img.shields.io/badge/status-experimental-orange)
+![npm: not released](https://img.shields.io/badge/npm-not%20released-lightgrey)
+[![CI](https://github.com/mikezaschka/cds-data/actions/workflows/test.yml/badge.svg)](https://github.com/mikezaschka/cds-data/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/mikezaschka/cds-data/blob/main/LICENSE)
+![SAP CAP](https://img.shields.io/badge/SAP%20CAP-%E2%89%A5%209-0a6ed1)
+[![Documentation](https://img.shields.io/badge/docs-online-brightgreen)](https://mikezaschka.github.io/cds-data/materialization/)
+
 Declarative `@materialize.snapshot` annotations for SAP CAP — scheduled aggregate snapshots that compose [`cds-data-pipeline`](https://www.npmjs.com/package/cds-data-pipeline).
 
 ## Scope

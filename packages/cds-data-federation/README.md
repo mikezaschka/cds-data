@@ -1,5 +1,12 @@
 # cds-data-federation
 
+[![npm version](https://img.shields.io/npm/v/cds-data-federation)](https://www.npmjs.com/package/cds-data-federation)
+[![monthly downloads](https://img.shields.io/npm/dm/cds-data-federation)](https://www.npmjs.com/package/cds-data-federation)
+[![CI](https://github.com/mikezaschka/cds-data/actions/workflows/test.yml/badge.svg)](https://github.com/mikezaschka/cds-data/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/mikezaschka/cds-data/blob/main/LICENSE)
+![SAP CAP](https://img.shields.io/badge/SAP%20CAP-%E2%89%A5%209-0a6ed1)
+[![Documentation](https://img.shields.io/badge/docs-online-brightgreen)](https://mikezaschka.github.io/cds-data/federation/)
+
 [Documentation](/federation/) · [npm](https://www.npmjs.com/package/cds-data-federation)
 
 The annotation-driven SAP CAP plugin for integrating external services into your application's data model — declarative, no handler code. Composes [`cds-data-pipeline`](https://www.npmjs.com/package/cds-data-pipeline) for scheduled sync.
