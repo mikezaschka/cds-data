@@ -19,6 +19,17 @@ function sourceIsDelegateStrategy(sourceDef) {
         Object.keys(sourceDef).some(k => k.startsWith('@federation.delegate.'))
 }
 
+/**
+ * Collects all `ref` arrays from a projection/query `from` clause, including
+ * join trees (`cross join`, `inner join`, …) where sources live under `args`.
+ */
+function extractSelectFromRefs(from) {
+    if (!from) return []
+    if (from.ref?.length) return [from.ref]
+    if (from.args?.length) return from.args.flatMap(extractSelectFromRefs)
+    return []
+}
+
 function resolveProjectionSource(csn, entityName, ref) {
     if (!ref?.length) return null
     const joined = ref.join('.')
@@ -94,13 +105,22 @@ function scanAnnotations(csn) {
         // forces the OData projection to materialize as a separate (empty) table
         // instead of a view. Detect by checking if the projection source already
         // carries @federation.* annotations.
-        const directSourceRef = def.projection?.from?.ref || def.query?.SELECT?.from?.ref
-        if (directSourceRef && directSourceRef.length > 0) {
-            const directSourceName = directSourceRef.join('.')
-            const directSourceDef = resolveProjectionSource(csn, name, directSourceRef)
-            if (sourceHasFederationAnnotation(directSourceDef)) {
-                LOG.debug(`Skipping '${name}': inherits @federation.* from '${directSourceName}' (derived projection)`)
-                markDerivedReadModel(def, sourceIsDelegateStrategy(directSourceDef))
+        const fromClause = def.projection?.from || def.query?.SELECT?.from
+        const sourceRefs = extractSelectFromRefs(fromClause)
+        if (sourceRefs.length > 0) {
+            let isDerived = false
+            let anyDelegateSource = false
+            let derivedFromName = null
+            for (const sourceRef of sourceRefs) {
+                const sourceDef = resolveProjectionSource(csn, name, sourceRef)
+                if (!sourceHasFederationAnnotation(sourceDef)) continue
+                isDerived = true
+                derivedFromName = derivedFromName || sourceRef.join('.')
+                if (sourceIsDelegateStrategy(sourceDef)) anyDelegateSource = true
+            }
+            if (isDerived) {
+                LOG.debug(`Skipping '${name}': inherits @federation.* from '${derivedFromName}' (derived projection)`)
+                markDerivedReadModel(def, anyDelegateSource)
                 continue
             }
         }

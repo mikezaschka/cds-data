@@ -110,6 +110,56 @@ describe('Unit Tests', () => {
             expect(derived['@cds.persistence.table']).to.equal(false)
         })
 
+        it('should keep join-based derived read models as views over replicated tables', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const derived = {
+                '@readonly': true,
+                '@federation.replicate': true,
+                query: {
+                    SELECT: {
+                        from: {
+                            join: 'cross',
+                            args: [
+                                { ref: ['SalesCockpit.SalesOrders'], as: 'o' },
+                                { ref: ['SalesCockpit.ExchangeRates'], as: 'fx' }
+                            ]
+                        },
+                        columns: [
+                            { ref: ['o', 'shipCountry'], as: 'country' },
+                            { func: 'sum', args: [{ ref: ['o', 'freight'] }], as: 'freightEUR' }
+                        ],
+                        groupBy: [{ ref: ['o', 'shipCountry'] }]
+                    }
+                }
+            }
+            const salesOrders = {
+                '@federation.replicate': { schedule: 600000, preload: true },
+                projection: { from: { ref: ['northwind_v4', 'Orders'] } }
+            }
+            const exchangeRates = {
+                '@federation.replicate': { schedule: 600000, preload: true },
+                projection: { from: { ref: ['FXService', 'ExchangeRates'] } }
+            }
+            const { configs } = scanAnnotations({
+                definitions: {
+                    northwind_v4: { kind: 'service' },
+                    FXService: { kind: 'service' },
+                    'SalesCockpit.SalesOrders': salesOrders,
+                    'SalesCockpit.ExchangeRates': exchangeRates,
+                    'SalesCockpit.FreightByCountryEUR': derived
+                }
+            })
+            expect(configs).to.have.length(2)
+            expect(configs.map(c => c.entityFullName)).to.deep.equal([
+                'SalesCockpit.SalesOrders',
+                'SalesCockpit.ExchangeRates'
+            ])
+            expect(salesOrders['@cds.persistence.table']).to.equal(true)
+            expect(exchangeRates['@cds.persistence.table']).to.equal(true)
+            expect(derived['@cds.persistence.table']).to.equal(false)
+            expect(derived).to.not.have.property('@cds.persistence.skip')
+        })
+
         it('should extract options from @federation.delegate annotation value', () => {
             const { scanAnnotations } = require('../../srv/annotation-scanner')
             const { configs } = scanAnnotations({
