@@ -974,10 +974,9 @@ class DataPipelineService extends cds.Service {
      *     Best-effort, fires on every app instance, no persistence across
      *     restarts, no retry. Matches pre-0.2 behaviour.
      *   - `engine: 'queued'` — `cds.queued(this).schedule(...).every(...)`
-     *     backed by the CAP persistent task queue. Single-winner across
+     *     backed by the CAP Event Queues scheduling API. Single-winner across
      *     app instances, survives restarts, exponential retry + dead-letter
-     *     via `cds.outbox.Messages`. The underlying CAP API is marked
-     *     Alpha; opt in per-pipeline.
+     *     via `cds.outbox.Messages`. Opt in per-pipeline via `engine: 'queued'`.
      *
      * @returns {import('node:events').EventEmitter|undefined} EventEmitter for spawn; undefined for invalid or queued
      */
@@ -1023,8 +1022,7 @@ class DataPipelineService extends cds.Service {
         if (!handle || typeof handle.every !== 'function') {
             throw new Error(
                 `addPipeline: cds.queued(srv).schedule(...).every(...) is not available on this ` +
-                `CAP runtime. The task scheduling API is documented as Alpha; check the CAP release ` +
-                `notes or fall back to schedule.engine='spawn'.`
+                `CAP runtime. Check the CAP release notes or fall back to schedule.engine='spawn'.`
             )
         }
 

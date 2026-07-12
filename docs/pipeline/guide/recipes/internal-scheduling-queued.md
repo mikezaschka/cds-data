@@ -2,11 +2,7 @@
 
 **When to pick this recipe:** you want a schedule owned by the CAP app (not an external service), you run the app with more than one instance, and you want the schedule to survive restarts, retry on failure, and fire **only once per tick across all instances**. This is the right upgrade from `schedule: <ms>` for production-grade deployments that don't justify the operational overhead of an external scheduler.
 
-The queued engine is backed by CAP's persistent task queue: the schedule message is stored in `cds.outbox.Messages` and dispatched exactly once per interval.
-
-::: warning Alpha API
-The underlying `.schedule()` / `.every()` API is marked experimental in the [CAP task scheduling docs](https://cap.cloud.sap/docs/node.js/queue#task-scheduling). Semantics may still change. For workloads that can't absorb churn, prefer the default `spawn` engine or an external trigger.
-:::
+The queued engine is backed by CAP's persistent task queue: the schedule message is stored in `cds.outbox.Messages` and dispatched exactly once per interval. See the [June 2026 scheduling API](https://cap.cloud.sap/docs/releases/2026/jun26#scheduling-api).
 
 ## Engines at a glance
 

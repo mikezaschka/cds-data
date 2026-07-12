@@ -11,6 +11,22 @@
 
 **A CAP plugin for declarative, scheduled data pipelines between CAP services.** Each pipeline moves data from one source to one target in a linear `READ → MAP → WRITE` flow — with tracking, retry, delta support, and a management API out of the box.
 
+## Beyond CAP
+
+CAP already gives you the moving parts — `cds.connect.to`, consumption views, `cds.ql`, `UPSERT`, `cds.spawn`, the [Event Queues scheduling API](https://cap.cloud.sap/docs/releases/2026/jun26#scheduling-api) (CDS 10), and the standard `before` / `on` / `after` hook API on services. Reference samples assemble the read–map–write loop by hand: paging, delta watermarks, error handling, and scheduling copied into every project.
+
+**This plugin reuses those primitives** and adds the orchestration layer on top:
+
+| Reuses from CAP | Adds on top |
+|---|---|
+| `cds.connect.to` for source and target I/O | Fixed `READ → MAP → WRITE` run envelope with `PIPELINE.*` events |
+| `cds.spawn` / [Event Queues scheduling API](https://cap.cloud.sap/docs/releases/2026/jun26#scheduling-api) / external `execute` | Three scheduling engines — see below |
+| `UPSERT` / `INSERT` / `DELETE` via target adapters | Delta modes, retry with backoff, concurrency guard, run history |
+| Standard service hooks | Per-pipeline `before` / `on` / `after` on every phase — opt-in only |
+| Consumption views (when used with federation) | Management OData at `/pipeline`, data inspector, [Pipeline Console](https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console) |
+
+You call `addPipeline({ source, target, … })` once; the engine owns the loop. Hooks are the CAP escape hatch when a run needs custom logic — not a requirement for every pipeline.
+
 ## Install
 
 ```bash
@@ -50,11 +66,25 @@ Local DB (default), remote OData, [custom](https://mikezaschka.github.io/cds-dat
 | Area | Highlights |
 |---|---|
 | **Delta** | `timestamp`, `key`, `datetime-fields`, or `full` refresh |
-| **Scheduling** | In-process `spawn`, persistent `queued`, or external trigger |
+| **Scheduling** | `spawn` (`cds.spawn`), `queued` (Event Queues API), or external trigger — see below |
 | **Event hooks** | `PIPELINE.START → READ → MAP → WRITE → DONE` via standard `before` / `on` / `after` |
 | **Housekeeping** | Opt-in `PipelineRuns` retention (`retentionDays`, `maxRuns`) |
 
-Details: [Recipes](https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/) · [Event hooks](https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/event-hooks)
+**Scheduling engines**
+
+| Engine | CAP primitive | When to use |
+|---|---|---|
+| **`spawn`** (default) | `cds.spawn({ every })` | Dev, single instance, best-effort interval |
+| **`queued`** | `cds.queued(srv).schedule(...).every(...)` — the [June 2026 scheduling API](https://cap.cloud.sap/docs/releases/2026/jun26#scheduling-api) | Scaled deployments: single-winner across instances, survives restarts, cron (`engine: 'queued'`). On CDS 10, named tasks (`.as(...)`) enable live `setSchedule` / `clearSchedule` via `unschedule` |
+| **External** | `POST /pipeline/execute` | BTP Job Scheduling Service, Kubernetes CronJob, corporate cron |
+
+```javascript
+schedule: 600_000,                              // spawn — implicit engine
+schedule: { every: '10m', engine: 'queued' }, // Event Queues: .schedule().every()
+schedule: { cron: '0 2 * * *', engine: 'queued' },
+```
+
+Details: [Internal scheduling (queued)](https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/internal-scheduling-queued) · [External scheduling](https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/external-scheduling-jss) · [Recipes](https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/) · [Event hooks](https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/event-hooks)
 
 ### Management API and observability
 
@@ -85,6 +115,38 @@ module.exports = cds.server;
 ```
 
 Step-by-step: [Get started](https://mikezaschka.github.io/cds-data/pipeline/guide/get-started)
+
+## Used by `cds-data-federation`
+
+[`cds-data-federation`](https://www.npmjs.com/package/cds-data-federation) composes this engine for annotation-driven sync — you install both packages, but rarely call `addPipeline` yourself:
+
+- **`@federation.replicate`** — federation scans consumption views at boot and registers entity-shape pipelines via `pipeline-binding.js` (source entity → local table, schedule, delta from annotation options).
+- **`cache.strategy: 'entity'`** on `@federation.delegate` — on TTL miss, a pipeline fills a SQLite snapshot of the projected entity.
+
+Federation-bound pipelines show up in `/pipeline` and the Pipeline Console alongside programmatic ones. For custom transforms on a federation pipeline, hook the pipeline **by name** (defaults to the entity name). See the [federation README](https://www.npmjs.com/package/cds-data-federation) and [first replication](https://mikezaschka.github.io/cds-data/federation/getting-started/first-replication).
+
+## Event hooks (optional)
+
+`DataPipelineService` is a normal `cds.Service`. The default path needs no handler code — register `before` / `on` / `after` on `PIPELINE.*` **only when** a run needs filtering, enrichment, side effects, or observability beyond the built-in MAP/WRITE. That is the usual CAP pattern: declarative wiring by default, intercept when processing gets non-trivial.
+
+```javascript
+const pipelines = await cds.connect.to('data-pipeline');
+
+// Filter source rows before rename mapping (federation replicate or addPipeline)
+pipelines.before('PIPELINE.MAP', 'ReplicatedPartners', (req) => {
+    req.data.sourceRecords = req.data.sourceRecords.filter(r => !r.blocked);
+});
+
+// Per-batch side effect after the default WRITE commits its statistics
+pipelines.after('PIPELINE.WRITE', 'Shipments', async (_results, req) => {
+    const { runId, batchIndex, statistics } = req.data;
+    await cds.tx(req).run(INSERT.into('BatchMetrics').entries({
+        runId, batchIndex, created: statistics?.created ?? 0,
+    }));
+});
+```
+
+Full event reference: [Event hooks](https://mikezaschka.github.io/cds-data/pipeline/guide/recipes/event-hooks) · [Management service](https://mikezaschka.github.io/cds-data/pipeline/reference/management-service#event-hooks)
 
 ## Pipeline Console
 
