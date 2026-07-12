@@ -11,6 +11,23 @@
 
 The annotation-driven SAP CAP plugin for integrating external services into your application's data model — declarative, no handler code. Composes [`cds-data-pipeline`](https://www.npmjs.com/package/cds-data-pipeline) for scheduled sync.
 
+## Beyond CAP
+
+CAP gives you the right concepts — consumption views, projection chains, `cds.connect.to`, `remote.run(req.query)` — and you rarely need much code per entity. But you still **maintain that wiring in every project**: `on('READ')` handlers, rename maps, replication loops, and schedule setup copied from samples such as [xtravels](https://github.com/capire/xtravels) or the [S/4 mashup sample](https://github.com/SAP-samples/cloud-cap-risk-management/tree/ext-service-s4hc-suppliers-ui). Cross-service `$expand` and navigation are especially brittle — intercepting incoming OData requests and CQN, stripping expand items, batch-fetching from the right service, and stitching results by foreign key adds up fast.
+
+**This plugin needs zero wiring code.** Annotate the consumption view; handlers, query translation, and pipeline binding are registered at boot.
+
+| Benefit | What you get |
+|---|---|
+| **Zero handler code** | `@federation.delegate` / `@federation.replicate` on the projection — no per-entity `srv` files to maintain |
+| **Consumption-view contract** | Field and association renames, column restriction, static `where` — inferred from the projection, not hand-written maps |
+| **Cross-service mashups** | `$expand` and navigation across local ↔ remote boundaries handled inside the plugin — not manual request interception per scenario |
+| **Scheduled replication** | Full/delta sync into local tables via `cds-data-pipeline` — retry, concurrency guard, run history, REST sources |
+| **Optional caching** | Per-query (`cds-caching`) or full-entity SQLite snapshots on delegate |
+| **Observability** | Federation-bound pipelines in `/pipeline` and the [Pipeline Console](https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console) |
+
+Full positioning against CAP samples and other approaches: [Comparison with CAP](https://mikezaschka.github.io/cds-data/federation/reference/comparison).
+
 ## Install
 
 ```bash
@@ -40,14 +57,6 @@ The plugin auto-activates on load via `cds-plugin.js`. Setup: [Installation](htt
 | Arbitrary filters/sorts on one entity; tolerate TTL | `@federation.delegate` + `cache: { strategy: 'entity' }` |
 | SQL joins with local tables, analytics, offline resilience | `@federation.replicate` (+ `cds-data-pipeline`) |
 | Plain REST JSON API (no CDS model on remote) | `@federation.replicate` + `rest: { … }` |
-
-| | Delegate | + response cache | + entity cache | Replicate |
-|---|---|---|---|---|
-| Freshness | Live | TTL | TTL | Last sync |
-| Data location | Remote | Cache backend | SQLite snapshot | Local DB table |
-| Joins with local tables | No | No | No | **Yes** |
-| Reduces remote load | No | Per query | Per entity/TTL | Per schedule |
-| Extra peer dep | — | `cds-caching` | `cds-data-pipeline`, `@cap-js/sqlite` | `cds-data-pipeline` |
 
 *Start with delegate; add cache for latency/load; replicate when you need SQL power or offline resilience.*
 
