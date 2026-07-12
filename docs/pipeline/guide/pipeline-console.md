@@ -21,6 +21,16 @@ The console manifest binds its default OData model to `/pipeline/` (absolute URL
 | **Mid — Pipeline detail** | Overview (status, health counters, cumulative statistics, raw JSON); Runs; Configuration (coded / override / effective); Data flow graph; Data Preview. Orange marks custom hooks or non-default configuration |
 | **End — Data inspector** | Source/target toggle, column selection, advanced filters, and paged preview table via `inspectData` |
 
+### Screenshots
+
+**Landscape** — pipelines grouped by remote service; entity nodes and flow arrows show source → pipeline → target:
+
+![Pipeline landscape — services and data flows](../../images/pipeline-landscape.png)
+
+**Pipelines list and run history** — schedules, status, and per-run statistics (including federation-bound replicate jobs):
+
+![Pipeline detail — run history and schedule controls](../../images/pipeline-runs.png)
+
 ### Status semantics
 
 **Pipeline status** (`idle` / `running` / `failed`) reflects the tracker lifecycle — whether a run is in progress and whether the last run failed — not data freshness. **Last successful run** (`lastSync`) is written only after a completed successful run; until then the UI shows *Never run yet*. **Enabled / Paused** gates scheduled ticks only — manual **Run pipeline** still works while paused.

@@ -105,6 +105,14 @@ Content-Type: application/json
 
 See the [cds-data-pipeline Management Service](/pipeline/reference/management-service) for all management endpoints.
 
+### Pipeline Console
+
+For a visual monitor, enable the pre-built UI with `management.reuse.console: true` on the `data-pipeline` requires entry (see [Feature activation](/pipeline/guide/feature-activation)). Replicate entities registered by federation appear automatically in the console.
+
+![Pipeline landscape — federation replicate pipelines grouped by service](../../images/pipeline-landscape.png)
+
+![Pipeline detail — replicate run history and schedule controls](../../images/pipeline-runs.png)
+
 ## What you get for free
 
 - Idempotent `UPSERT` writes — re-runs produce no duplicates.

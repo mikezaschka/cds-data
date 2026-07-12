@@ -1,9 +1,5 @@
 # Introduction
 
-::: info Pre-1.0
-`cds-data-pipeline` is published and usable today, but still pre-1.0 — the programmatic API and tracker schema may see refinements before a stable release. It runs on both CDS 9 and CDS 10.
-:::
-
 ## What it is
 
 **cds-data-pipeline** is a **CAP plugin** for scheduled, traceable data movement between CAP services. Each pipeline has **one source** and **one target**. A run follows a fixed **`READ → MAP → WRITE`** order. Every phase is a **`PIPELINE.*` event** on `DataPipelineService`, so you use the standard **`before` / `on` / `after`** hooks — no new runtime to learn.
