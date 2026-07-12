@@ -1,6 +1,6 @@
 {
   "name": "cds-data-federation",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A data federation plugin for SAP CAP applications supporting delegation, caching, and replication strategies via declarative CDS annotations.",
   "repository": {
     "type": "git",
