@@ -19,7 +19,13 @@ import type Table from "sap/m/Table";
 import type MultiComboBox from "sap/m/MultiComboBox";
 import type ODataModel from "sap/ui/model/odata/v4/ODataModel";
 import type UIComponent from "sap/ui/core/UIComponent";
-import { pipelinesEntity, inspectCapabilitiesFunction, inspectDataFunction } from "pipeline/monitor/fcl/util/ODataPath";
+import {
+    pipelinesEntity,
+    inspectCapabilitiesFunction,
+    inspectDataFunction,
+    PIPELINE_DETAIL_SELECT,
+    PIPELINE_RUNS_EXPAND,
+} from "pipeline/monitor/fcl/util/ODataPath";
 import { getEntityContext, invokeBoundAction, invokeBoundFunction, invokeUnboundAction, parseODataJsonValue } from "pipeline/monitor/fcl/util/ODataAction";
 import { getText, getTextSync } from "pipeline/monitor/fcl/util/I18n";
 import { getFcl, getSemanticHelper, setFclLayout, syncFclActionButtonsDeferred, isMidColumnFullScreen } from "pipeline/monitor/fcl/util/FclHelper";
@@ -31,7 +37,6 @@ import {
     formatJson,
     formatTimestamp,
     formatRelativeTime,
-    placeholder,
     runDuration,
     errorPreview,
     isScheduleEnabled,
@@ -175,7 +180,10 @@ export default class Detail extends Controller {
 
         this.getView().bindElement({
             path: pipelinesEntity(name),
-            parameters: { $expand: "runs" },
+            parameters: {
+                $select: `${PIPELINE_DETAIL_SELECT},runs`,
+                $expand: PIPELINE_RUNS_EXPAND,
+            },
             events: {
                 dataRequested: () => detail.setProperty("/busy", true),
                 dataReceived: () => {
@@ -703,8 +711,11 @@ export default class Detail extends Controller {
     runDuration = runDuration;
     errorPreview = errorPreview;
 
-    formatLastRun(value: string | number | Date | null): string {
-        return value != null && value !== "" ? formatRelativeTime(value) : placeholder(null, "Never run yet");
+    formatLastRun(value: unknown): string {
+        if (value == null || value === "") {
+            return getTextSync(this, "neverRun");
+        }
+        return formatRelativeTime(value) || getTextSync(this, "neverRun");
     }
 
     formatStatusLabel(status: string): string {

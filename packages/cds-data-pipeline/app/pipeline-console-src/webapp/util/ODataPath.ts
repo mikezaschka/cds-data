@@ -1,3 +1,18 @@
+/**
+ * Explicit OData $select lists for Pipeline Console bindings.
+ * autoExpandSelect misses Timestamp fields on programmatic bindElement / $expand.
+ */
+export const PIPELINES_LIST_SELECT =
+    "name,description,status,mode,schedule,enabled,lastSync,errorCount";
+
+export const PIPELINE_DETAIL_SELECT =
+    "name,description,status,enabled,schedule,mode,lastSync,lastKey,origin,source,target,errorCount,lastError,statistics_created,statistics_updated,statistics_deleted";
+
+export const PIPELINE_RUNS_LIST_SELECT =
+    "ID,startTime,endTime,status,trigger,mode,origin,error,statistics_created,statistics_updated,statistics_deleted";
+
+export const PIPELINE_RUNS_EXPAND = `runs($select=${PIPELINE_RUNS_LIST_SELECT})`;
+
 export function pipelinesEntity(name: string): string {
     return `/Pipelines('${String(name).replace(/'/g, "''")}')`;
 }

@@ -22,6 +22,9 @@
                             noDataText="{i18n>noPipelines}" updateFinished="onTableUpdateFinished"
                             items="{
                                 path: '/Pipelines',
+                                parameters: {
+                                    $select: 'name,description,status,mode,schedule,enabled,lastSync,errorCount'
+                                },
                                 sorter: { path: 'name' },
                                 templateShareable: false
                             }">
@@ -67,7 +70,7 @@
                                         </HBox>
                                         <Text text="{mode}" />
                                         <Text text="{ parts: [{path:'schedule'},{path:'enabled', targetType:'any'}], formatter: '.formatScheduleCellLabel' }" />
-                                        <Text text="{ path: 'lastSync', formatter: '.formatLastRun' }" />
+                                        <Text text="{ path: 'lastSync', targetType: 'any', formatter: '.formatLastRun' }" />
                                         <Text text="{ path: 'errorCount', formatter: '.formatCount' }" textAlign="End" />
                                     </cells>
                                 </ColumnListItem>

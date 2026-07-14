@@ -260,11 +260,11 @@ export default class Master extends Controller {
         return this.isScheduleEnabled(enabled) ? "Success" : "Warning";
     }
 
-    formatLastRun(value: string | number | Date | null): string {
+    formatLastRun(value: unknown): string {
         if (value == null || value === "") {
             return getTextSync(this, "neverRun");
         }
-        return formatRelativeTime(value);
+        return formatRelativeTime(value) || getTextSync(this, "neverRun");
     }
 
     formatCount(value: unknown): string {

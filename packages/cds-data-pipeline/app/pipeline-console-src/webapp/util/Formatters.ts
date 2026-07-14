@@ -1,4 +1,5 @@
 import type { ValueState } from "sap/ui/core/library";
+import DateTimeOffset from "sap/ui/model/odata/type/DateTimeOffset";
 
 function normalizeStatus(status: unknown): string {
     return String(status ?? "").trim().toLowerCase();
@@ -112,13 +113,38 @@ export function formatJson(json: string | null | undefined): string {
     }
 }
 
-function toTimestamp(value: string | number | Date | null | undefined): number | null {
+/** CAP / OData V4 DateTimeOffset uses millisecond precision (metadata precision 7). */
+let oDataDateTimeOffset: DateTimeOffset | undefined;
+
+function getODataDateTimeOffsetType(): DateTimeOffset {
+    if (!oDataDateTimeOffset) {
+        oDataDateTimeOffset = new DateTimeOffset(
+            {},
+            { precision: 7, V4: true, nullable: true },
+        );
+    }
+    return oDataDateTimeOffset;
+}
+
+function isDateLike(value: unknown): value is { getTime: () => number } {
+    return (
+        typeof value === "object"
+        && value !== null
+        && typeof (value as { getTime?: () => number }).getTime === "function"
+    );
+}
+
+function toTimestamp(value: unknown): number | null {
     if (value == null || value === "") {
         return null;
     }
     if (value instanceof Date) {
         const time = value.getTime();
         return Number.isNaN(time) ? null : time;
+    }
+    if (isDateLike(value)) {
+        const time = value.getTime();
+        return Number.isFinite(time) ? time : null;
     }
     if (typeof value === "number") {
         if (!Number.isFinite(value)) {
@@ -142,15 +168,22 @@ function toTimestamp(value: string | number | Date | null | undefined): number |
     return Number.isNaN(time) ? null : time;
 }
 
-export function formatTimestamp(value: string | number | Date | null | undefined): string {
-    const time = toTimestamp(value);
-    if (time == null) {
+export function formatTimestamp(value: unknown): string {
+    if (value == null || value === "") {
         return "";
     }
-    return new Date(time).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    try {
+        return getODataDateTimeOffsetType().formatValue(value, "string");
+    } catch {
+        const time = toTimestamp(value);
+        if (time == null) {
+            return "";
+        }
+        return new Date(time).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    }
 }
 
-export function formatRelativeTime(value: string | number | Date | null | undefined): string {
+export function formatRelativeTime(value: unknown): string {
     const time = toTimestamp(value);
     if (time == null) {
         return "";
@@ -176,7 +209,7 @@ export function formatRelativeTime(value: string | number | Date | null | undefi
     return `${days}d ago`;
 }
 
-export function runDuration(start: string | number | Date | null, end: string | number | Date | null): string {
+export function runDuration(start: unknown, end: unknown): string {
     const startTime = toTimestamp(start);
     const endTime = toTimestamp(end);
     if (startTime == null || endTime == null) {

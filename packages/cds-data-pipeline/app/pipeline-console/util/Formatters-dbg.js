@@ -1,4 +1,4 @@
-sap.ui.define([], function () {
+sap.ui.define(["sap/ui/model/odata/type/DateTimeOffset"], function (DateTimeOffset) {
   "use strict";
 
   function normalizeStatus(status) {
@@ -84,6 +84,22 @@ sap.ui.define([], function () {
       return String(json);
     }
   }
+
+  /** CAP / OData V4 DateTimeOffset uses millisecond precision (metadata precision 7). */
+  let oDataDateTimeOffset;
+  function getODataDateTimeOffsetType() {
+    if (!oDataDateTimeOffset) {
+      oDataDateTimeOffset = new DateTimeOffset({}, {
+        precision: 7,
+        V4: true,
+        nullable: true
+      });
+    }
+    return oDataDateTimeOffset;
+  }
+  function isDateLike(value) {
+    return typeof value === "object" && value !== null && typeof value.getTime === "function";
+  }
   function toTimestamp(value) {
     if (value == null || value === "") {
       return null;
@@ -91,6 +107,10 @@ sap.ui.define([], function () {
     if (value instanceof Date) {
       const time = value.getTime();
       return Number.isNaN(time) ? null : time;
+    }
+    if (isDateLike(value)) {
+      const time = value.getTime();
+      return Number.isFinite(time) ? time : null;
     }
     if (typeof value === "number") {
       if (!Number.isFinite(value)) {
@@ -114,14 +134,21 @@ sap.ui.define([], function () {
     return Number.isNaN(time) ? null : time;
   }
   function formatTimestamp(value) {
-    const time = toTimestamp(value);
-    if (time == null) {
+    if (value == null || value === "") {
       return "";
     }
-    return new Date(time).toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short"
-    });
+    try {
+      return getODataDateTimeOffsetType().formatValue(value, "string");
+    } catch {
+      const time = toTimestamp(value);
+      if (time == null) {
+        return "";
+      }
+      return new Date(time).toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short"
+      });
+    }
   }
   function formatRelativeTime(value) {
     const time = toTimestamp(value);

@@ -7,6 +7,10 @@ function toTimestamp(value) {
         const time = value.getTime()
         return Number.isNaN(time) ? null : time
     }
+    if (typeof value === 'object' && value !== null && typeof value.getTime === 'function') {
+        const time = value.getTime()
+        return Number.isFinite(time) ? time : null
+    }
     if (typeof value === 'number') {
         if (!Number.isFinite(value)) return null
         return Math.abs(value) < 1e12 ? value * 1000 : value
@@ -64,5 +68,10 @@ describe('formatRelativeTime', () => {
     it('parses OData V2 /Date(ms)/ strings', () => {
         const ms = new Date('2026-07-08T16:33:58.430Z').getTime()
         expect(toTimestamp(`/Date(${ms})/`)).toBe(ms)
+    })
+
+    it('parses Date-like objects without instanceof Date', () => {
+        const ms = new Date('2026-07-08T16:33:58.430Z').getTime()
+        expect(toTimestamp({ getTime: () => ms })).toBe(ms)
     })
 })

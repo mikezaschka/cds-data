@@ -4,6 +4,8 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
   const pipelinesEntity = __pipeline_monitor_fcl_util_ODataPath["pipelinesEntity"];
   const inspectCapabilitiesFunction = __pipeline_monitor_fcl_util_ODataPath["inspectCapabilitiesFunction"];
   const inspectDataFunction = __pipeline_monitor_fcl_util_ODataPath["inspectDataFunction"];
+  const PIPELINE_DETAIL_SELECT = __pipeline_monitor_fcl_util_ODataPath["PIPELINE_DETAIL_SELECT"];
+  const PIPELINE_RUNS_EXPAND = __pipeline_monitor_fcl_util_ODataPath["PIPELINE_RUNS_EXPAND"];
   const getEntityContext = __pipeline_monitor_fcl_util_ODataAction["getEntityContext"];
   const invokeBoundAction = __pipeline_monitor_fcl_util_ODataAction["invokeBoundAction"];
   const invokeBoundFunction = __pipeline_monitor_fcl_util_ODataAction["invokeBoundFunction"];
@@ -25,7 +27,6 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
   const formatJson = __pipeline_monitor_fcl_util_Formatters["formatJson"];
   const formatTimestamp = __pipeline_monitor_fcl_util_Formatters["formatTimestamp"];
   const formatRelativeTime = __pipeline_monitor_fcl_util_Formatters["formatRelativeTime"];
-  const placeholder = __pipeline_monitor_fcl_util_Formatters["placeholder"];
   const runDuration = __pipeline_monitor_fcl_util_Formatters["runDuration"];
   const errorPreview = __pipeline_monitor_fcl_util_Formatters["errorPreview"];
   const isScheduleEnabled = __pipeline_monitor_fcl_util_Formatters["isScheduleEnabled"];
@@ -124,7 +125,8 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
         this.getView().bindElement({
           path: pipelinesEntity(name),
           parameters: {
-            $expand: "runs"
+            $select: `${PIPELINE_DETAIL_SELECT},runs`,
+            $expand: PIPELINE_RUNS_EXPAND
           },
           events: {
             dataRequested: () => detail.setProperty("/busy", true),
@@ -625,7 +627,10 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/core/Fragment", "sap/m/Mess
       }
     },
     formatLastRun: function _formatLastRun(value) {
-      return value != null && value !== "" ? formatRelativeTime(value) : placeholder(null, "Never run yet");
+      if (value == null || value === "") {
+        return getTextSync(this, "neverRun");
+      }
+      return formatRelativeTime(value) || getTextSync(this, "neverRun");
     },
     formatStatusLabel: function _formatStatusLabel(status) {
       const key = String(status ?? "").trim().toLowerCase();

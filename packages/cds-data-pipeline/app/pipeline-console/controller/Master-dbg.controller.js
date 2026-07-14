@@ -220,7 +220,7 @@ sap.ui.define(["sap/ui/core/mvc/Controller", "sap/ui/model/Filter", "sap/ui/mode
       if (value == null || value === "") {
         return getTextSync(this, "neverRun");
       }
-      return formatRelativeTime(value);
+      return formatRelativeTime(value) || getTextSync(this, "neverRun");
     },
     formatCount: function _formatCount(value) {
       if (value === null || value === undefined || value === "") {
