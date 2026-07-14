@@ -71,7 +71,7 @@
     "@cap-js/cds-test": "^1",
     "@cap-js/postgres": "^2.3.0",
     "@cap-js/sqlite": "^3",
-    "@sapui5/types": "^1.120.0",
+    "@sapui5/types": "^1.150.0",
     "@sap/cds-dk": "^9",
     "@ui5/cli": "^4.0.0",
     "typescript": "^5.0.0",

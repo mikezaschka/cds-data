@@ -10,7 +10,7 @@ const { copy, path, write, fs } = cds.utils
 const { join } = path
 
 const APP_ID = 'cds.plugin.data_pipeline.console'
-const UI5_VERSION = '1.120.0'
+const UI5_VERSION = '1.150.0'
 
 function resolveModuleId() {
     const project = cds.add?.readProject?.()
