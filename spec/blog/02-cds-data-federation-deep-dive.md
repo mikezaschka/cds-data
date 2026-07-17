@@ -1,945 +1,699 @@
 ---
-title: "cds-data-federation in depth — alternatives, a reproducible xflights demo, and an agent-driven scaffold"
-description: "A deep dive into @federation.delegate and @federation.replicate, how they relate to SAP and community alternatives (xtravels, Risk Management, HANA SDA, Datasphere, SAP Graph, cds-caching, @cap-js-community/common), plus a fully reproducible travel-extension demo on top of SAP's @capire/xflights provider, built two ways: by hand, then by an AI coding agent."
-date: 2026-05-23
+title: "The Full Picture: Federating, Replicating, and Caching Remote Data in CAP — Part 2: Hands-On"
+description: "Part 2 of 2: a step-by-step walkthrough. We build a Sales Cockpit that blends a public OData service, local data, and a second native CAP service — delegation, caching, replication, the pipeline console, and CQL queries from cds repl. At every step: what is standard CAP, and what the plugins add."
+date: 2026-07-16
 author: Mike Zaschka
-tags: [SAP CAP, cds-data-federation, side-by-side extensions, xflights, xtravels, AI coding agents]
+tags: [SAP CAP, cds-data-federation, cds-data-pipeline, cds-caching, federation, replication, HCQL, BTP, tutorial]
 ---
 
-# cds-data-federation in depth — alternatives, a reproducible xflights demo, and an agent-driven scaffold
+# The Full Picture: Federating, Replicating, and Caching Remote Data in CAP — Part 2: Hands-On
 
-> **Series — part 2 of 2.** [Part 1](./01-introducing-cds-data.md) introduced the toolkit. This post zooms into the federation plugin: how the two strategies behave, how they map to existing SAP and community options, and how to build the same demo project twice — once by hand, once by an AI coding agent.
+[Part 1](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-1/ba-p/14402349) covered the theory: what federation, delegation, and replication mean, what CAP provides out of the box, and how a combined set of plugins closes the gaps. This post is the practical counterpart — we build a small but complete application, step by step.
 
-The shape of a CAP side-by-side extension is reasonably stable. There is a remote SAP service (S/4HANA Cloud, SuccessFactors, Ariba, Concur, an aggregated SAP Graph context, or a reference provider like [`@capire/xflights`](https://github.com/capire/xflights)); a destination or `cds.requires` block wires CAP to it; one or more consumption views project remote entities into the extension's schema; local entities — notes, tags, scoring, approval state, audit logs — sit next to them with managed associations; a Fiori Elements UI consumes the combined model. The thing that varies project to project is the *assembly* between the consumption view and the runtime: read forwarding, write opt-in, cross-service `$expand`, scheduled sync, caching, retry, delta tracking.
+The finished project is on GitHub: **[sales-cockpit](https://github.com/mikezaschka/data-federation-demo)**. The repo contains the final state; every step below documents how to get there, so you can build along or start from the finished app.
 
-`cds-data-federation` exposes that assembly as two annotations on the consumption view: `@federation.delegate` for live forwarding, `@federation.replicate` for scheduled sync. The remaining sections of this post walk through how the annotations behave, what the alternatives are, and how to build a small travel-extension on top of xflights using the plugin — first by hand, then with an AI coding agent.
+One thing I want to make explicit throughout this walkthrough: **which part is standard CAP, and which part comes from the plugins.** The plugins deliberately build *on* CAP's own mechanics — consumption views, query translation, service bindings — rather than replacing them. Each step ends with a short "CAP or plugin?" box so the boundary stays visible. My hope is that by the end you'll see how nicely the pieces snap together.
 
----
+## What we're building
 
-## The two strategies
+A **Sales Cockpit** for an inside-sales team. It starts as an empty CAP app and progressively blends:
 
-Pick one annotation per consumption view:
-
-| Strategy | Annotation | Behavior | Reach for it when |
-|---|---|---|---|
-| **Delegate** | `@federation.delegate` | Live proxy. Every read goes to the remote at request time. CUD opt-in per operation. | The data must be strictly consistent with the system of record, writes must land in S/4HANA / SuccessFactors / Ariba, or the dataset is too large to copy. |
-| **Replicate** | `@federation.replicate` | Scheduled sync into the local DB. Subsequent reads served from local SQL. | Joins across local and remote, analytics and aggregations, resilience during remote outages, offline capability. |
-
-Caching is orthogonal to the strategy, configured as an option on either annotation:
-
-- `cache.strategy: 'response'` — TTL-keyed response cache via [`cds-caching`](https://github.com/mikezaschka/cds-caching). Fits when the same query repeats inside the TTL window.
-- `cache.strategy: 'entity'` — full-entity SQLite snapshot refreshed on TTL miss, backed by `cds-data-pipeline`. Fits when arbitrary queries against the same entity repeat inside the TTL window.
-
-The full annotation reference (every option, type, default) lives at [Federation → Annotations](https://mikezaschka.github.io/cds-data/federation/reference/annotations).
-
----
-
-## What the federation plugin does inside the CAP runtime
-
-At `cds.on('loaded')`, the scanner walks CSN for `@federation.*` annotations and extracts:
-
-- **Source service** — from the `projection on remoteService.RemoteEntity` clause.
-- **Projected columns** — the upper bound for `$select` on remote calls.
-- **Bidirectional rename mapping** — `localToRemote` for outbound queries, `remoteToLocal` for inbound responses, derived from the `as` clauses.
-- **Strategy and options** — `delegate` vs. `replicate`, and any `cache`, `writable`, `schedule`, `delta`, `rest` sub-options.
-
-At `cds.once('served')`:
-
-- For each `@federation.delegate` entity the plugin registers an `on('READ', Entity, …)` handler (plus optional `on('CREATE' | 'UPDATE' | 'DELETE', …)` if the CUD flags are set). The handler clones `req.query`, applies the rename map and column restriction, and calls `remote.run(query)`. Cross-service `$expand` items are stripped, executed separately against the correct service, then stitched on the foreign key.
-- For each `@federation.replicate` entity the plugin calls `addPipeline({ … })` on `DataPipelineService` via `srv/pipeline-binding.js`. The entity-shape config gives the engine enough information to derive `kind: 'replicate'` and `mode: 'delta'`.
-
-Both flows ride on the [Calesi pattern](https://cap.cloud.sap/docs/get-started/concepts#the-calesi-pattern). The remote service is a CAP service like any other; CAP handles destination resolution, mocking, and the OData → CQN translation. The plugin adds the rename map, column restriction, cross-service stitching, CUD opt-in, schedule, delta tracking, and the pipeline binding.
-
----
-
-## A worked example: a personal travel extension on top of xflights
-
-[`@capire/xflights`](https://github.com/capire/xflights) is SAP's reference master-data provider for flights, airlines, airports, and supplements. It is the same provider [xtravels](https://github.com/capire/xtravels) consumes in the SAP-blessed federation sample, so the entity shape, naming, and OData V4 surface are exactly what a real CAP federation looks like in practice. It also has the practical advantage of being clonable and runnable locally — no destination, no API key, no SAP API Hub registration.
-
-The demo below is a small **travel-extension app** sitting next to xflights: live airline lookups, a cached airport list for autocomplete, a replicated flight schedule for SQL-side analytics, plus local-owned entities (a watchlist, bookings, and notes) joined to the federated data through cross-service `$expand`.
-
-### Domain shape
+- **Live remote data** — Customers from the public Northwind OData V4 service, proxied at query time (delegate).
+- **Local data** — the reps' own `CustomerNotes`, merged with the live remote customers via `$expand` in both directions.
+- **Cached lookups** — two delegated entities showing both cache flavors: `Suppliers` (response cache via cds-caching) and `Products` (entity cache, a local snapshot).
+- **Replicated analytics** — Northwind Orders synced into local tables on a schedule, joinable with everything else in plain SQL.
+- **A second, native CAP system** — an FX rate service, consumed over CAP's brand-new **HCQL** protocol and replicated the exact same way as the external OData source.
+- **Event-driven refresh** — a single updated FX rate emits a CAP event that triggers a targeted single-record sync, no waiting for the schedule.
+- **A third source type: plain REST** — a shipment-tracking API with no CDS model, replicated with pagination, a delta parameter, and a field-mapping hook.
+- **Observability** — the built-in Pipeline Console.
+- **A custom REST API** — a hand-written endpoint whose custom handler combines live, local, and replicated reads in one response.
+- **And as a finale** — the same federated data queried interactively with CQL from `cds repl`, and (optionally) by an AI agent over MCP.
 
 ```
-xflights provider (port 4444)                  Travel extension (port 4004)
-───────────────────────────────                ───────────────────────────────
-sap.capire.flights.data
-  Airlines   ────────────────────────────────►   Airlines           (@federation.delegate)
-  Airports   ────────────────────────────────►   Airports           (@federation.delegate
-                                                                      + 30s response cache)
-  Flights    ────────────────────────────────►   ReplicatedFlights  (@federation.replicate
-                                                                      every 10 min)
-  Supplements ───────────────────────────────►   Supplements        (@federation.delegate)
-
-                                               local entities (SQLite)
-                                                 Bookings           ─► assoc to Airlines + Airports (delegate)
-                                                 FlightWatchlist    ─► assoc to ReplicatedFlights (local SQL)
-                                                 AirportNotes       ─► assoc to Airports (delegate)
-                                                 AircraftStats      ─► GROUP BY over ReplicatedFlights (local SQL)
-                                                 AvailableFlights   ─► filtered read model on ReplicatedFlights
+┌──────────────────────────────────────────────────────────────────────┐
+│  SalesCockpit                    (CAP, SQLite, port 4004)            │
+│                                                                      │
+│  local DB ──── CustomerNotes                                         │
+│                                                                      │
+│  delegate ──── Northwind V4 (public) → Customers, GermanCustomers    │
+│                  ├─ Suppliers with cache: { strategy: 'response' }   │
+│                  └─ Products  with cache: { strategy: 'entity' }     │
+│                                                                      │
+│  replicate ─┬── Northwind V4 (public)  → SalesOrders   ── OData      │
+│             ├── FX service (CAP app)   → ExchangeRates ── HCQL       │
+│             └── Tracking API (no CDS!) → Shipments     ── plain REST │
+│                                                                      │
+│  local view ── FreightByCountryEUR (SQL join over two remotes)       │
+│                                                                      │
+│  event ─────── FXService.RateChanged → single-record micro-run       │
+│                                                                      │
+│  REST API ──── /api/customerBrief (custom handler, 3 read paths)     │
+│                                                                      │
+│  pipeline ──── tracker tables + /pipeline-console/                   │
+└──────────────────────────────────────────────────────────────────────┘
+         │                    │                        │
+  services.odata.org   FX service (CAP,       tracking-api (plain
+  (OData V4, public)   @hcql, port 4005)      Node.js, port 4006)
 ```
 
-`ReplicatedFlights` is the analytics view: SQL aggregations and `$apply` over the flight schedule are impractical over a live remote, so the engine keeps a local copy refreshed every 10 minutes. **`AircraftStats`** and **`AvailableFlights`** are read models on top of that local table — they only return data after a successful sync. **`FlightWatchlist`** stores price alerts with a managed association to **`ReplicatedFlights`** (composite key `ID` + `date`), so you can `$expand=flight` without calling xflights again. `Bookings` and `AirportNotes` stay on the delegate side for cross-service expand into live master data.
+**Prerequisites:** Node.js ≥ 22, `@sap/cds` 10 (the HCQL step needs it on both apps; everything else also runs on CDS 9), `@sap/cds-dk` globally, and network access to `services.odata.org`. I'll use the VS Code REST Client — the repo ships a [`requests.http`](https://github.com/mikezaschka/data-federation-demo/blob/main/requests.http) with every request from this post.
 
-### The consumption views
+## Step 0 — Scaffold a fresh app
 
-```cds title="srv/travel-service.cds"
-using from 'cds-data-pipeline/db';
-using from 'cds-data-pipeline/srv/DataPipelineManagementService';
-using { sap.capire.flights.data as flights } from './external/data-service';
+```bash
+cds init sales-cockpit
+cd sales-cockpit
+cds add nodejs sqlite
+cds watch          # → empty app on http://localhost:4004
+```
 
-namespace travel;
+A standard, empty CAP app with a file-backed SQLite database. Nothing to see yet — which is the point. Let's give it data it doesn't own.
 
-service TravelService {
+> **CAP or plugin?** 100% standard CAP. The file-backed SQLite matters later: replicated tables, the entity cache, and the pipeline tracker will survive restarts.
 
-  // 1. Live delegate — every read forwards to xflights.
-  //    Field names match the imported OData CSN (currency/country/type are flattened to *_code).
-  @federation.delegate
-  entity Airlines as projection on flights.Airlines {
-      ID,
-      name,
-      icon,
-      currency_code
-  };
+## Step 1 — Import the remote service
 
-  // 2. Live delegate + 30-second response cache — used by an autocomplete widget.
-  @federation.delegate: { cache: { ttl: 30000 } }
-  entity Airports as projection on flights.Airports {
-      ID            as code,
-      name          as fullName,
-      city,
-      country_code  as country
-  };
+Northwind plays the role of the ERP-style backend. Download its metadata once and import it (the `.edmx` is also [committed to the repo](https://github.com/mikezaschka/data-federation-demo/blob/main/sales-cockpit/srv/external/northwind-v4.edmx) in case the public service is down):
 
-  // 3. Live delegate — supplements catalog.
-  @federation.delegate
-  entity Supplements as projection on flights.Supplements {
-      ID,
-      type_code    as type,
-      descr        as description,
-      price,
-      currency_code
-  };
+```bash
+curl -sL 'https://services.odata.org/V4/Northwind/Northwind.svc/$metadata' -o northwind-v4.edmx
+cds import northwind-v4.edmx --as cds
+```
 
-  // 4. Scheduled replication every 10 minutes for SQL-side analytics.
-  //    Flights has a composite key (ID, date) — both keys are projected.
-  //    mode: 'full' because the xflights Flights OData view excludes modifiedAt
-  //    (no reliable delta watermark on the wire). First boot still needs a manual
-  //    POST /pipeline/execute — see requests/travel-extension.http.
-  @federation.replicate: { schedule: 600000, mode: 'full' }
-  entity ReplicatedFlights as projection on flights.Flights {
-      ID,
-      date,
-      aircraft,
-      price,
-      currency_code,
-      maximum_seats,
-      occupied_seats,
-      free_seats,
-      airline_ID,
-      origin_ID,
-      destination_ID
-  };
+Then tell CAP where the real service lives:
 
-  // 5. Read models over the replicated table — SQL views, not sibling tables.
-  //    Empty until the first sync completes. cds-data-federation clears inherited
-  //    @cds.persistence.table on projections/selects over @federation.replicate targets.
-  @readonly
-  entity AvailableFlights as projection on ReplicatedFlights {
-      ID,
-      date,
-      aircraft,
-      price,
-      currency_code,
-      free_seats,
-      airline_ID,
-      origin_ID,
-      destination_ID
-  } where free_seats > 0;
-
-  @readonly
-  entity AircraftStats as select from ReplicatedFlights {
-      aircraft,
-      count(*)          as flightCount    : Integer,
-      avg(price)        as avgPrice       : Decimal(9, 4),
-      sum(free_seats)   as totalFreeSeats : Integer
-  } group by aircraft;
-
-  // 6. Local-owned entities with associations to federated ones.
-  entity Bookings {
-      key ID               : UUID;
-          passengerName    : String(100);
-          airline          : Association to Airlines;
-          departureAirport : Association to Airports;
-          arrivalAirport   : Association to Airports;
-          bookedAt         : Timestamp;
-  }
-
-  entity FlightWatchlist {
-      key ID         : UUID;
-          flight       : Association to ReplicatedFlights;
-          watchedBy    : String(100);
-          maxPrice     : Decimal(9, 4);
-          createdAt    : Timestamp;
-  }
-
-  entity AirportNotes {
-      key ID        : UUID;
-          airport   : Association to Airports;
-          author    : String(100);
-          subject   : String(200);
-          body      : String(2000);
-          createdAt : Timestamp;
-  }
-
+```jsonc
+// package.json → cds.requires
+"northwind_v4": {
+  "kind": "odata",
+  "model": "srv/external/northwind-v4",
+  "credentials": { "url": "https://services.odata.org/V4/Northwind/Northwind.svc" }
 }
 ```
 
-Four `@federation.*` consumption views, two read models over the replicated table, three local entities. No JavaScript handler file — but `@federation.replicate` needs the pipeline **tracker** tables in your database (`using from 'cds-data-pipeline/db'`) and the **management OData** surface at `/pipeline` (`using from 'cds-data-pipeline/srv/DataPipelineManagementService'`) for manual sync and run history (see Step 4).
-
-### What this gives you, query by query
-
-After Step 6 you run these from [VS Code REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) or the built-in HTTP request editor (`.http` files). The teaching sequence is: sync replicated flights first, then query local analytics and `$expand` into the replicated copy.
-
-```http title="requests/travel-extension.http (excerpt)"
-@base = http://localhost:4004
-@travel = {{base}}/odata/v4/travel
-
-### Live airline read — one HTTP request to xflights
-GET {{travel}}/Airlines?$top=5
-
-### Cached airport autocomplete — run twice within 30s; second response is from cds-caching
-GET {{travel}}/Airports?$filter=startswith(code,'F')&$select=code,fullName,city
-
-### Bootstrap replication (required before ReplicatedFlights / AircraftStats return rows)
-POST {{base}}/pipeline/execute
-Content-Type: application/json
-
-{ "name": "ReplicatedFlights", "mode": "full", "trigger": "manual" }
-
-### Local SQL over the replicated schedule — no remote call
-GET {{travel}}/ReplicatedFlights?$top=5&$orderby=price desc
-
-### GROUP BY / $apply — rejected on delegate entities; works on replicated data
-GET {{travel}}/AircraftStats?$orderby=avgPrice desc
-
-### Filtered read model — only flights with free seats in the local copy
-GET {{travel}}/AvailableFlights?$top=10
-
-### Local booking with cross-service $expand into live delegate entities
-GET {{travel}}/Bookings?$expand=airline,departureAirport,arrivalAirport
-
-### Watchlist row with $expand into the replicated flight (local SQL join, no xflights call)
-GET {{travel}}/FlightWatchlist?$expand=flight
-```
-
-### Triggering replication and inspecting the tracker
-
-The pipeline engine exposes a management OData service at `/pipeline` once you included `using from 'cds-data-pipeline/srv/DataPipelineManagementService'`:
-
-```http title="requests/travel-extension.http (pipeline section)"
-@base = http://localhost:4004
-
-### Trigger a full sync (independent of the 10-minute schedule)
-POST {{base}}/pipeline/execute
-Content-Type: application/json
-
-{ "name": "ReplicatedFlights", "mode": "full", "trigger": "manual" }
-
-### Inspect pipelines and their last-run state
-GET {{base}}/pipeline/Pipelines?$select=name,status,lastSync,errorCount
-
-### Drill into individual runs
-GET {{base}}/pipeline/PipelineRuns?$orderby=startTime desc&$top=10
-
-### Convenience function for one pipeline
-GET {{base}}/pipeline/status(name='ReplicatedFlights')
-```
-
-`PipelineRuns` carries `status`, `startTime`, `endTime`, row statistics, and any error message. The same data is also available programmatically through the `DataPipelineService` API — useful when an action handler or a Fiori extension UI needs to surface sync state.
-
-### Cross-service `$expand` mechanics
-
-The `$expand=airline,departureAirport,arrivalAirport` query above is the most interesting one: a local entity with three federated expand items, all against the same provider. The plugin handles all four expand topologies — see the table below — and the full reference with mermaid diagrams lives at [Cross-Service Scenarios](https://mikezaschka.github.io/cds-data/federation/concepts/cross-service-scenarios).
-
-| Topology | Main entity | Expand target | Mechanism |
-|---|---|---|---|
-| Delegated expand | `@federation.delegate` | `@federation.delegate` (same provider) | Forward the full query; rename map applied to inner items. |
-| Cross-service expand: local → remote | local or `@federation.replicate` | `@federation.delegate` | Strip the expand item, run local SQL, batch-fetch by FK, stitch. |
-| Cross-service expand: remote → local | `@federation.delegate` | local or `@federation.replicate` | Run the remote query, batch-fetch the local side by FK, stitch. |
-| Cross-service expand: cross-provider | local or `@federation.replicate` | `@federation.delegate` (multiple providers) | One batch-fetch per provider; stitch all sides. |
-
-In every cross-service flow the remote side is `@federation.delegate`. The local side can be plain local CAP or `@federation.replicate` — both look like ordinary local tables at query time.
-
----
-
-## Where the plugin sits, and what to pick when
-
-### Application-layer alternatives — same architectural neighborhood
-
-These options live inside the CAP app, like `cds-data-federation` does:
-
-| Alternative | What it is | Pick it when |
-|---|---|---|
-| [**xtravels**](https://github.com/capire/xtravels) (SAP Service Integration reference sample) | Travel-booking consumer for [xflights](https://github.com/capire/xflights). Delegation via `on('READ', Entity, req => remote.run(req.query))` and a generic `@federated` handler in [`srv/data-federation.js`](https://github.com/capire/xtravels/blob/main/srv/data-federation.js). | One or two federated entities, zero plugin dependencies, full handler ownership. The Part A walkthrough below uses xflights as the same provider so the two patterns are directly comparable. |
-| [**Risk Management — ext-service branch**](https://github.com/SAP-samples/cloud-cap-risk-management/tree/ext-service-s4hc-suppliers-ui) | SAP's S/4HANA mashup sample. Five handlers in [`risk-service.js`](https://github.com/SAP-samples/cloud-cap-risk-management/blob/ext-service-s4hc-suppliers-ui/srv/risk-service.js) cover read delegation, write-back, value helps, navigation, and a mashup. | Extending Risk Management itself or staying close to the SAP-blessed sample shape. |
-| [**Kai Niklas — CAP Remote Services + Fiori Elements**](https://blog.kai-niklas.de/posts/9-sap-cap-remote-services-fiori-elements/) | End-to-end blog with EDMX import, consumption view, Fiori UI. | A tutorial-level introduction to the same recipe, no plugin adoption. |
-| [**Gregor Wolf — cap-replication-demo**](https://github.com/gregorwolf/cap-replication-demo) | Replication-focused demo against `API_BUSINESS_PARTNER`: action-triggered load, offset pagination loop driven by `$count`, per-entity column projection, `UPSERT().into()`, event-driven upsert on `sap.s4.beh.businesspartner.v1.BusinessPartner.Changed.v1` via [Event Mesh](https://help.sap.com/docs/SAP_EM). | A canonical reference for the moving parts that a scheduled-sync plugin contributes — useful side-by-side before adopting `@federation.replicate`. |
-| [**`@cap-js-community/common`** (Replication Cache)](https://github.com/cap-js-community/common) | Loads a full entity dataset into a per-tenant SQLite file on first access; serves subsequent queries from the snapshot within a TTL. Declarative via `@cds.replicate`. | Entity-level caching as the single concern, no field renames, no cross-service `$expand`, preference for that specific community package. Functionally close to `cds-data-federation`'s `cache.strategy: 'entity'`. |
-| [**`cds-caching`**](https://github.com/mikezaschka/cds-caching) | Response-level cache for CAP services. | TTL-keyed caching on identical queries. The plugin's default `cache.strategy: 'response'` rides on this package. |
-
-The [federation comparison matrix](https://mikezaschka.github.io/cds-data/federation/reference/comparison) puts these side-by-side row by row.
-
-### Database-layer alternatives — integration in HANA Cloud
-
-[HANA synonyms](https://cap.cloud.sap/docs/advanced/hana#native-hana-features) (`.hdbsynonym`) alias a table or view in another HANA schema. Common in CAP HDI containers paired with an S/4HANA CDS view schema. [HANA Smart Data Access](https://help.sap.com/docs/SAP_HANA_PLATFORM/6b94445c94ae495c83a19646e7c3fd56/6ce5a8dc7c0f44e28f12ff09db93b45c.html) provides virtual tables federating remote HANA, MSSQL, Oracle, Postgres into the HANA query engine.
-
-Pick a DB-layer option when the integration boundary belongs in the database — native joins, query pushdown, queries that stay within HANA. The application layer comes back into play when the contract needs field renames, cross-service `$expand`, opt-in CUD, or a scheduler with delta tracking.
-
-### Platform-layer alternatives — integration outside the CAP app
-
-| Option | Pick it when |
-|---|---|
-| [**SAP Business Data Cloud**](https://www.sap.com/products/data-cloud.html) (umbrella over Datasphere, Databricks integration, Analytics Cloud, Joule agents) | A governed, enterprise-scale data fabric across SAP applications is the target. |
-| [**SAP Datasphere Replication Flow**](https://help.sap.com/docs/SAP_DATASPHERE) | Managed enterprise-scale replication; the closest platform-layer match for `@federation.replicate`. |
-| [**SAP Cloud Integration (Integration Suite)**](https://help.sap.com/docs/integration-suite) | The integration itself is the deliverable — transformation logic, B2B/EDI, A2A messaging, routing, error handling in middleware. Also valid as an upstream producer: CPI exposes a virtualized OData endpoint, the CAP app consumes via `@federation.delegate`. |
-| [**SAP Graph**](https://help.sap.com/docs/SAP_GRAPH) | A harmonized, cross-system read API (One Domain Model) across S/4HANA, SuccessFactors, Ariba, Concur is the deliverable. Orthogonal to the plugin: if SAP Graph exposes OData for a given context, it is a `@federation.delegate` source like any other. |
-| [**SAP Master Data Integration**](https://help.sap.com/docs/SAP_MASTER_DATA_INTEGRATION) | Master-data lifecycle (CRUD propagation, soft-delete, cross-system harmonization) is the problem. Architecturally similar to SAP Graph from the plugin's perspective — OData APIs on BTP, candidate `@federation.delegate` / `@federation.replicate` source. Natural pairing with MDI-emitted change events on [Event Mesh](https://help.sap.com/docs/SAP_EM). |
-| Generic CDC / ETL — [Debezium](https://debezium.io/), [Airflow](https://airflow.apache.org/), [dbt](https://www.getdbt.com/) | Heterogeneous data pipelines across many consumers are the deliverable and the CAP app is just one of them. |
-
-### A decision tree
-
-```
-                       Where does the integration contract live?
-                                          │
-        ┌─────────────────────────────────┼───────────────────────────────┐
-        │                                 │                               │
-   in the database                  in the CAP app                in a data platform
-        │                                 │                               │
-   HANA SDA /                              │                       Business Data Cloud /
-   synonyms                                │                       Datasphere /
-                                           │                       Integration Suite /
-                                           │                       SAP Graph /
-                                           │                       Master Data Integration /
-                                           │                       Debezium, Airflow, dbt
-                                           │
-            ┌──────────────────────────────┼──────────────────────────────┐
-            │                              │                              │
-       live reads?                  scheduled sync?              one or two entities only?
-            │                              │                              │
-            ▼                              ▼                              ▼
-  @federation.delegate         @federation.replicate              xtravels recipe
-  (+ optional cache:           (+ cds-data-pipeline                (handler per entity)
-   response or entity)           under the hood)
-```
-
----
-
-## Part A — Build the demo by hand
-
-This walkthrough produces the project described above. It runs end-to-end on a single laptop with two terminals: one for the xflights provider, one for the federated consumer. No SAP API Hub, no destinations, no auth.
-
-### Prerequisites
-
-- Node.js 24+
-- `@sap/cds-dk` 8+ installed globally (`npm install -g @sap/cds-dk`)
-- Git
+And install the plugins plus the Cloud SDK connectivity layer CAP uses for outbound HTTP:
 
 ```bash
-node -v        # → v24.x or newer
-cds --version  # → @sap/cds: >= 8
+npm add cds-data-federation
+npm add @sap-cloud-sdk/http-client @sap-cloud-sdk/resilience @sap-cloud-sdk/connectivity
 ```
 
-A workspace folder for the two projects:
+> **CAP or plugin?** Still standard CAP: `cds import`, the external model under `srv/external/`, and the `cds.requires` binding are exactly what the [Service Integration guide](https://cap.cloud.sap/docs/guides/integration/calesi) describes. In production you'd point `credentials` at a BTP destination instead of a URL — also standard. The plugin is installed but hasn't done anything yet.
 
-```bash
-mkdir -p ~/cds-data-demo && cd ~/cds-data-demo
-```
+## Step 2 — Delegate: the projection is the contract
 
-### Step 1 — Run the xflights provider (terminal 1)
+Now the first plugin moment. Expose the remote Customers through your own service — as a plain CDS projection with one annotation:
 
-Clone xflights, install its dependencies, and serve it on port 4444:
+```cds
+// srv/sales-cockpit.cds
+using { northwind_v4 as northwind } from './external/northwind-v4';
 
-```bash
-cd ~/cds-data-demo
-git clone https://github.com/capire/xflights.git provider
-cd provider
-npm install
-npx cds run --port 4444
-```
+service SalesCockpit {
 
-The log ends with something like:
-
-```
-[cds] - server listening on { url: 'http://localhost:4444' }
-[cds] - launched at 12:34:56, version: 9.x.x, in: 1.234s
-[cds] - [ terminate with ^C ]
-```
-
-Quick smoke test — create `requests/provider-smoke.http` in the provider folder (or use REST Client from any `.http` file):
-
-```http title="provider/requests/smoke.http"
-@provider = http://localhost:4444/odata/v4/data
-
-GET {{provider}}/Airports?$top=3&$select=ID,name,city
-###
-GET {{provider}}/Airlines?$top=3
-###
-GET {{provider}}/Flights?$top=3
-```
-
-Each request should return a small JSON payload. Leave this terminal running.
-
-### Step 2 — Bootstrap the federated consumer (terminal 2)
-
-```bash
-cd ~/cds-data-demo
-mkdir consumer && cd consumer
-cds init
-npm add cds-data-federation cds-data-pipeline @cap-js/sqlite
-```
-
-Both plugins auto-activate via their `cds-plugin.js` entry points. No `server.js` wiring required.
-
-### Step 3 — Import the running provider's metadata
-
-`cds import` expects a local metadata file. Fetch `$metadata` from the running provider and save the response body as `xflights.edmx`:
-
-```http title="requests/import-metadata.http"
-GET http://localhost:4444/odata/v4/data/$metadata
-```
-
-In REST Client, use **Save Response Body** on the result (or copy the XML into `xflights.edmx`). Then import:
-
-```bash
-npx cds import xflights.edmx
-```
-
-The import generates CSN/CDS under `srv/external/` and adds a `cds.requires` entry to `package.json`. Rename the block to something friendlier and point it at the running provider:
-
-```json title="package.json (excerpt)"
-"cds": {
-  "requires": {
-    "flights": {
-      "kind": "odata-v4",
-      "model": "srv/external/data-service",
-      "credentials": { "url": "http://localhost:4444/odata/v4/data" }
-    },
-    "db": {
-      "kind": "sqlite",
-      "credentials": { "url": "db.sqlite" }
-    }
-  }
-}
-```
-
-The same model file works against any deployment of xflights — local, BTP, or a destination — by swapping the `credentials` block.
-
-### Step 4 — Declare the consumption views and include the pipeline tracker schema
-
-Create `srv/travel-service.cds` with the contents from the worked example above. Three details matter beyond the federation annotations:
-
-1. **`using from 'cds-data-pipeline/db'`** at the top of the service file. Installing `cds-data-pipeline` registers `DataPipelineService` at runtime, but it does **not** add the tracker entities to your deploy. Without this line, boot fails when federation binds `@federation.replicate` — `SqliteError: no such table: plugin_data_pipeline_Pipelines`. The import pulls `Pipelines` and `PipelineRuns` into the compiled model; `cds deploy` (Step 5) materializes them in SQLite.
-
-2. **`using from 'cds-data-pipeline/srv/DataPipelineManagementService'`** on the same file. This exposes the management OData API at `/pipeline` (`execute`, `Pipelines`, `PipelineRuns`) used in Step 6.
-
-3. The **`using { sap.capire.flights.data as flights }`** clause must match the `cds.requires.flights` block from Step 3:
-
-```cds title="srv/travel-service.cds (excerpt)"
-using from 'cds-data-pipeline/db';
-using from 'cds-data-pipeline/srv/DataPipelineManagementService';
-using { sap.capire.flights.data as flights } from '../@cds-models/flights';
-// or, if you keep the original `cds import` path:
-// using { sap.capire.flights.data as flights } from './external/data-service';
-
-namespace travel;
-
-service TravelService { ... }
-```
-
-### Step 5 — Deploy the local schema and run
-
-```bash
-npx cds deploy --to sqlite:db.sqlite
-npx cds watch --port 4004
-```
-
-The boot log includes:
-
-```
-[cds-data-federation] discovered 4 @federation.* entities
-[cds-data-federation] scheduled replication ReplicatedFlights (every 600000ms)
-[cds-data-pipeline] DataPipelineService served at /pipeline
-[cds] - server listening on { url: 'http://localhost:4004' }
-```
-
-The pipeline tracker tables (`plugin_data_pipeline_Pipelines`, `plugin_data_pipeline_PipelineRuns`) are defined in `packages/cds-data-pipeline/db/index.cds` and enter your SQLite file only because Step 4 included `using from 'cds-data-pipeline/db'`. The plugin performs no runtime DDL.
-
-### Step 6 — Exercise each capability (`.http` requests)
-
-Install the [REST Client](https://marketplace.visualstudio.com/items?itemName=humao.rest-client) extension in VS Code (or use Cursor's built-in HTTP request editor). Create `requests/travel-extension.http` in the consumer project and run requests with **Send Request** above each `###` separator.
-
-Run them top to bottom — replicated read models stay empty until the first `POST /pipeline/execute` succeeds.
-
-```http title="consumer/requests/travel-extension.http"
-@base = http://localhost:4004
-@travel = {{base}}/odata/v4/travel
-
-# ── Delegate reads ───────────────────────────────────────────────────────────
-
-### Live airline read — one HTTP roundtrip to xflights
-GET {{travel}}/Airlines?$top=5
-
-### Cached airport autocomplete — run twice within 30s; second response is from cds-caching
-GET {{travel}}/Airports?$filter=startswith(code,'F')&$select=code,fullName,city
-
-### (repeat the request above to observe a cache hit)
-
-# ── Replication bootstrap ────────────────────────────────────────────────────
-
-### Full sync — required before ReplicatedFlights / AircraftStats / AvailableFlights return rows
-POST {{base}}/pipeline/execute
-Content-Type: application/json
-
-{ "name": "ReplicatedFlights", "mode": "full", "trigger": "manual" }
-
-### Local SQL over the replicated schedule — no remote call
-GET {{travel}}/ReplicatedFlights?$top=5&$orderby=price desc
-
-### GROUP BY read model — only possible on the local replica
-GET {{travel}}/AircraftStats?$orderby=avgPrice desc
-
-### Filtered read model — flights with free seats in the local copy
-GET {{travel}}/AvailableFlights?$top=10
-
-# ── Local entities joined to federated data ──────────────────────────────────
-
-### Create a booking — FK names follow the consumption-view keys (Airports key is `code`, not `ID`)
-POST {{travel}}/Bookings
-Content-Type: application/json
-
-{
-  "passengerName": "Mike",
-  "airline_ID": "GA",
-  "departureAirport_code": "FRA",
-  "arrivalAirport_code": "JFK"
-}
-
-### Cross-service $expand into live delegate entities (three batch-fetches to xflights)
-GET {{travel}}/Bookings?$expand=airline,departureAirport,arrivalAirport
-
-### Watchlist row — assoc to ReplicatedFlights uses composite FK (ID + date); paste values from the replicated GET above
-POST {{travel}}/FlightWatchlist
-Content-Type: application/json
-
-{
-  "watchedBy": "mike",
-  "maxPrice": 299.00,
-  "flight_ID": "GA0322",
-  "flight_date": "2024-06-02"
-}
-
-### $expand into the replicated flight — local SQL join, no xflights call
-GET {{travel}}/FlightWatchlist?$expand=flight
-
-### Airport note with assoc to cached delegate entity
-POST {{travel}}/AirportNotes
-Content-Type: application/json
-
-{
-  "airport_code": "FRA",
-  "author": "mike",
-  "subject": "Lounge",
-  "body": "Senator lounge near gate Z25."
-}
-
-GET {{travel}}/AirportNotes?$expand=airport
-
-# ── Pipeline tracker ─────────────────────────────────────────────────────────
-
-### Inspect pipeline state after the sync
-GET {{base}}/pipeline/Pipelines?$select=name,status,lastSync,errorCount
-
-### Recent runs
-GET {{base}}/pipeline/PipelineRuns?$orderby=startTime desc&$top=5
-
-### Convenience function for one pipeline
-GET {{base}}/pipeline/status(name='ReplicatedFlights')
-```
-
-Replace `airline_ID`, `flight_ID`, and `flight_date` with values from the `Airlines` and `ReplicatedFlights` responses if the placeholders do not match your provider seed data.
-
-### Step 7 — Hook into the pipeline (optional)
-
-A common requirement: drop a column before write, or transform a value during MAP. The federation plugin composes the engine, so the standard event-hook API works on the federation-bound pipeline:
-
-```javascript title="srv/travel-service.js"
-const cds = require('@sap/cds');
-
-module.exports = cds.service.impl(async function () {
-    const pipelines = await cds.connect.to('DataPipelineService');
-
-    pipelines.before('PIPELINE.MAP', 'ReplicatedFlights', async (req) => {
-        // Drop flights with zero free seats from the local copy.
-        req.data.sourceRecords = req.data.sourceRecords.filter(f => f.free_seats > 0);
-    });
-
-    pipelines.after('PIPELINE.WRITE', 'ReplicatedFlights', async (req) => {
-        const { affectedRows } = req.data;
-        cds.log('travel').info(`replicated ${affectedRows} flights`);
-    });
-});
-```
-
-Same surface as any other CAP service.
-
-### Step 8 — Mount the UI on the local CAP server (optional)
-
-`cds watch` serves static files from `app/` on the **same origin** as OData (`http://localhost:4004/…`). No BTP approuter, no separate UI5 dev server — the Fiori apps and the backend share one process, which is exactly what you want when clicking through federation features locally.
-
-You need three pieces: a Fiori Elements app over `Bookings`, the Pipeline Console mounted from `cds-data-pipeline`, and a sandbox launchpad that links both.
-
-#### 8.1 — Generate a Fiori Elements app
-
-From the consumer project root:
-
-```bash
-cds add fiori
-```
-
-When prompted, pick **SAP Fiori elements**, **List Report Object Page**, service **`TravelService`**, main entity **`Bookings`**. The generator creates `app/bookings/webapp/` (component namespace varies by cds-dk version — adjust the launchpad tile below if your folder name differs).
-
-Add list-report annotations so the federated associations show up in the UI — the Object Page can expand into live xflights master data without any custom OData code:
-
-```cds title="srv/travel-service-ui.cds"
-using TravelService from './travel-service';
-
-annotate TravelService.Bookings with @(
-    UI: {
-        HeaderInfo: {
-            TypeName       : 'Booking',
-            TypeNamePlural : 'Bookings',
-            Title          : { Value: passengerName }
-        },
-        LineItem: [
-            { Value: passengerName, Label: 'Passenger' },
-            { Value: airline.name,  Label: 'Airline' },
-            { Value: departureAirport.fullName, Label: 'From' },
-            { Value: arrivalAirport.fullName,   Label: 'To' },
-            { Value: bookedAt,      Label: 'Booked at' }
-        ],
-        Facets: [
-            { $Type: 'UI.ReferenceFacet', Label: 'Flight', Target: '@UI.FieldGroup#Flight' },
-            { $Type: 'UI.ReferenceFacet', Label: 'Airline', Target: 'airline/@UI.LineItem' },
-            { $Type: 'UI.ReferenceFacet', Label: 'Departure', Target: 'departureAirport/@UI.LineItem' },
-            { $Type: 'UI.ReferenceFacet', Label: 'Arrival', Target: 'arrivalAirport/@UI.LineItem' }
-        ],
-        FieldGroup #Flight: {
-            Data: [
-                { Value: passengerName },
-                { Value: bookedAt }
-            ]
-        }
-    }
-);
-```
-
-Redeploy so annotations reach the OData metadata:
-
-```bash
-npx cds deploy --to sqlite:db.sqlite
-```
-
-#### 8.2 — Enable the Pipeline Console
-
-The replication tracker is already on `/pipeline` from Step 4. Enable the pre-built console via config reuse (same pattern as [cds-caching](https://github.com/mikezaschka/cds-caching) `metrics.reuse.*`):
-
-```json title="package.json"
-{
-  "cds": {
-    "requires": {
-      "datapipeline": {
-        "impl": "cds-data-pipeline",
-        "management": {
-          "reuse": {
-            "api": true,
-            "console": true
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-The console is served at `/pipeline-console/`; the management API stays at `/pipeline/`. For BTP HTML5 repo deployments, use `cds add pipeline-console` instead of `management.reuse.console`. See [Feature activation](../../docs/pipeline/guide/feature-activation.md).
-```
-
-#### 8.3 — Add a sandbox launchpad
-
-Create `app/launchpage.html` — a `sap.ushell` sandbox that embeds the Bookings app and the Pipeline Console as tiles on the same host:
-
-```html title="app/launchpage.html (excerpt — applications block)"
-<script>
-    window['sap-ushell-config'] = {
-        defaultRenderer: 'fiori2',
-        applications: {
-            'bookings-app': {
-                title: 'Bookings',
-                description: 'Local bookings with cross-service $expand into xflights',
-                additionalInformation: 'SAPUI5.Component=ns.bookings',
-                applicationType: 'URL',
-                url: './bookings/webapp',
-                navigationMode: 'embedded'
-            },
-            'pipeline-console': {
-                title: 'Pipeline Console',
-                description: 'Trigger ReplicatedFlights sync and inspect run history',
-                additionalInformation: 'SAPUI5.Component=pipeline.monitor.fcl',
-                applicationType: 'URL',
-                url: '/pipeline-console',
-                navigationMode: 'embedded'
-            }
-        }
+    @federation.delegate
+    entity Customers as projection on northwind.Customers {
+        CustomerID  as customerId,
+        CompanyName as companyName,
+        ContactName as contactName,
+        City        as city,
+        Country     as country
     };
-</script>
-<script src="https://ui5.sap.com/test-resources/sap/ushell/bootstrap/sandbox.js"></script>
-```
-
-Match `SAPUI5.Component=…` to the `id` in `app/bookings/webapp/manifest.json` (`sap.app/id`). The Pipeline Console component id is fixed in the shipped package.
-
-Full launchpad boilerplate (UI5 bootstrap script, `sap.ushell.Container.createRenderer()`, …) follows the same pattern as [`examples/consumer/app/launchpage.html`](https://github.com/mikezaschka/cds-data/blob/main/examples/consumer/app/launchpage.html).
-
-#### 8.4 — Open the launchpad
-
-Restart the consumer (so `server.js` is picked up), bootstrap replication once if you have not already, then open:
-
-```
-http://localhost:4004/launchpage.html
-```
-
-| Tile | What you exercise |
-|---|---|
-| **Bookings** | Fiori Elements list/object page on a local entity; Object Page facets call live delegate entities via cross-service `$expand`. |
-| **Pipeline Console** | Manual `ReplicatedFlights` sync, run history, schedule — the same operations as `POST /pipeline/execute` in Step 6, now clickable. |
-
-Direct URLs still work for debugging: `http://localhost:4004/bookings/webapp/index.html`, `http://localhost:4004/pipeline-console/index.html`.
-
-### Tear-down
-
-`Ctrl+C` in both terminals stops everything. To reset local state for a clean re-run:
-
-```bash
-rm -f consumer/db.sqlite
-```
-
-### Comparing the result to xtravels
-
-[xtravels](https://github.com/capire/xtravels) consumes the same xflights provider with delegation handlers in [`srv/data-federation.js`](https://github.com/capire/xtravels/blob/main/srv/data-federation.js) — a useful side-by-side reference for what `cds-data-federation` composes. The published API surface is the same; the difference shows up in the CDS file (annotations) vs. the JS file (handlers).
-
-### Reference reading while you work
-
-- [Installation](https://mikezaschka.github.io/cds-data/federation/getting-started/installation) — peer dependency matrix.
-- [First Delegation](https://mikezaschka.github.io/cds-data/federation/getting-started/first-delegation) — the consumption-view-as-contract idea in detail.
-- [First Replication](https://mikezaschka.github.io/cds-data/federation/getting-started/first-replication) — delta modes and the management API.
-- [Joining Local with Remote](https://mikezaschka.github.io/cds-data/federation/getting-started/joining-local-with-remote) — cross-service `$expand` mechanics.
-- [Consumption Views](https://mikezaschka.github.io/cds-data/federation/concepts/consumption-views) — wildcard, renames, `excluding`, static `where`.
-- [Annotations reference](https://mikezaschka.github.io/cds-data/federation/reference/annotations) — every option with type and default.
-
----
-
-## Part B — Build the same demo with an AI coding agent
-
-Each published package ships agent guidance inside the npm tarball:
-
-- `node_modules/cds-data-federation/AGENTS.md` — entry point for AI tools following the [AGENTS.md cross-tool standard](https://agentsmd.org). [Cursor](https://cursor.com), [Claude Code](https://www.claude.com/product/claude-code), [Codex CLI](https://github.com/openai/codex), [GitHub Copilot](https://github.com/features/copilot), and [Aider](https://aider.chat/) all pick it up.
-- `node_modules/cds-data-federation/skills/` — task-focused [Agent Skills](https://agentskills.io). Each skill is a small markdown file the agent reads on demand (declare a delegate, add caching, add CUD opt-in, configure REST replication, hook into the pipeline, …).
-
-This means the agent's job, on this kind of project, is closer to picking the matching skill and following its checklist than to drafting CAP integration code from training data.
-
-### Step 0 — Run the provider
-
-Terminal 1 from Part A still applies — the provider is the same regardless of how the consumer is built:
-
-```bash
-cd ~/cds-data-demo
-git clone https://github.com/capire/xflights.git provider
-cd provider && npm install && npx cds run --port 4444
-```
-
-### Step 1 — Bootstrap the consumer and link the agent guidance
-
-```bash
-cd ~/cds-data-demo
-mkdir consumer && cd consumer
-cds init
-npm add cds-data-federation cds-data-pipeline @cap-js/sqlite
-
-# Pull the shipped Agent Skills into the workspace.
-npx skills-npm --include cds-data-federation cds-data-pipeline
-
-# Surface AGENTS.md at the project root so any tool finds it.
-ln -s node_modules/cds-data-federation/AGENTS.md ./AGENTS-cds-data-federation.md
-ln -s node_modules/cds-data-pipeline/AGENTS.md   ./AGENTS-cds-data-pipeline.md
-```
-
-### Step 2 — Wire up MCP for CSN introspection
-
-[Model Context Protocol](https://modelcontextprotocol.io/) gives the agent live introspection capabilities. [`@cap-js/mcp-server`](https://www.npmjs.com/package/@cap-js/mcp-server) lets the agent ask "what services / entities / annotations are defined?" without `node -e "…"` snippets. [`@sap/fiori-mcp`](https://www.npmjs.com/package/@sap/fiori-mcp) is useful when the same agent is also going to scaffold a Fiori Elements UI on top.
-
-```json title=".mcp.json"
-{
-  "mcpServers": {
-    "cap-mcp":   { "command": "npx", "args": ["-y", "@cap-js/mcp-server"] },
-    "fiori-mcp": { "command": "npx", "args": ["-y", "@sap/fiori-mcp"] }
-  }
 }
 ```
 
-### Step 3 — The prompt
+Save, and `cds watch` reloads. That's it — no handler file. Try it:
 
-A single prompt produces the same project as Part A. The structure — clear deliverables, explicit references to the agent surface — is what keeps the agent on-task:
+```http
+GET http://localhost:4004/odata/v4/sales-cockpit/Customers?$filter=country eq 'Germany'&$top=5
+```
 
-> I'm building a CAP travel extension on top of the `@capire/xflights` reference provider, using `cds-data-federation` and `cds-data-pipeline`. Both packages are installed and their `AGENTS.md` plus skills are linked into this workspace. The `cap-mcp` MCP server is available for live CSN introspection.
->
-> The xflights provider is already running on `http://localhost:4444/odata/v4/data` (entities: `Airlines`, `Airports`, `Flights`, `Supplements`; namespace `sap.capire.flights.data`).
->
-> Please:
->
-> 1. Fetch provider metadata with a GET on `http://localhost:4444/odata/v4/data/$metadata`, save the response as `xflights.edmx`, then run `cds import xflights.edmx` to bring in the remote model.
-> 2. Configure `cds.requires.flights` in `package.json` with `kind: 'odata-v4'`, `model: 'srv/external/data-service'`, and `credentials.url: 'http://localhost:4444/odata/v4/data'`. Add `cds.requires.db` as SQLite at `db.sqlite`.
-> 3. Create `srv/travel-service.cds` with `using from 'cds-data-pipeline/db';` and `using from 'cds-data-pipeline/srv/DataPipelineManagementService';` at the top (required for `@federation.replicate` — without the db import, boot fails with `no such table: plugin_data_pipeline_Pipelines`). Then expose (use the skills under `skills/cds-data-federation/` for every annotation choice):
->    - `Airlines` — `@federation.delegate` projection on `Airlines` with `ID, name, icon, currency_code`.
->    - `Airports` — `@federation.delegate: { cache: { ttl: 30000 } }` projection on `Airports` with `ID as code, name as fullName, city, country_code as country`.
->    - `Supplements` — `@federation.delegate` projection with `ID, type_code as type, descr as description, price, currency_code`.
->    - `ReplicatedFlights` — `@federation.replicate: { schedule: 600000, mode: 'full' }` projection on `Flights` with composite key `(ID, date)` and columns `ID, date, aircraft, price, currency_code, maximum_seats, occupied_seats, free_seats, airline_ID, origin_ID, destination_ID`. Use `mode: 'full'` because the xflights `Flights` OData view excludes `modifiedAt`.
->    - `AvailableFlights` — `@readonly` projection on `ReplicatedFlights` with `where free_seats > 0`.
->    - `AircraftStats` — `@readonly` `group by aircraft` over `ReplicatedFlights` with `count`, `avg(price)`, `sum(free_seats)`.
->    - Local entities `Bookings`, `FlightWatchlist`, `AirportNotes` — managed associations to federated entities (`Bookings` → delegate `Airlines`/`Airports`; `FlightWatchlist` → `ReplicatedFlights`; `AirportNotes` → `Airports`).
-> 4. Deploy with `cds deploy --to sqlite:db.sqlite` and start on port 4004. Confirm the boot log includes `[cds-data-federation] discovered 4 @federation.* entities` and `scheduled replication ReplicatedFlights`.
-> 5. Create `requests/travel-extension.http` (VS Code REST Client format) that exercises:
->    - Live read on `Airlines`.
->    - Cached read on `Airports` (twice, to demonstrate the cache hit).
->    - Manual replication via `POST /pipeline/execute` with `{ "name": "ReplicatedFlights", "mode": "full", "trigger": "manual" }`.
->    - Local reads on `ReplicatedFlights`, `AircraftStats`, and `AvailableFlights`.
->    - Create a `Bookings` row and `GET …/Bookings?$expand=airline,departureAirport,arrivalAirport` (use `departureAirport_code` / `arrivalAirport_code` FK names because the airport key is renamed to `code`).
->    - Create a `FlightWatchlist` row with `flight_ID` + `flight_date` from replicated data, then `$expand=flight`.
->    - `AirportNotes` with `$expand=airport`.
->    - Pipeline tracker queries on `/pipeline/Pipelines` and `/pipeline/PipelineRuns`.
-> 6. Mount a local launchpad (optional but recommended):
->    - `cds add fiori` for `TravelService.Bookings` (List Report Object Page).
->    - Add `srv/travel-service-ui.cds` with `@UI.LineItem` / `@UI.Facets` for `airline`, `departureAirport`, and `arrivalAirport`.
->    - Add `management.reuse.console` under `cds.requires.datapipeline` to serve the Pipeline Console at `/pipeline-console/`.
->    - Create `app/launchpage.html` with tiles for the Bookings app (`./bookings/webapp`) and the Pipeline Console (`/pipeline-console`). Open `http://localhost:4004/launchpage.html`.
->
->    Run the `.http` requests and report the response shapes.
->
-> Cite the docs at https://mikezaschka.github.io/cds-data/federation/ when you explain trade-offs.
+The client filters on `country` — your field name. The remote receives `$filter=Country eq 'Germany'` — its field name. Only the five projected columns are ever requested from the remote; fields you didn't project are never fetched. The response is mapped back through the renames.
 
-### What the agent typically does
+Consumption views can also carry **static filters**. A second entity, same source, permanently scoped:
 
-1. Reads `AGENTS-cds-data-federation.md` and the relevant skills before writing any code.
-2. Uses `cap-mcp` to confirm what the imported `sap.capire.flights.data.*` entities look like (avoids guessing at wire names like `currency_code` vs. `currency`, `type_code` vs. `type`, or `country_code` vs. `country`).
-3. Writes the consumption view in a single pass — the annotation surface is small enough that there is little room for drift.
-4. Runs `cds deploy` and `cds watch`, watches the boot log, then runs the `.http` request file. Failures (e.g. a wrong field name in a rename) surface as a `[cds-data-federation]` error on boot rather than a runtime mystery later.
+```cds
+@federation.delegate
+entity GermanCustomers as projection on northwind.Customers {
+    CustomerID  as ID,
+    CompanyName as companyName,
+    ContactName as contactName,
+    City        as city,
+    Country     as country,
+} where Country = 'Germany';
+```
 
-### Iteration patterns that map onto skills
+Every query against `GermanCustomers` silently gets the filter injected into the remote call.
 
-Once the baseline runs, follow-up asks compose cleanly:
+> **CAP or plugin?** The projection syntax, the renames, and the query translation through the projection chain are **standard CAP** — this is CAP's "Automatic Query Translation" doing the heavy lifting. What the **plugin** adds: it scans the model for `@federation.*` at startup, registers the pass-through handler for you (the `this.on('READ', ...)` you'd otherwise write per entity), extracts the static `where` into every remote query, and enforces `@readonly` since we didn't opt into writes. One line of the log confirms it: `[cds-data-federation] discovered N @federation.* entities`.
 
-- *"Switch `Airports` to `cache.strategy: 'entity'` with `batchSize: 500` and a 5-minute TTL."* → the entity-cache skill.
-- *"Add `EditableAirlines` as a writable delegate with `update: true`; leave the public `Airlines` read-only."* → the CUD-opt-in skill.
-- *"Publish a CDS event via [Event Mesh](https://help.sap.com/docs/SAP_EM) when `ReplicatedFlights` finishes a successful run, carrying the run summary."* → the pipeline-hook skill plus the messaging recipe.
+## Step 3 — Blend local and remote data
 
-The shipped skills are deterministic enough that the agent is composing them, not inventing.
+A cockpit needs data the reps *own*. Add a local entity — with an association pointing at the **remote** one:
 
-### A reference for the agent to imitate
+```cds
+// inside service SalesCockpit
+entity CustomerNotes {
+    key ID        : UUID;
+        customer  : Association to SalesCockpit.Customers;  // → lives in Northwind!
+        author    : String(100);
+        note      : String(500);
+        createdAt : Timestamp;
+}
+```
 
-The [`examples/`](https://github.com/mikezaschka/cds-data/tree/main/examples) folder in the repository has two full setups — the [Sales Intelligence Workbench](https://github.com/mikezaschka/cds-data/tree/main/examples/sales-intel) (Northwind V4 + V2 + a local CAP provider + a REST provider) and a [Movies & Streaming demo](https://github.com/mikezaschka/cds-data/tree/main/examples/consumer). Both boot in one command and aggregate Fiori apps behind a launchpad. Pointing the agent at one of these as a structural template improves the success rate on the first pass.
+And give `Customers` the backlink:
 
----
+```cds
+@federation.delegate
+entity Customers as projection on northwind.Customers {
+    CustomerID  as customerId,
+    // ... as before ...
+    notes : Association to SalesCockpit.CustomerNotes on notes.customer = $self
+};
+```
 
-## Closing notes
+Seed a few notes against real Northwind keys (`ALFKI`, `BLAUS`, …) via CSV ([grab it from the repo](https://github.com/mikezaschka/data-federation-demo/blob/main/sales-cockpit/db/data/SalesCockpit.CustomerNotes.csv)), `cds deploy`, and then ask for both directions:
 
-A few takeaways that hold across both walkthroughs:
+```http
+# local → remote: my notes, each stitched to its live remote customer
+GET {{baseUrl}}/CustomerNotes?$expand=customer&$filter=customer/companyName eq 'Alfreds Futterkiste'
 
-1. **The strategy is a runtime choice.** The same `sap.capire.flights.data.Airlines` projection can appear in the model as a live `Airlines`, a cached `HotAirlines`, a replicated `ReplicatedAirlines`, and an opt-in-writable `EditableAirlines`. The annotation is the switch.
-2. **The plugin is application-layer.** Pick it when the integration contract belongs in the CAP app — renames, cross-service `$expand`, opt-in CUD, scheduled sync with tracker observability. Pick a [HANA SDA / synonym](https://cap.cloud.sap/docs/advanced/hana#native-hana-features), [Datasphere Replication Flow](https://help.sap.com/docs/SAP_DATASPHERE), [SAP Graph](https://help.sap.com/docs/SAP_GRAPH), [Master Data Integration](https://help.sap.com/docs/SAP_MASTER_DATA_INTEGRATION), or [Cloud Integration](https://help.sap.com/docs/integration-suite) when the contract belongs to a different layer.
-3. **The reference samples remain useful.** [xtravels](https://github.com/capire/xtravels) — built on the same [xflights](https://github.com/capire/xflights) provider this demo uses — shows the recipe at the handler level. Reading it side by side with the consumption view from Part A clarifies what `cds-data-federation` composes and where the boundaries are.
-4. **A travel-extension is roughly six files plus an optional `app/` folder.** `cds.requires`, one `.cds` file with the projections and local entities, one `.http` request file, `cds deploy`, `cds watch`, and — when you want clickable UI — `server.js` + `app/launchpage.html`. Two terminals if you count the provider.
-5. **The agent path is shorter than it looks.** With the shipped `AGENTS.md`, skills, and `cap-mcp` for live CSN introspection, a single structured prompt produces the same scaffold as the hands-on walkthrough.
+# remote → local: a live remote customer, stitched to my local notes
+GET {{baseUrl}}/Customers('ALFKI')?$expand=notes
+```
 
-For depth on individual capabilities:
+Read that first request again: it filters local notes **by a field of the remote customer** (`customer/companyName`) and expands across the service boundary. The second goes the other way — a live remote read, enriched with local rows.
 
-- [Annotations reference](https://mikezaschka.github.io/cds-data/federation/reference/annotations) — every option with type and default.
-- [Comparison matrix](https://mikezaschka.github.io/cds-data/federation/reference/comparison) — alternatives row by row.
-- [Cross-service scenarios](https://mikezaschka.github.io/cds-data/federation/concepts/cross-service-scenarios) — every expand and navigation topology with mermaid diagrams.
-- [Pipeline guide](https://mikezaschka.github.io/cds-data/pipeline/) — programmatic API, adapters, recipes.
+> **CAP or plugin?** The association modeling is **standard CDS** — you declare relationships exactly as if everything were local; that's the beauty of the consumption-view contract. But executing them is the part CAP leaves to you: a cross-service `$expand` means splitting the query, batch-fetching the other side by key, and stitching results — per entity, per direction (in part 1 this was the first "what's missing" bullet). The **plugin** resolves both directions generically, including navigation filters like `customer/companyName`, without N+1 remote calls.
 
-→ Back to **[Part 1: Introducing cds-data](./01-introducing-cds-data.md)**.
+## Step 4 — Cache: response, then entity
 
----
+Lookups that are read constantly but change rarely don't need the remote on every request. Caching comes in two flavors, and the cockpit uses both — on two different entities.
+
+First flavor, the **response cache** via [cds-caching](https://github.com/mikezaschka/cds-caching), on `Suppliers`:
+
+```bash
+npm add cds-caching
+```
+
+```cds
+@federation.delegate: { cache: { strategy: 'response', ttl: 60000 } }
+entity Suppliers as projection on northwind.Suppliers {
+    SupplierID  as supplierId,
+    CompanyName as companyName,
+    City        as city,
+    Country     as country
+};
+```
+
+```http
+GET {{baseUrl}}/Suppliers?$top=10      # cold → remote
+GET {{baseUrl}}/Suppliers?$top=10      # warm → cache hit, no remote call
+GET {{baseUrl}}/Suppliers?$filter=country eq 'Germany'   # different query → miss
+```
+
+Identical queries are instant; every *variation* is a fresh miss. Perfect for repetitive reads — but for a Fiori list page where users constantly change filters, that's not good enough. That's what the second flavor, the **entity cache**, is for — here on `Products`:
+
+```bash
+npm add cds-data-pipeline    # the entity cache is a snapshot on the pipeline engine
+```
+
+The snapshot needs a place to live: declare the cache datastore in `cds.requires`, so the required tables are deployed — a dedicated SQLite file, kept separate from your application tables:
+
+```jsonc
+// package.json → cds.requires — datastore for the entity-cache snapshot tables
+"data-federation-cache": { "kind": "sqlite" }
+```
+
+```cds
+@federation.delegate: { cache: { strategy: 'entity', ttl: 5000 } }
+entity Products as projection on northwind.Products;
+```
+
+Now the plugin pulls the *whole* projected entity into a local SQLite table once, and **any** filter, sort, or aggregation is served locally until the TTL expires:
+
+```http
+GET {{baseUrl}}/Products?$filter=UnitPrice gt 20&$orderby=UnitPrice desc   # local
+GET {{baseUrl}}/Products?$filter=contains(ProductName,'Cha')               # still local
+```
+
+(The 5-second TTL is demo-friendly so you can watch the refresh in the logs; in a real app you'd use minutes or hours.)
+
+> **CAP or plugin?** Caching has no CAP-native counterpart — this is plugin territory on both flavors. Note the composition, though: the response cache is `cds-caching` (a separate plugin, usable entirely on its own) wired in by the federation plugin; the entity cache is the **pipeline engine** doing a full read into a local table. Remember that sentence — the next step is the same mechanism, made permanent.
+
+## Step 5 — Replicate: same engine, scheduled and joinable
+
+Freight analytics over Orders shouldn't hit a remote per request. Replicate instead:
+
+```jsonc
+// package.json → cds.requires — enable the tracker's management API + console
+"data-pipeline": {
+  "management": { "reuse": { "api": true, "console": true } }
+}
+```
+
+```cds
+@federation.replicate: { preload: true, schedule: 30000 }
+entity SalesOrders as projection on northwind.Orders {
+    OrderID     as orderId,
+    OrderDate   as orderDate,
+    Freight     as freight,
+    ShipCountry as shipCountry,
+    CustomerID  as customerId,
+    notes : Association to many SalesCockpit.CustomerNotes
+                on notes.customer.customerId = $self.customerId
+};
+```
+
+Same consumption-view pattern, different annotation. `preload: true` runs an initial sync at startup; `schedule: 30000` re-syncs every 30 seconds. Watch the log narrate it: `PIPELINE.READ` … `PIPELINE.WRITE` — the engine pages through the remote, streams records, and UPSERTs them into a real local table. Which means:
+
+```http
+# aggregation over the replicated table — plain local SQL
+GET {{baseUrl}}/SalesOrders?$apply=groupby((shipCountry),aggregate(freight with sum as totalFreight))&$orderby=totalFreight desc
+
+# replicated → local join: every order carries my notes — a SQL join, not a stitch
+GET {{baseUrl}}/SalesOrders?$expand=notes&$top=5
+```
+
+Compare with step 3: there, `$expand` across the boundary was a runtime stitch orchestrated by the plugin. Here, `$expand=notes` is a plain database join, because `SalesOrders` *is* a local table. Delegate for freshness, replicate for joins and analytics — and switching between them is an annotation, not a rewrite.
+
+> **CAP or plugin?** Serving `$apply` aggregations from a local table is **standard CAP** — once the data is local, CAP doesn't care how it got there. Everything that *makes* it local is the **plugin stack**: `cds-data-federation` derives the pipeline from the consumption view, and `cds-data-pipeline` contributes the scheduler, paging, streaming, idempotent UPSERT, retry with backoff, the concurrency guard, and the tracker tables (part 1's replication gap list, item by item).
+
+## Step 6 — A second, native CAP system over HCQL
+
+So far the remote was external OData, imported from an `.edmx`. Now the second half of the story: consume a **native CAP service** — and watch the same annotations behave identically.
+
+The provider is a tiny FX-rate CAP app (in the repo under [`fx-service/`](https://github.com/mikezaschka/data-federation-demo/tree/main/fx-service)), serving one entity over both OData and HCQL:
+
+```cds
+// fx-service/srv/fx-service.cds
+@hcql @odata
+service FXService @(path: 'fx') {
+    entity ExchangeRates as projection on fx.ExchangeRates;  // currency, base, rate, modifiedAt
+}
+```
+
+Instead of an `.edmx` import, share it the idiomatic CAP-to-CAP way — [CAP's own API packaging](https://cap.cloud.sap/docs/guides/integration/calesi#providing-cap-level-apis): `cds export` on the provider produces an interface-only npm package, which the consumer simply installs:
+
+```bash
+# in fx-service/ (done once, committed to the repo)
+cds export srv/fx-service.cds --data
+
+# in sales-cockpit/
+npm add ../fx-service/apis/fx-service
+```
+
+```cds
+// srv/sales-cockpit.cds
+using { FXService as fx } from 'data-federation-demo-fx-api';   // ← an npm package, not an edmx
+
+@federation.replicate: {
+    schedule: 60000,
+    preload : true,
+    mode    : 'delta',
+    delta   : { field: 'modifiedAt' }
+}
+entity ExchangeRates as projection on fx.ExchangeRates {
+    currency, base, rate, modifiedAt
+};
+```
+
+Two new things in the annotation: `mode: 'delta'` with a `delta.field` — after the first full load, only rows whose `modifiedAt` passed the last run's high-watermark are fetched. The tracker keeps that watermark; you keep nothing.
+
+Run the provider as a real, separate process and bind it:
+
+```jsonc
+// sales-cockpit/package.json → cds.requires
+"FXService": { "kind": "hcql", "credentials": { "url": "http://localhost:4005/hcql/fx" } }
+```
+
+```bash
+# terminal 1
+cd fx-service && cds watch --port 4005
+# terminal 2
+cd sales-cockpit && cds watch
+```
+
+And here's the payoff in the pipeline log — same engine, two wire protocols:
+
+```
+[cds-data-pipeline] PIPELINE.READ SalesOrders   — via odata
+[cds-data-pipeline] PIPELINE.READ ExchangeRates — via hcql
+```
+
+Since both replicas are plain local tables now, joining **two different remote systems** is just CDS:
+
+```cds
+entity FreightByCountryEUR as
+    select from SalesOrders as o
+    cross join ExchangeRates as fx {
+        o.shipCountry            as country,
+        sum(o.freight * fx.rate) as freightEUR
+    }
+    where fx.currency = 'USD' and fx.base = 'EUR'
+    group by o.shipCountry;
+```
+
+```http
+GET {{baseUrl}}/FreightByCountryEUR?$orderby=freightEUR desc
+```
+
+Northwind orders (USD freight) × FX rates from a second system → EUR totals per country. In one local SQL view.
+
+> **CAP or plugin?** A lot of standard CAP here, and it's worth appreciating: `cds export` / `npm add` is CAP's Calesi packaging, and **HCQL is a CDS 10 runtime feature** — CAP auto-selects it for CAP-to-CAP hops because the provider declares `@hcql`; there is no `@federation.hcql`. The `FreightByCountryEUR` view is plain CDS over local tables. The **plugin's** contribution is consistency: `@federation.replicate` is byte-for-byte the same annotation whether the source arrived as an `.edmx` import, a native CAP package, or a plain REST API (that one comes in step 8) — federation is source-agnostic, and the engine picks the best wire per source.
+
+## Step 7 — Watch the delta run work — then make it instant
+
+In step 6 we declared `mode: 'delta'` on `ExchangeRates` — but we never actually *saw* it work. Let's fix that first, in isolation, before adding events on top.
+
+The FX service has an `updateRate` action that changes a single rate and bumps its `modifiedAt` — a plain custom handler, nothing special:
+
+```cds
+// fx-service/srv/fx-service.cds
+action updateRate(currency : String(3), rate : Decimal(10, 4)) returns ExchangeRates;
+```
+
+```http
+POST http://localhost:4005/odata/v4/fx/updateRate
+Content-Type: application/json
+
+{ "currency": "USD", "rate": 0.9250 }
+```
+
+Now watch the cockpit's log. Within 60 seconds the scheduled run fires — and fetches exactly **one** row:
+
+```
+[cds-data-pipeline] PIPELINE.READ ExchangeRates — delta (modifiedAt > <watermark>) via hcql
+[cds-data-pipeline] PIPELINE.WRITE ExchangeRates — 1 record
+```
+
+That's delta sync in isolation: the tracker keeps a high-watermark from the last successful run, and every scheduled run asks the source only for rows changed since. Cheap, steady, zero code on your side. The one thing it can't give you is **immediacy** — worst case, the cockpit is a full schedule interval stale.
+
+So let's close that gap. A second action on the FX service — same update, but this one also **emits a declared CDS event**:
+
+```cds
+// fx-service/srv/fx-service.cds
+action updateRateAndNotify(currency : String(3), rate : Decimal(10, 4)) returns ExchangeRates;
+event  RateChanged { currency : String(3); rate : Decimal(10, 4); }
+```
+
+```js
+// fx-service/srv/fx-service.js — the notifying handler
+this.on('updateRateAndNotify', async (req) => {
+    const result = await updateRate(req)                 // the same update as before
+    await this.emit('RateChanged', { currency: result.currency, rate: result.rate })
+    return result
+})
+```
+
+Since the two apps are separate processes, they need a message channel. For local development, CAP ships one that needs zero infrastructure — add to **both** apps:
+
+```jsonc
+// package.json → cds.requires (both apps)
+"messaging": { "kind": "file-based-messaging" }
+```
+
+Consumer side, in the cockpit's service implementation — subscribe and hand the key to the pipeline:
+
+```js
+// sales-cockpit/srv/sales-cockpit.js
+const messaging = await cds.connect.to('messaging')
+const pipelines = await cds.connect.to('data-pipeline')
+
+messaging.on('FXService.RateChanged', async (msg) => {
+    const { currency } = msg.data
+    await pipelines.executeEvent('ExchangeRates', {
+        event: { read: 'key', keys: { currency } },
+    })
+})
+```
+
+`executeEvent` runs a **micro-run**: a single-key read from the source, through the same MAP/WRITE path as the batch sync. Compare the two side by side:
+
+```http
+POST http://localhost:4005/odata/v4/fx/updateRateAndNotify
+Content-Type: application/json
+
+{ "currency": "USD", "rate": 0.9312 }
+```
+
+```http
+GET {{baseUrl}}/ExchangeRates?$filter=currency eq 'USD'    # updated in seconds — not on the next schedule tick
+```
+
+Where the silent `updateRate` left the cockpit stale until the next scheduled delta run, the notifying variant lands in the local table near-instantly. And the scheduled delta run keeps running underneath as the catch-up net — for changes that happen while the cockpit is down, or sources that don't emit events at all.
+
+One subtle detail that's easy to get wrong when hand-rolling this: the micro-run deliberately does **not** advance the batch delta watermark (`lastSync`). If it did, the next scheduled delta run could silently skip rows that changed between the watermark and the event. Batch and event runs coexist safely; both appear in the tracker, the micro-runs marked `trigger: event`.
+
+> **CAP or plugin?** The actions, the declared event, `this.emit`, and the messaging binding are **standard CAP** — custom handlers and eventing straight from the book; locally file-based, in production you'd swap the binding to SAP Event Mesh or Redis without touching a line of code (also standard). The **plugin** owns both sync mechanics: the scheduled delta run (watermark tracking, changed-rows-only fetch) and `executeEvent` (the targeted single-record run, watermark protection, `trigger: event` observability). Notice the seam: CAP delivers the notification, the engine turns it into a safe, traceable sync.
+
+## Step 8 — A third source type: a plain REST API
+
+Northwind arrived as imported OData, the FX service as a native CAP package. The third kind of source you'll meet in the wild has neither: a **plain JSON-over-HTTP API**. No OData, no CDS model, snake_case field names, records wrapped in an envelope, offset paging. Our stand-in is a shipment-tracking API — in the repo as a single-file, zero-dependency Node server ([`tracking-api/`](https://github.com/mikezaschka/data-federation-demo/tree/main/tracking-api), deliberately *not* CAP):
+
+```bash
+# terminal 3
+cd tracking-api && npm start     # → http://localhost:4006/api/shipments
+```
+
+```json
+// GET /api/shipments?offset=0&limit=2 — what the wire actually looks like
+{
+  "results": [
+    { "order_id": 10248, "status_text": "in_transit", "carrier_name": "DHL", "updated_at": "2026-07-15T08:12:44Z" },
+    { "order_id": 10249, "status_text": "delivered",  "carrier_name": "UPS", "updated_at": "2026-07-14T16:03:01Z" }
+  ],
+  "totalCount": 80
+}
+```
+
+No CDS model means no projection — there's nothing to project *from*. This is the one escape hatch in the consumption-view principle: declare the target entity locally, and describe the wire in the annotation:
+
+```jsonc
+// package.json → cds.requires
+"TrackingAPI": { "kind": "rest", "credentials": { "url": "http://localhost:4006" } }
+```
+
+```cds
+@federation.replicate: {
+    source  : 'TrackingAPI',
+    schedule: 30000,
+    preload : true,
+    mode    : 'delta',
+    delta   : { field: 'updatedAt' },
+    rest    : {
+        path      : '/api/shipments',
+        pagination: { type: 'offset', pageSize: 50 },
+        deltaParam: 'modifiedSince',
+        dataPath  : 'results'
+    }
+}
+entity Shipments {
+    key orderId   : Integer;
+        status    : String(20);
+        carrier   : String(40);
+        updatedAt : Timestamp;
+}
+```
+
+Read the `rest` block as a description of the API's conventions: page with `offset`/`limit` in steps of 50, find the records under `results`, and pass the delta watermark as `?modifiedSince=...`. One thing is still missing — without a projection there are no renames to infer, and the API speaks snake_case. A `PIPELINE.MAP` hook closes that gap:
+
+```js
+// srv/sales-cockpit.js
+pipelines.on('PIPELINE.MAP', 'Shipments', (req) => {
+    req.data.targetRecords = req.data.sourceRecords.map((r) => ({
+        orderId:   r.order_id,
+        status:    r.status_text,
+        carrier:   r.carrier_name,
+        updatedAt: r.updated_at,
+    }))
+})
+```
+
+And because the tracking server advances a random shipment's status every 20 seconds, the 30-second delta schedule has something to do — watch the log pick up one or two changed rows per run, exactly like the FX delta in step 7. Since `Shipments` keys on the Northwind order ID, the payoff is a three-source join:
+
+```http
+GET {{baseUrl}}/Shipments?$filter=status ne 'delivered'&$orderby=updatedAt desc
+
+# OData-sourced order + REST-sourced shipment + local notes — one local join
+GET {{baseUrl}}/SalesOrders?$expand=shipment,notes&$top=5
+```
+
+> **CAP or plugin?** This step is the mirror image of the others: here CAP genuinely can't help — no model, no projection, no query translation — and only the `cds.requires` service binding with `kind: 'rest'` is standard. Everything else is the **pipeline's REST adapter**: pagination strategies (offset, page, cursor), envelope unwrapping via `dataPath`, the delta query parameter, and the MAP hook for field translation. What's worth noticing is what *didn't* change: the annotation is still `@federation.replicate`, the target is still a plain local table, and the tracker, retry, and console treat this pipeline exactly like the OData and HCQL ones.
+
+## Step 9 — Observability: the Pipeline Console
+
+We enabled `management.reuse` in step 5 — so this step costs nothing:
+
+```
+http://localhost:4004/pipeline-console/index.html
+```
+
+All three pipelines — `SalesOrders` (OData), `ExchangeRates` (HCQL), and `Shipments` (REST) — with status, run history, row counts, durations, errors, and the wire protocol per source. Fire the `updateRateAndNotify` action from step 7 again and watch the `ExchangeRates` run list: the scheduled batch runs (full and delta) sit next to single-record entries marked `trigger: event`. Behind the UI sits a plain OData management service you can script against:
+
+```http
+GET  http://localhost:4004/pipeline/Pipelines?$expand=runs($top=3;$orderby=startedAt desc)
+
+POST http://localhost:4004/pipeline/execute
+Content-Type: application/json
+
+{ "name": "ExchangeRates", "mode": "full" }
+```
+
+> **CAP or plugin?** The console and the management service ship with `cds-data-pipeline`. But notice *what* they are: a CDS-modeled OData service like any other — which is why you can query it with `$expand` and call its actions with plain HTTP. The plugin eats CAP's own dog food.
+
+## Step 10 — A custom REST endpoint, a custom handler
+
+So far every consumer spoke OData. Not everything does — a mobile app, a script, another system might just want plain JSON. And sometimes one endpoint should answer with data from *several* of our sources at once. Both are ordinary CAP: a second service served over the REST protocol, with a hand-written handler.
+
+```cds
+// srv/cockpit-api.cds
+using { SalesCockpit } from './sales-cockpit';
+
+@protocol: 'rest'
+service CockpitAPI @(path: '/api') {
+    function customerBrief(customerId : String) returns CustomerBrief;
+    // (CustomerBrief and its sub-types are plain CDS type definitions — see the repo)
+}
+```
+
+The handler is where it gets interesting — three reads, three completely different execution paths, identical code:
+
+```js
+// srv/cockpit-api.js
+export default class CockpitAPI extends cds.ApplicationService {
+    async init() {
+        const cockpit = await cds.connect.to('SalesCockpit')
+        const { Customers, CustomerNotes, SalesOrders } = cockpit.entities
+
+        this.on('customerBrief', async (req) => {
+            const { customerId } = req.data
+
+            // 1. LIVE remote read — routed through the delegate handler to Northwind
+            const customer = await cockpit.read(Customers, { customerId })
+                .columns('customerId', 'companyName', 'city', 'country')
+
+            // 2. Local read — the reps' notes from our own SQLite table
+            const notes = await cockpit.read(CustomerNotes)
+                .columns('author', 'note')
+                .where({ customer_customerId: customerId })
+
+            // 3. Replicated read — a local table the pipeline keeps in sync
+            const [orderStats] = await cockpit.read(SalesOrders)
+                .columns('count(*) as orderCount', 'sum(freight) as totalFreight')
+                .where({ customerId })
+
+            return { customer, notes, orderStats }
+        })
+        return super.init()
+    }
+}
+```
+
+```http
+GET http://localhost:4004/api/customerBrief?customerId=ALFKI
+```
+
+```json
+{
+  "customer":   { "customerId": "ALFKI", "companyName": "Alfreds Futterkiste", "city": "Berlin", "country": "Germany" },
+  "notes":      [ { "author": "John Smith", "note": "Initial contact established. ..." }, ... ],
+  "orderStats": { "orderCount": 6, "totalFreight": 225.58 }
+}
+```
+
+Look at the handler once more: nothing in it knows that `Customers` is a live remote, that `SalesOrders` is a replica, or that `Products` would come from a cache. It's three `cockpit.read(...)` calls. The annotations on the consumption views decide the execution path — the handler code stays strategy-agnostic, which means you can *change* the strategy later without touching this handler.
+
+> **CAP or plugin?** Almost everything here is **standard CAP**: `@protocol: 'rest'` for the plain-JSON endpoint, `cds.ApplicationService` with an `on` handler, CQL via `srv.read(...)`. The **plugin's** entire contribution is invisible: read #1 fires its delegate handler because CQL queries hit the same service events as HTTP requests. That invisibility is the point — custom code composes with federation for free.
+
+## Step 11 — Query it all from `cds repl`
+
+Here's my favorite way to show that federation lives at the **CAP service level**, not at the OData adapter: query it with CQL, interactively. Stop `cds watch` in the cockpit terminal and start the REPL instead (the FX service keeps running):
+
+```bash
+cds repl --run .
+```
+
+This boots the app inside a Node.js REPL, with `cds` and the query builders as globals. Connect to your service and go:
+
+```js
+> var cockpit = await cds.connect.to('SalesCockpit')
+
+// A delegated entity — this CQL query triggers a LIVE remote call to Northwind:
+> await cockpit.read('Customers').where({ country: 'Germany' })
+[ { customerId: 'ALFKI', companyName: 'Alfreds Futterkiste', ... }, ... ]
+
+// The cached entity — served from the SQLite snapshot, no remote call within TTL:
+> await cockpit.read('Products').where('UnitPrice >', 50)
+
+// The replicated table — plain local read, aggregate away:
+> await cockpit.read('SalesOrders')
+    .columns('shipCountry', 'sum(freight) as totalFreight')
+    .groupBy('shipCountry')
+
+// And the cross-system join view:
+> await SELECT.from(cockpit.entities.FreightByCountryEUR).orderBy('freightEUR desc')
+```
+
+Watch the terminal while you do this: the first query logs an outbound Northwind request, the second logs a cache hit, the third stays silent — pure SQLite. Same CQL, three different execution paths, decided entirely by the annotation on the consumption view.
+
+Why this matters beyond the wow factor: **anything** that speaks CQN against your service gets federation for free — custom handlers (step 10 was exactly that), integration tests, the REPL, and, as we'll see next, AI agents. The OData endpoint is just one consumer among many.
+
+> **CAP or plugin?** `cds repl` is a **standard CAP** developer tool, and programmatic CQL against a service is core CAP. The **plugin** simply doesn't care who's asking: its handlers sit on the service's READ events, so REPL queries route through delegate/cache/replicate exactly like HTTP requests do. Nothing was configured for this step — it falls out of the architecture.
+
+## Step 12 (optional) — Let an AI agent query it over MCP
+
+One more consumer, because it's 2026: expose the same service via the Model Context Protocol. With CAP's MCP adapter this is one annotation and one dependency:
+
+```bash
+npm add @cap-js/mcp
+```
+
+```cds
+@mcp: 'agent'
+service SalesCockpit { /* everything from steps 2–8, unchanged */ }
+```
+
+The service is now also served at `http://localhost:4004/mcp/agent` (tools: `describe`, `query`, `call_action`). Point any MCP client at it — Cursor, Claude, the MCP Inspector — and ask in natural language: *"List the top 5 customers in Germany and show total freight per country in EUR."* The agent's `query` calls run CQN `SELECT`s on your service — landing on the same federation handlers as the REPL queries in step 11. Live remote data, cached lookups, and replicated analytics in one conversation, with zero MCP-specific code.
+
+> **CAP or plugin?** The MCP adapter is **standard CAP** (`@cap-js/mcp`, CDS 10). The federation handlers underneath are the plugin. Neither knows about the other — they compose through CAP's event model. That's the "nicely fits together" point of this whole post in a single step.
+
+## How it all fits together
+
+Looking back at what we built, the division of labor is remarkably clean:
+
+| Concern | Standard CAP | The plugins add |
+|---|---|---|
+| Remote model & binding | `cds import`, `cds.requires`, destinations | — |
+| Schema contract | consumption views, renames, associations | — |
+| Query translation | projection chain, automatic renames | — |
+| Live forwarding | `remote.run(query)` primitive | handler registration, cross-service `$expand`/navigation, static `where`, CUD opt-in |
+| Caching | — | response cache (`cds-caching`), entity cache (pipeline snapshot) |
+| Replication | `UPSERT`, `cds.spawn` primitives | scheduler, full/delta modes, retry, concurrency guard, streaming, tracker |
+| CAP-to-CAP | `cds export`/`npm add`, HCQL (CDS 10) | same annotation for every source type |
+| REST sources | `cds.requires` binding (`kind: 'rest'`) | REST adapter: pagination, `dataPath` envelopes, delta param, `PIPELINE.MAP` field translation |
+| Eventing | declared events, `emit`, messaging bindings (file-based → Event Mesh) | `executeEvent` single-record micro-runs, watermark-safe, `trigger: event` in the tracker |
+| Custom endpoints | `@protocol: 'rest'`, `ApplicationService` handlers, CQL | reads inside handlers route through delegate / cache / replicate automatically |
+| Observability | CDS-modeled services, OData | Pipeline Console + management API |
+| Other consumers | `cds repl`, CQL, `@cap-js/mcp` | handlers fire on every channel automatically |
+
+The left column is why this doesn't feel bolted on: the contract (consumption views), the translation (projections), and the transports (OData, HCQL, MCP) are all CAP. The right column is part 1's "what's missing" list, crossed off. And the seam between the two is a handful of annotations.
+
+The complete project — both apps, seed data, `requests.http`, step-by-step commits — is here: **[GitHub repo](https://github.com/mikezaschka/data-federation-demo)**.
+
+If you build something with it, hit a gap, or disagree with a design decision — the comments below and the [GitHub issues](https://github.com/mikezaschka/cds-data/issues) are open. And if you missed the concepts behind all of this, [part 1](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-1/ba-p/14402349) has you covered.
 
 ## Links
 
-### Packages and docs
-
 | Resource | URL |
 |---|---|
+| Demo project (this post) | https://github.com/mikezaschka/data-federation-demo |
+| Part 1 of this series | https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-1/ba-p/14402349 |
 | Documentation portal | https://mikezaschka.github.io/cds-data/ |
-| `cds-data-federation` guide | https://mikezaschka.github.io/cds-data/federation/ |
-| `cds-data-pipeline` guide | https://mikezaschka.github.io/cds-data/pipeline/ |
-| `cds-data-materialization` guide | https://mikezaschka.github.io/cds-data/materialization/ |
-| Source repo (monorepo) | https://github.com/mikezaschka/cds-data |
-| Federation annotations reference | https://mikezaschka.github.io/cds-data/federation/reference/annotations |
-| Federation comparison matrix | https://mikezaschka.github.io/cds-data/federation/reference/comparison |
-| Cross-service scenarios | https://mikezaschka.github.io/cds-data/federation/concepts/cross-service-scenarios |
-| Terminology page | https://mikezaschka.github.io/cds-data/federation/concepts/terminology |
-
-### SAP and CAP references
-
-| Resource | URL |
-|---|---|
-| CAP Service Integration guide | https://cap.cloud.sap/docs/guides/integration/calesi |
-| CAP Data Federation guide | https://cap.cloud.sap/docs/guides/integration/data-federation |
-| The Calesi Pattern | https://cap.cloud.sap/docs/get-started/concepts#the-calesi-pattern |
-| Consuming Services (projection features) | https://cap.cloud.sap/docs/guides/services/consuming-services#supported-projection-features |
-| HANA native features in CAP | https://cap.cloud.sap/docs/advanced/hana#native-hana-features |
-| `@capire/xflights` (reference provider, used in Part A) | https://github.com/capire/xflights |
-| `@capire/xtravels` (canonical handler-level consumer of xflights) | https://github.com/capire/xtravels |
-| `API_BUSINESS_PARTNER` on SAP API Hub | https://api.sap.com/api/API_BUSINESS_PARTNER/overview |
-
-### Alternatives
-
-| Tool | URL |
-|---|---|
-| Risk Management ext-service branch | https://github.com/SAP-samples/cloud-cap-risk-management/tree/ext-service-s4hc-suppliers-ui |
-| Kai Niklas — CAP Remote Services + Fiori Elements | https://blog.kai-niklas.de/posts/9-sap-cap-remote-services-fiori-elements/ |
-| Gregor Wolf — cap-replication-demo | https://github.com/gregorwolf/cap-replication-demo |
-| `@cap-js-community/common` (Replication Cache) | https://github.com/cap-js-community/common |
+| Annotation reference | https://mikezaschka.github.io/cds-data/federation/reference/annotations |
+| Pipeline Console guide | https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console |
+| `cds-data-federation` on npm | https://www.npmjs.com/package/cds-data-federation |
+| `cds-data-pipeline` on npm | https://www.npmjs.com/package/cds-data-pipeline |
 | `cds-caching` | https://github.com/mikezaschka/cds-caching |
-| HANA Smart Data Access | https://help.sap.com/docs/SAP_HANA_PLATFORM/6b94445c94ae495c83a19646e7c3fd56/6ce5a8dc7c0f44e28f12ff09db93b45c.html |
-| SAP Business Data Cloud | https://www.sap.com/products/data-cloud.html |
-| SAP Datasphere | https://help.sap.com/docs/SAP_DATASPHERE |
-| SAP Cloud Integration (Integration Suite) | https://help.sap.com/docs/integration-suite |
-| SAP Graph | https://help.sap.com/docs/SAP_GRAPH |
-| SAP Master Data Integration | https://help.sap.com/docs/SAP_MASTER_DATA_INTEGRATION |
-| SAP Event Mesh | https://help.sap.com/docs/SAP_EM |
-| Debezium | https://debezium.io/ |
-| Apache Airflow | https://airflow.apache.org/ |
-| dbt | https://www.getdbt.com/ |
-
-### Agent tooling
-
-| Tool | URL |
-|---|---|
-| AGENTS.md standard | https://agentsmd.org |
-| Agent Skills format | https://agentskills.io |
-| Model Context Protocol | https://modelcontextprotocol.io/ |
-| `@cap-js/mcp-server` | https://www.npmjs.com/package/@cap-js/mcp-server |
-| `@sap/fiori-mcp` | https://www.npmjs.com/package/@sap/fiori-mcp |
-| Cursor | https://cursor.com |
-| Claude Code | https://www.claude.com/product/claude-code |
-| Codex CLI | https://github.com/openai/codex |
-| GitHub Copilot | https://github.com/features/copilot |
-| Aider | https://aider.chat/ |
+| CAP Service Integration guide | https://cap.cloud.sap/docs/guides/integration/calesi |
+| Northwind OData service | https://services.odata.org/V4/Northwind/Northwind.svc |
