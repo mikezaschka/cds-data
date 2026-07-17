@@ -3,7 +3,7 @@ const cds = require('@sap/cds')
 function findServingService(entityFullName) {
     for (const [, srv] of Object.entries(cds.services)) {
         if (!srv.entities) continue
-        if (srv.kind !== 'app-service' && srv.kind !== 'service') continue
+        if (!srv.isAppService && srv.kind !== 'app-service' && srv.kind !== 'service') continue
         for (const entity of srv.entities) {
             if (entity.name === entityFullName) return srv
             const projRef = entity.projection?.from?.ref?.[0]
