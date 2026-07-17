@@ -135,3 +135,4 @@ Multi-tenancy: [CAP MTX](https://mikezaschka.github.io/cds-data/federation/integ
 
 - [`cds-data-pipeline`](https://www.npmjs.com/package/cds-data-pipeline) — the pipeline engine this plugin composes.
 - [`cds-caching`](https://github.com/mikezaschka/cds-caching) — optional peer for `cache.strategy: 'response'`.
+- SAP Community — [Part 1: concepts](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-1/ba-p/14402349) · [Part 2: hands-on](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-2/ba-p/14442604)

@@ -52,3 +52,10 @@ These plugins track CAP's June 2026 (**cds 10**) release. All three install on *
 - **MCP** (`@cap-js/mcp`) — expose federated entities to AI agents through the Model Context Protocol. Because federation handlers run on the application service, MCP `query` calls flow through the same delegate/replicate path as OData.
 
 See **[CDS 10, HCQL and MCP](/concepts/cds-10)** for the full picture, or the deep dives in [Service query execution](/federation/concepts/service-query-execution#cds-10-hcql-and-mcp) and [MCP integration](/federation/integration/mcp).
+
+## Blog posts
+
+A two-part series on SAP Community covers the concepts and a hands-on walkthrough:
+
+- [The Full Picture: Federating, Replicating, and Caching Remote Data in CAP — Part 1](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-1/ba-p/14402349) — terminology, what CAP provides, and how the plugins close the gaps
+- [The Full Picture: Federating, Replicating, and Caching Remote Data in CAP — Part 2: Hands-On](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-2/ba-p/14442604) — Sales Cockpit walkthrough (delegate, cache, replicate)

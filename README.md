@@ -61,4 +61,9 @@ Runnable demos live under [`examples/`](./examples/). See [`examples/README.md`]
 - [cds-caching](https://github.com/mikezaschka/cds-caching) — optional peer for `cache.strategy: 'response'`; built-in `cache.strategy: 'entity'` uses `cds-data-pipeline` + SQLite
 - [CAP Service Integration guide](https://cap.cloud.sap/docs/guides/integration/calesi) — upstream delegation and federation reference
 
+### Blog posts (SAP Community)
+
+- [The Full Picture: Federating, Replicating, and Caching Remote Data in CAP — Part 1](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-1/ba-p/14402349) — concepts, CAP primitives, and how the plugins fit
+- [The Full Picture: Federating, Replicating, and Caching Remote Data in CAP — Part 2: Hands-On](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-2/ba-p/14442604) — Sales Cockpit walkthrough
+
 Preview docs locally: `npm run docs:serve` from the repository root.

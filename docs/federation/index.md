@@ -63,3 +63,8 @@ entity ReplicatedPartners as projection on remote.A_BusinessPartner {
 Install: `npm add cds-data-federation cds-data-pipeline` — runs on **both CDS 9 and CDS 10** (`@sap/cds >= 9`).
 
 **CDS 10 (June 2026):** delegate and replicate benefit automatically from CAP's **HCQL** protocol on CAP-to-CAP hops, and federated entities are reachable by AI agents through the **[MCP adapter](/federation/integration/mcp)** — no annotation changes. See [CDS 10, HCQL and MCP](/federation/concepts/service-query-execution#cds-10-hcql-and-mcp).
+
+## Blog posts
+
+- [The Full Picture: Federating, Replicating, and Caching Remote Data in CAP — Part 1](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-1/ba-p/14402349) — concepts and CAP primitives
+- [The Full Picture: Federating, Replicating, and Caching Remote Data in CAP — Part 2: Hands-On](https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-2/ba-p/14442604) — Sales Cockpit walkthrough

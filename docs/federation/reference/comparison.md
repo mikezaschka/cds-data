@@ -94,6 +94,8 @@ Within the application layer, the plugin complements rather than replaces neighb
 
 | Resource | URL |
 |---|---|
+| SAP Community — Federating, Replicating, and Caching Remote Data in CAP (Part 1) | https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-1/ba-p/14402349 |
+| SAP Community — Federating, Replicating, and Caching Remote Data in CAP (Part 2: Hands-On) | https://community.sap.com/t5/technology-blog-posts-by-members/federating-replicating-and-caching-remote-data-in-cap-part-2/ba-p/14442604 |
 | CAP Service Integration guide | https://cap.cloud.sap/docs/guides/integration/calesi |
 | CAP Data Federation guide | https://cap.cloud.sap/docs/guides/integration/data-federation |
 | xtravels (Service Integration reference sample) | https://github.com/capire/xtravels |
