@@ -86,6 +86,10 @@ async function registerFederationHandlers(federationConfigs, viewMappingRegistry
         const federatedMap = federatedByService.get(service.name)
         const localAssocs = buildLocalAssocInfo(servedFullName, service.name, federatedMap)
         const wf = writeFlags || { create: false, update: false, delete: false }
+        const directQueryContext = {
+            entityFullName: servedFullName,
+            viewMappingRegistry,
+        }
 
         if (options.cache) {
             const cacheStrategy = options.cache.strategy || 'response'
@@ -101,12 +105,32 @@ async function registerFederationHandlers(federationConfigs, viewMappingRegistry
                     wf,
                     entityFullName,
                     entityCacheMeta,
+                    directQueryContext,
                 )
             } else {
-                await registerCachedDelegateHandler(service, serviceEntityName, sourceService, options.cache, viewMapping, assocTargets, localAssocs, wf)
+                await registerCachedDelegateHandler(
+                    service,
+                    serviceEntityName,
+                    sourceService,
+                    options.cache,
+                    viewMapping,
+                    assocTargets,
+                    localAssocs,
+                    wf,
+                    directQueryContext,
+                )
             }
         } else {
-            registerDelegateHandler(service, serviceEntityName, sourceService, viewMapping, assocTargets, localAssocs, wf)
+            registerDelegateHandler(
+                service,
+                serviceEntityName,
+                sourceService,
+                viewMapping,
+                assocTargets,
+                localAssocs,
+                wf,
+                directQueryContext,
+            )
         }
     }
 

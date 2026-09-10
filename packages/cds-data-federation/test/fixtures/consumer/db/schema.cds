@@ -116,6 +116,20 @@ entity Orders as projection on remote.Orders {
     modifiedAt
 };
 
+// Restricted projection + static filter exercises the direct-remote query path
+// for delegated expands.
+@federation.delegate
+entity ShippedOrders as projection on remote.Orders {
+    ID        as orderId,
+    customer  as buyer,
+    product   as item,
+    quantity,
+    total     as amount,
+    status,
+    orderDate as placedOn,
+    modifiedAt
+} where status = 'shipped';
+
 // Entity-level rename: reframes remote "Customers" as local "Suppliers"
 // Same remote data, completely different local domain purpose.
 @federation.delegate
@@ -175,6 +189,19 @@ entity OrdersV2 as projection on remoteV2.Orders {
     orderDate as placedOn,
     modifiedAt
 };
+
+// V2 mirror used to guard direct-query expand column generation.
+@federation.delegate
+entity ShippedOrdersV2 as projection on remoteV2.Orders {
+    ID        as orderId,
+    customer  as buyer,
+    product   as item,
+    quantity,
+    total     as amount,
+    status,
+    orderDate as placedOn,
+    modifiedAt
+} where status = 'shipped';
 
 // V2 Suppliers: entity-level rename via V2 protocol
 @federation.delegate

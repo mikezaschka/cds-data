@@ -21,7 +21,7 @@ describe('Delegate Strategy', () => {
     })
 
     function describeQueryCapabilities(protocol, entities) {
-        const { Customers, Products, Orders, Suppliers, isV2 } = entities
+        const { Customers, Products, Orders, ShippedOrders, Suppliers, isV2 } = entities
         // cds 10 defaults `ieee754compatible: true` (and `count_as_string: true`),
         // so Decimal/Int64 and `@odata.count` arrive as JSON strings on V4 too —
         // not just V2. Coerce unconditionally to stay compatible with cds 9 and 10.
@@ -357,6 +357,26 @@ describe('Delegate Strategy', () => {
                     expect(data.buyer).to.have.property('ID', 'C001')
                     expect(data.buyer).to.have.property('name', 'Acme Corp')
                 })
+
+                it('[4.1.6] static where + delegated expand: narrows a trimmed expand target', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrders}('O001')?$expand=item`)
+                    expect(data.orderId).to.equal('O001')
+                    expect(data.status).to.equal('shipped')
+                    expect(data.item).to.have.property('productId')
+                    expect(data.item).to.have.property('productName')
+                    expect(data.item).to.have.property('unitPrice')
+                    expect(data.item).to.not.have.property('stock')
+                    expect(data.item).to.not.have.property('modifiedAt')
+                })
+
+                it('[4.1.6] static where + delegated expand: supports multiple expands', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrders}?$expand=buyer,item`)
+                    expect(data.value).to.have.length(3)
+                    expect(data.value.every(order => order.status === 'shipped')).to.be.true
+                    expect(data.value[0].buyer).to.have.property('name')
+                    expect(data.value[0].item).to.have.property('productName')
+                    expect(data.value[0].item).to.not.have.property('stock')
+                })
             })
 
             // ── $expand options (V4 only — V2 does not support nested query options in $expand) ──
@@ -473,11 +493,13 @@ describe('Delegate Strategy', () => {
 
     describeQueryCapabilities('OData V4', {
         Customers: 'Customers', Products: 'Products',
-        Orders: 'Orders', Suppliers: 'Suppliers', isV2: false
+        Orders: 'Orders', ShippedOrders: 'ShippedOrders',
+        Suppliers: 'Suppliers', isV2: false
     })
 
     describeQueryCapabilities('OData V2', {
         Customers: 'CustomersV2', Products: 'ProductsV2',
-        Orders: 'OrdersV2', Suppliers: 'SuppliersV2', isV2: true
+        Orders: 'OrdersV2', ShippedOrders: 'ShippedOrdersV2',
+        Suppliers: 'SuppliersV2', isV2: true
     })
 })

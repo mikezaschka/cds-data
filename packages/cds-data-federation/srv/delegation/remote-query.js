@@ -12,6 +12,11 @@
 const cds = require('@sap/cds')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
 const { projectedColumnToSelectArg } = require('cds-data-pipeline/srv/lib/columnRefPath')
+const {
+    buildInnerColumns,
+    isAssociationColumn,
+    projectedScalarColumns,
+} = require('./expand-columns')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -66,6 +71,100 @@ function translateWhere(where, localToRemote) {
     return result
 }
 
+function translateRef(ref, localToRemote) {
+    return ref.map(seg =>
+        typeof seg === 'string' ? (localToRemote?.[seg] || seg) : seg
+    )
+}
+
+function normalizeExpandColumn(
+    col,
+    viewMapping,
+    remoteEntityDef,
+    entityFullName,
+    viewMappingRegistry,
+) {
+    const localToRemote = viewMapping?.localToRemote || {}
+    const translatedRef = translateRef(col.ref, localToRemote)
+    const localAssocName = col.ref?.[0]
+    const remoteAssocName = translatedRef?.[0]
+    const localEntityDef = cds.model?.definitions?.[entityFullName]
+    const localTargetName = localEntityDef?.elements?.[localAssocName]?.target
+    const targetMapping = viewMappingRegistry?.[localTargetName] || {}
+    const remoteTargetName = remoteEntityDef?.elements?.[remoteAssocName]?.target
+    const remoteTargetDef = cds.model?.definitions?.[remoteTargetName]
+
+    const innerColumns = buildInnerColumns(
+        col,
+        targetMapping.localToRemote || {},
+        targetMapping,
+        null,
+        remoteTargetDef,
+        {
+            mapExpand: nested => normalizeExpandColumn(
+                nested,
+                targetMapping,
+                remoteTargetDef,
+                localTargetName,
+                viewMappingRegistry,
+            ),
+        },
+    )
+
+    return { ...col, ref: translatedRef, expand: innerColumns }
+}
+
+function buildDirectRemoteColumns(
+    sel,
+    viewMapping,
+    remoteEntityDef,
+    entityFullName,
+    viewMappingRegistry,
+) {
+    const { localToRemote, projectedColumns, isWildcard } = viewMapping || {}
+
+    if (!sel.columns) {
+        if (isWildcard || !projectedColumns?.length) return null
+        return projectedColumns
+            .filter(col => !isAssociationColumn(col, remoteEntityDef))
+            .map(col => projectedColumnToSelectArg(col))
+    }
+
+    const hasWildcard = sel.columns.some(col => col === '*' || col?.['*'])
+    if (hasWildcard) {
+        const remoteCols = projectedScalarColumns(viewMapping, remoteEntityDef)
+            .map(col => projectedColumnToSelectArg(col))
+        for (const col of sel.columns.filter(item => item?.expand)) {
+            remoteCols.push(normalizeExpandColumn(
+                col,
+                viewMapping,
+                remoteEntityDef,
+                entityFullName,
+                viewMappingRegistry,
+            ))
+        }
+        return remoteCols
+    }
+
+    const remoteCols = []
+    for (const col of sel.columns) {
+        if (col?.expand) {
+            remoteCols.push(normalizeExpandColumn(
+                col,
+                viewMapping,
+                remoteEntityDef,
+                entityFullName,
+                viewMappingRegistry,
+            ))
+        } else if (col?.ref) {
+            remoteCols.push({ ...col, ref: translateRef(col.ref, localToRemote) })
+        } else {
+            remoteCols.push(col)
+        }
+    }
+    return remoteCols
+}
+
 /**
  * Builds and runs a CQN that targets the remote entity directly, bypassing
  * CAP's cds.ql.resolve() projection chain traversal. This is required when:
@@ -80,12 +179,19 @@ function translateWhere(where, localToRemote) {
  *   Output from: ProviderService.Products, where: price,      columns: name
  *   (bypasses projection chain; results mapped back via remoteToLocal)
  */
-async function runDirectRemoteQuery(remote, sourceServiceName, originalQuery, viewMapping) {
+async function runDirectRemoteQuery(
+    remote,
+    sourceServiceName,
+    originalQuery,
+    viewMapping,
+    { entityFullName, viewMappingRegistry } = {},
+) {
     const sel = originalQuery.SELECT
-    const { localToRemote, remoteToLocal, projectedColumns, staticWhere, sourceEntity, isWildcard } = viewMapping || {}
+    const { localToRemote, remoteToLocal, staticWhere, sourceEntity } = viewMapping || {}
 
     const entityName = sourceEntity || sel.from?.ref?.[0]?.id || sel.from?.ref?.[0] || sel.from
     const remoteEntity = `${sourceServiceName}.${entityName}`
+    const remoteEntityDef = cds.model?.definitions?.[remoteEntity]
 
     const reasons = []
     if (staticWhere) reasons.push('staticWhere')
@@ -108,42 +214,14 @@ async function runDirectRemoteQuery(remote, sourceServiceName, originalQuery, vi
         }
     }
 
-    if (sel.columns) {
-        const hasWildcard = sel.columns.some(c => c === '*' || c['*'])
-        if (hasWildcard && !isWildcard && projectedColumns?.length) {
-            const remoteCols = projectedColumns.map(c => projectedColumnToSelectArg(c))
-            const expandCols = sel.columns.filter(c => c.expand)
-            for (const col of expandCols) {
-                const translatedRef = localToRemote
-                    ? col.ref.map(seg => (typeof seg === 'string' ? localToRemote[seg] || seg : seg))
-                    : col.ref
-                remoteCols.push({ ...col, ref: translatedRef })
-            }
-            q.SELECT.columns = remoteCols
-        } else {
-            const remoteCols = []
-            for (const col of sel.columns) {
-                if (col.expand) {
-                    const translatedRef = localToRemote
-                        ? col.ref.map(seg => (typeof seg === 'string' ? localToRemote[seg] || seg : seg))
-                        : col.ref
-                    remoteCols.push({ ...col, ref: translatedRef })
-                } else if (col.ref) {
-                    const translatedRef = col.ref.map(seg =>
-                        typeof seg === 'string' ? (localToRemote?.[seg] || seg) : seg
-                    )
-                    remoteCols.push({ ...col, ref: translatedRef })
-                } else if (col === '*' || col['*']) {
-                    remoteCols.push(col)
-                } else {
-                    remoteCols.push(col)
-                }
-            }
-            if (remoteCols.length > 0) q.SELECT.columns = remoteCols
-        }
-    } else if (projectedColumns?.length) {
-        q.SELECT.columns = projectedColumns.map(c => projectedColumnToSelectArg(c))
-    }
+    const remoteColumns = buildDirectRemoteColumns(
+        sel,
+        viewMapping,
+        remoteEntityDef,
+        entityFullName,
+        viewMappingRegistry,
+    )
+    if (remoteColumns?.length) q.SELECT.columns = remoteColumns
 
     if (sel.limit) q.SELECT.limit = sel.limit
     if (sel.orderBy) {
@@ -161,18 +239,50 @@ async function runDirectRemoteQuery(remote, sourceServiceName, originalQuery, vi
 
     const results = await runPagedRemoteQuery(remote, q)
 
-    if (!remoteToLocal || Object.keys(remoteToLocal).length === 0) return results
-
     if (!Array.isArray(results)) return results
-    const mapped = results.map(row => mapRow(row, remoteToLocal))
+    const hasTopLevelMapping = remoteToLocal && Object.keys(remoteToLocal).length > 0
+    if (!hasTopLevelMapping && (!entityFullName || !viewMappingRegistry)) return results
+    const mapped = results.map(row => mapRow(
+        row,
+        remoteToLocal || {},
+        remoteEntityDef,
+        entityFullName,
+        viewMappingRegistry,
+    ))
     if ('$count' in results) mapped.$count = results.$count
     return mapped
 }
 
-function mapRow(row, remoteToLocal) {
+function mapRow(row, remoteToLocal, remoteEntityDef, entityFullName, viewMappingRegistry) {
     const mapped = {}
     for (const [key, val] of Object.entries(row)) {
-        mapped[remoteToLocal[key] || key] = val
+        const localKey = remoteToLocal[key] || key
+        const remoteElement = remoteEntityDef?.elements?.[key]
+        if (remoteElement?.target && val != null && typeof val === 'object') {
+            const localEntityDef = cds.model?.definitions?.[entityFullName]
+            const localTargetName = localEntityDef?.elements?.[localKey]?.target
+            const targetMapping = viewMappingRegistry?.[localTargetName] || {}
+            const remoteTargetDef = cds.model?.definitions?.[remoteElement.target]
+            if (Array.isArray(val)) {
+                mapped[localKey] = val.map(item => mapRow(
+                    item,
+                    targetMapping.remoteToLocal || {},
+                    remoteTargetDef,
+                    localTargetName,
+                    viewMappingRegistry,
+                ))
+            } else {
+                mapped[localKey] = mapRow(
+                    val,
+                    targetMapping.remoteToLocal || {},
+                    remoteTargetDef,
+                    localTargetName,
+                    viewMappingRegistry,
+                )
+            }
+        } else {
+            mapped[localKey] = val
+        }
     }
     return mapped
 }
@@ -198,4 +308,9 @@ function propagateRemoteError(err, _sourceServiceName) {
     return err
 }
 
-module.exports = { containsLambda, runDirectRemoteQuery, propagateRemoteError }
+module.exports = {
+    buildDirectRemoteColumns,
+    containsLambda,
+    runDirectRemoteQuery,
+    propagateRemoteError,
+}
