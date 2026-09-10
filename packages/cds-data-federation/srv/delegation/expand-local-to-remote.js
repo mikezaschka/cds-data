@@ -3,7 +3,8 @@ const { resolveRemoteNavigationFilters } = require('./remote-navigation-filters'
 const { rewriteRemoteToLocalNavigation } = require('./cross-service-navigation')
 const {
     buildInnerColumns,
-    translateExpandOrderBy,
+    localFieldName,
+    translateOrderBy,
     translateExpandWhere,
 } = require('./expand-columns')
 
@@ -374,7 +375,7 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
         : null
 
     const expandOrderBy = expandItem.orderBy
-        ? translateExpandOrderBy(expandItem.orderBy, localToRemote)
+        ? translateOrderBy(expandItem.orderBy, localToRemote)
         : null
 
     const allResults = []
@@ -507,7 +508,7 @@ async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMapp
         : null
 
     const expandOrderBy = expandItem.orderBy
-        ? translateExpandOrderBy(expandItem.orderBy, localToRemote)
+        ? translateOrderBy(expandItem.orderBy, localToRemote)
         : null
 
     const allResults = []
@@ -591,17 +592,7 @@ function mapResultWithNestedExpands(row, remoteToLocal, remoteEntityDef, viewMap
 function mapFlatWithFKs(row, remoteToLocal) {
     const mapped = {}
     for (const [k, v] of Object.entries(row)) {
-        let localKey = remoteToLocal[k]
-        if (!localKey) {
-            for (const [remoteName, localName] of Object.entries(remoteToLocal)) {
-                const prefix = remoteName + '_'
-                if (k.startsWith(prefix)) {
-                    localKey = localName + '_' + k.substring(prefix.length)
-                    break
-                }
-            }
-        }
-        mapped[localKey || k] = v
+        mapped[localFieldName(k, remoteToLocal)] = v
     }
     return mapped
 }

@@ -11,12 +11,12 @@
 
 const cds = require('@sap/cds')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
-const { projectedColumnToSelectArg } = require('cds-data-pipeline/srv/lib/columnRefPath')
 const {
     buildInnerColumns,
-    isAssociationColumn,
+    localFieldName,
     projectedScalarColumns,
-    translateExpandOrderBy,
+    remoteFieldName,
+    translateOrderBy,
     translateExpandWhere,
 } = require('./expand-columns')
 
@@ -50,9 +50,9 @@ function translateWhere(where, localToRemote) {
         if (typeof item === 'object' && item !== null) {
             if (item.ref) {
                 const translated = item.ref.map(seg => {
-                    if (typeof seg === 'string') return localToRemote[seg] || seg
+                    if (typeof seg === 'string') return remoteFieldName(seg, localToRemote)
                     if (seg.id) {
-                        const newSeg = { ...seg, id: localToRemote[seg.id] || seg.id }
+                        const newSeg = { ...seg, id: remoteFieldName(seg.id, localToRemote) }
                         if (seg.where) newSeg.where = translateWhere(seg.where, localToRemote)
                         return newSeg
                     }
@@ -75,7 +75,7 @@ function translateWhere(where, localToRemote) {
 
 function translateRef(ref, localToRemote) {
     return ref.map(seg =>
-        typeof seg === 'string' ? (localToRemote?.[seg] || seg) : seg
+        typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
     )
 }
 
@@ -121,7 +121,7 @@ function normalizeExpandColumn(
         )
     }
     if (col.orderBy) {
-        normalized.orderBy = translateExpandOrderBy(
+        normalized.orderBy = translateOrderBy(
             col.orderBy,
             targetMapping.localToRemote || {},
         )
@@ -140,15 +140,12 @@ function buildDirectRemoteColumns(
 
     if (!sel.columns) {
         if (isWildcard || !projectedColumns?.length) return null
-        return projectedColumns
-            .filter(col => !isAssociationColumn(col, remoteEntityDef))
-            .map(col => projectedColumnToSelectArg(col))
+        return projectedScalarColumns(viewMapping, remoteEntityDef)
     }
 
     const hasWildcard = sel.columns.some(col => col === '*' || col?.['*'])
     if (hasWildcard) {
         const remoteCols = projectedScalarColumns(viewMapping, remoteEntityDef)
-            .map(col => projectedColumnToSelectArg(col))
         for (const col of sel.columns.filter(item => item?.expand)) {
             remoteCols.push(normalizeExpandColumn(
                 col,
@@ -241,13 +238,7 @@ async function runDirectRemoteQuery(
     if (sel.limit) q.SELECT.limit = sel.limit
     if (sel.orderBy) {
         q.SELECT.orderBy = localToRemote
-            ? sel.orderBy.map(o => {
-                if (o.ref) {
-                    const mapped = o.ref.map(r => (typeof r === 'string' ? localToRemote[r] || r : r))
-                    return { ...o, ref: mapped }
-                }
-                return o
-            })
+            ? translateOrderBy(sel.orderBy, localToRemote)
             : sel.orderBy
     }
     if (sel.count) q.SELECT.count = sel.count
@@ -271,7 +262,7 @@ async function runDirectRemoteQuery(
 function mapRow(row, remoteToLocal, remoteEntityDef, entityFullName, viewMappingRegistry) {
     const mapped = {}
     for (const [key, val] of Object.entries(row)) {
-        const localKey = remoteToLocal[key] || key
+        const localKey = localFieldName(key, remoteToLocal)
         const remoteElement = remoteEntityDef?.elements?.[key]
         if (remoteElement?.target && val != null && typeof val === 'object') {
             const localEntityDef = cds.model?.definitions?.[entityFullName]

@@ -16,24 +16,88 @@ function isAssociationColumn(col, remoteEntityDef) {
     return !!(element?.target || element?.is2one || element?.is2many)
 }
 
+/**
+ * Foreign key element names a managed to-one association contributes to its
+ * source entity, e.g. `customer` with key `ID` yields `customer_ID`. To-many and
+ * unmanaged associations own no foreign keys, so they yield nothing.
+ */
+function associationForeignKeyRefs(assocName, remoteEntityDef) {
+    const element = remoteEntityDef?.elements?.[assocName]
+    if (!element || element.is2many || !element.keys?.length) return []
+    return element.keys
+        .map(key => key.$generatedFieldName
+            || (Array.isArray(key.ref) ? `${assocName}_${key.ref.join('_')}` : null))
+        .filter(Boolean)
+        .map(name => ({ ref: [name] }))
+}
+
+/**
+ * Translates a local field name to its remote counterpart, including the foreign
+ * keys of renamed associations (`buyer_ID` → `customer_ID` for `customer as buyer`).
+ */
+function remoteFieldName(name, localToRemote) {
+    if (!localToRemote) return name
+    if (localToRemote[name]) return localToRemote[name]
+    for (const [local, remote] of Object.entries(localToRemote)) {
+        const prefix = `${local}_`
+        if (name.startsWith(prefix)) return `${remote}_${name.slice(prefix.length)}`
+    }
+    return name
+}
+
+/**
+ * Inverse of {@link remoteFieldName}: maps a remote result key back to the local
+ * name, including foreign keys of renamed associations.
+ */
+function localFieldName(name, remoteToLocal) {
+    if (!remoteToLocal) return name
+    if (remoteToLocal[name]) return remoteToLocal[name]
+    for (const [remote, local] of Object.entries(remoteToLocal)) {
+        const prefix = `${remote}_`
+        if (name.startsWith(prefix)) return `${local}_${name.slice(prefix.length)}`
+    }
+    return name
+}
+
 function projectedScalarColumns(viewMapping, remoteEntityDef) {
     const projectedColumns = viewMapping?.projectedColumns || []
     if (!viewMapping?.isWildcard && projectedColumns.length > 0) {
-        return projectedColumns
-            .filter(col => !isAssociationColumn(col, remoteEntityDef))
-            .map(col => projectedColumnToRemoteSelectRef(col))
+        const columns = []
+        for (const col of projectedColumns) {
+            if (isAssociationColumn(col, remoteEntityDef)) {
+                // Associations belong in $expand, but their foreign keys are
+                // structural properties the consumption view still exposes.
+                columns.push(...associationForeignKeyRefs(projectedColumnRef(col)[0], remoteEntityDef))
+            } else {
+                columns.push(projectedColumnToRemoteSelectRef(col))
+            }
+        }
+        return dedupeRefs(columns)
     }
 
     if (!remoteEntityDef?.elements) return []
     const excluded = new Set(viewMapping?.excludedColumns || [])
-    return Object.entries(remoteEntityDef.elements)
-        .filter(([name, element]) =>
-            !excluded.has(name)
-            && !element.target
-            && !element.is2one
-            && !element.is2many
-        )
-        .map(([name]) => ({ ref: [name] }))
+    const columns = []
+    for (const [name, element] of Object.entries(remoteEntityDef.elements)) {
+        if (excluded.has(name)) continue
+        if (element.target || element.is2one || element.is2many) {
+            columns.push(...associationForeignKeyRefs(name, remoteEntityDef))
+        } else {
+            columns.push({ ref: [name] })
+        }
+    }
+    return dedupeRefs(columns)
+}
+
+function dedupeRefs(columns) {
+    const seen = new Set()
+    return columns.filter(col => {
+        const key = col?.ref?.join('.')
+        if (!key) return true
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
 }
 
 function translateExpandWhere(where, localToRemote) {
@@ -41,7 +105,7 @@ function translateExpandWhere(where, localToRemote) {
     return where.map(node => {
         if (node?.ref) {
             const translatedRef = node.ref.map(seg =>
-                typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
+                typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
             )
             return { ...node, ref: translatedRef }
         }
@@ -55,12 +119,12 @@ function translateExpandWhere(where, localToRemote) {
     })
 }
 
-function translateExpandOrderBy(orderBy, localToRemote) {
+function translateOrderBy(orderBy, localToRemote) {
     if (!Array.isArray(orderBy)) return orderBy
     return orderBy.map(item => {
         if (!item?.ref) return item
         const translatedRef = item.ref.map(seg =>
-            typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
+            typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
         )
         return { ...item, ref: translatedRef }
     })
@@ -97,13 +161,13 @@ function buildInnerColumns(
                     innerColumns.push(options.mapExpand(col))
                 } else {
                     const translatedRef = col.ref.map(seg =>
-                        typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
+                        typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
                     )
                     innerColumns.push({ ...col, ref: translatedRef })
                 }
             } else if (!hasWildcard && col?.ref) {
                 const translatedRef = col.ref.map(seg =>
-                    typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
+                    typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
                 )
                 innerColumns.push({ ...col, ref: translatedRef })
             }
@@ -127,8 +191,9 @@ function buildInnerColumns(
 
 module.exports = {
     buildInnerColumns,
-    isAssociationColumn,
+    localFieldName,
     projectedScalarColumns,
-    translateExpandOrderBy,
+    remoteFieldName,
     translateExpandWhere,
+    translateOrderBy,
 }

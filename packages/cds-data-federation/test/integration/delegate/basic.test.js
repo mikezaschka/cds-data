@@ -377,6 +377,30 @@ describe('Delegate Strategy', () => {
                     expect(data.value[0].item).to.have.property('productName')
                     expect(data.value[0].item).to.not.have.property('stock')
                 })
+
+                it('[4.1.6] static where: exposes renamed association foreign keys', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrders}('O001')`)
+                    expect(data).to.have.property('buyer_ID', 'C001')
+                    expect(data).to.have.property('item_ID', 'P001')
+                    expect(data).to.not.have.property('customer_ID')
+                    expect(data).to.not.have.property('product_ID')
+                })
+
+                it('[4.1.6] static where: selects a renamed association foreign key', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrders}('O001')?$select=orderId,buyer_ID`)
+                    expect(data).to.have.property('orderId', 'O001')
+                    expect(data).to.have.property('buyer_ID', 'C001')
+                })
+
+                it('[4.1.6] static where: filters and orders by a renamed association foreign key', async () => {
+                    const filtered = await GET(`${base}/${ShippedOrders}?$filter=buyer_ID eq 'C001'`)
+                    expect(filtered.data.value).to.have.length(1)
+                    expect(filtered.data.value[0].orderId).to.equal('O001')
+
+                    const ordered = await GET(`${base}/${ShippedOrders}?$orderby=buyer_ID desc`)
+                    const buyers = ordered.data.value.map(row => row.buyer_ID)
+                    expect(buyers).to.deep.equal([...buyers].sort().reverse())
+                })
             })
 
             // ── $expand options (V4 only — V2 does not support nested query options in $expand) ──

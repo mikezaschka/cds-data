@@ -5,8 +5,8 @@ describe('Direct remote query columns', () => {
     const remoteOrders = {
         elements: {
             ID: {},
-            customer: { target: 'Remote.Customers' },
-            product: { target: 'Remote.Products' },
+            customer: { target: 'Remote.Customers', keys: [{ ref: ['ID'] }] },
+            product: { target: 'Remote.Products', keys: [{ ref: ['ID'] }] },
             status: {},
         },
     }
@@ -116,6 +116,8 @@ describe('Direct remote query columns', () => {
 
         expect(columns.some(col => col.ref?.[0] === 'customer' && !col.expand)).toBe(false)
         expect(columns.some(col => col.ref?.[0] === 'product' && !col.expand)).toBe(false)
+        expect(columns.some(col => col.ref?.[0] === 'customer_ID')).toBe(true)
+        expect(columns.some(col => col.ref?.[0] === 'product_ID')).toBe(true)
 
         const buyer = columns.find(col => col.ref?.[0] === 'customer' && col.expand)
         expect(buyer.expand).toEqual([
@@ -187,7 +189,7 @@ describe('Direct remote query columns', () => {
         expect(expand.orderBy[0].ref).toEqual(['productName'])
     })
 
-    it('excludes associations when the client supplies no columns', () => {
+    it('replaces projected associations with their remote foreign keys', () => {
         const columns = buildDirectRemoteColumns(
             {},
             topMapping,
@@ -197,8 +199,26 @@ describe('Direct remote query columns', () => {
         )
 
         expect(columns).toEqual([
-            { ref: ['ID'], as: 'orderId' },
+            { ref: ['ID'] },
+            { ref: ['customer_ID'] },
+            { ref: ['product_ID'] },
             { ref: ['status'] },
+        ])
+    })
+
+    it('translates renamed association foreign keys in an explicit select', () => {
+        const columns = buildDirectRemoteColumns(
+            { columns: [{ ref: ['orderId'] }, { ref: ['buyer_ID'] }, { ref: ['item_ID'] }] },
+            topMapping,
+            remoteOrders,
+            'App.ShippedOrders',
+            registry,
+        )
+
+        expect(columns).toEqual([
+            { ref: ['ID'] },
+            { ref: ['customer_ID'] },
+            { ref: ['product_ID'] },
         ])
     })
 })
