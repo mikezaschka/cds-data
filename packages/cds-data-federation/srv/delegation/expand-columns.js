@@ -36,6 +36,36 @@ function projectedScalarColumns(viewMapping, remoteEntityDef) {
         .map(([name]) => ({ ref: [name] }))
 }
 
+function translateExpandWhere(where, localToRemote) {
+    if (!Array.isArray(where)) return where
+    return where.map(node => {
+        if (node?.ref) {
+            const translatedRef = node.ref.map(seg =>
+                typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
+            )
+            return { ...node, ref: translatedRef }
+        }
+        if (node?.func && Array.isArray(node.args)) {
+            return { ...node, args: translateExpandWhere(node.args, localToRemote) }
+        }
+        if (node?.xpr) {
+            return { ...node, xpr: translateExpandWhere(node.xpr, localToRemote) }
+        }
+        return node
+    })
+}
+
+function translateExpandOrderBy(orderBy, localToRemote) {
+    if (!Array.isArray(orderBy)) return orderBy
+    return orderBy.map(item => {
+        if (!item?.ref) return item
+        const translatedRef = item.ref.map(seg =>
+            typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
+        )
+        return { ...item, ref: translatedRef }
+    })
+}
+
 /**
  * Builds explicit remote columns for an expand item. Wildcards are replaced by
  * the target consumption view's scalar columns so OData v2 never receives nav/*.
@@ -99,4 +129,6 @@ module.exports = {
     buildInnerColumns,
     isAssociationColumn,
     projectedScalarColumns,
+    translateExpandOrderBy,
+    translateExpandWhere,
 }

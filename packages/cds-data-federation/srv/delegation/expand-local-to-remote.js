@@ -1,7 +1,11 @@
 const cds = require('@sap/cds')
 const { resolveRemoteNavigationFilters } = require('./remote-navigation-filters')
 const { rewriteRemoteToLocalNavigation } = require('./cross-service-navigation')
-const { buildInnerColumns } = require('./expand-columns')
+const {
+    buildInnerColumns,
+    translateExpandOrderBy,
+    translateExpandWhere,
+} = require('./expand-columns')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -160,29 +164,6 @@ function parseOnCondition(on, assocName) {
         return { localField, remoteField }
     }
     return null
-}
-
-/**
- * Translates field refs in an inner expand WHERE clause from local to remote names.
- * Returns a new array (does not mutate the original).
- */
-function translateExpandWhere(where, localToRemote) {
-    if (!Array.isArray(where)) return where
-    return where.map(node => {
-        if (node?.ref) {
-            const translatedRef = node.ref.map(seg =>
-                typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
-            )
-            return { ...node, ref: translatedRef }
-        }
-        if (node?.func && Array.isArray(node.args)) {
-            return { ...node, args: translateExpandWhere(node.args, localToRemote) }
-        }
-        if (node?.xpr) {
-            return { ...node, xpr: translateExpandWhere(node.xpr, localToRemote) }
-        }
-        return node
-    })
 }
 
 // ─── Remote Lambda Filter Resolution (cross-service filter: local → remote) ─
@@ -393,13 +374,7 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
         : null
 
     const expandOrderBy = expandItem.orderBy
-        ? expandItem.orderBy.map(o => {
-            if (!o.ref) return o
-            const translatedRef = o.ref.map(seg =>
-                typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
-            )
-            return { ...o, ref: translatedRef }
-        })
+        ? translateExpandOrderBy(expandItem.orderBy, localToRemote)
         : null
 
     const allResults = []
@@ -532,13 +507,7 @@ async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMapp
         : null
 
     const expandOrderBy = expandItem.orderBy
-        ? expandItem.orderBy.map(o => {
-            if (!o.ref) return o
-            const translatedRef = o.ref.map(seg =>
-                typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
-            )
-            return { ...o, ref: translatedRef }
-        })
+        ? translateExpandOrderBy(expandItem.orderBy, localToRemote)
         : null
 
     const allResults = []

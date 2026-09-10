@@ -16,6 +16,8 @@ const {
     buildInnerColumns,
     isAssociationColumn,
     projectedScalarColumns,
+    translateExpandOrderBy,
+    translateExpandWhere,
 } = require('./expand-columns')
 
 const LOG = cds.log('cds-data-federation')
@@ -111,7 +113,20 @@ function normalizeExpandColumn(
         },
     )
 
-    return { ...col, ref: translatedRef, expand: innerColumns }
+    const normalized = { ...col, ref: translatedRef, expand: innerColumns }
+    if (col.where) {
+        normalized.where = translateExpandWhere(
+            col.where,
+            targetMapping.localToRemote || {},
+        )
+    }
+    if (col.orderBy) {
+        normalized.orderBy = translateExpandOrderBy(
+            col.orderBy,
+            targetMapping.localToRemote || {},
+        )
+    }
+    return normalized
 }
 
 function buildDirectRemoteColumns(

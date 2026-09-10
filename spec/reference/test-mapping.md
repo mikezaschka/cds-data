@@ -13,7 +13,7 @@ See [`spec/reference/requirements.md`](./requirements.md) for the requirement de
 | Requirement | Status | Tagged tests |
 |---|---|---|
 | 4.1.3 | Implemented (HCQL remote; OData-only limitation remains) | 1 |
-| 4.1.6 | Implemented | 2 |
+| 4.1.6 | Implemented | 3 |
 | 4.2.5 | Implemented | 25 |
 | 4.2.6 | Implemented | 10 |
 | 4.2.12 | Implemented | 5 |
@@ -51,6 +51,7 @@ Status: **Implemented**
 
 - `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where + delegated expand: narrows a trimmed expand target
 - `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where + delegated expand: supports multiple expands
+- `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where + delegated expand: translates renamed filter and orderby fields
 
 ### 4.2.5
 

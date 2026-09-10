@@ -133,7 +133,7 @@ describe('Direct remote query columns', () => {
         expect(item.expand.some(col => col === '*' || col?.['*'])).toBe(false)
     })
 
-    it('translates explicit inner selects and keeps flattened scalar paths', () => {
+    it('translates explicit inner selects, filters, and ordering without mutating input', () => {
         const mapping = {
             ...topMapping,
             projectedColumns: [
@@ -141,11 +141,26 @@ describe('Direct remote query columns', () => {
                 { ref: ['customer', 'name'], as: 'buyerName' },
             ],
         }
+        const expand = {
+            ref: ['item'],
+            expand: [{ ref: ['productName'] }],
+            where: [
+                { ref: ['unitPrice'] },
+                '>',
+                { val: 100 },
+                'and',
+                {
+                    func: 'contains',
+                    args: [{ ref: ['productName'] }, { val: 'Pro' }],
+                },
+            ],
+            orderBy: [{ ref: ['productName'], sort: 'asc' }],
+        }
         const columns = buildDirectRemoteColumns(
             {
                 columns: [
                     '*',
-                    { ref: ['item'], expand: [{ ref: ['productName'] }] },
+                    expand,
                 ],
             },
             mapping,
@@ -157,6 +172,19 @@ describe('Direct remote query columns', () => {
         expect(columns.some(col => col.ref?.join('.') === 'customer.name')).toBe(true)
         const item = columns.find(col => col.ref?.[0] === 'product' && col.expand)
         expect(item.expand).toEqual([{ ref: ['name'] }])
+        expect(item.where).toEqual([
+            { ref: ['price'] },
+            '>',
+            { val: 100 },
+            'and',
+            {
+                func: 'contains',
+                args: [{ ref: ['name'] }, { val: 'Pro' }],
+            },
+        ])
+        expect(item.orderBy).toEqual([{ ref: ['name'], sort: 'asc' }])
+        expect(expand.where[0].ref).toEqual(['unitPrice'])
+        expect(expand.orderBy[0].ref).toEqual(['productName'])
     })
 
     it('excludes associations when the client supplies no columns', () => {

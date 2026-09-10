@@ -384,6 +384,17 @@ describe('Delegate Strategy', () => {
             if (!isV2) {
                 describe('$filter / $orderby / $top / $skip within $expand', () => {
 
+                    it('[4.1.6] static where + delegated expand: translates renamed filter and orderby fields', async () => {
+                        const { data } = await GET(
+                            `${base}/${ShippedOrders}('O001')?$expand=item($filter=unitPrice gt 100;$orderby=productName asc)`
+                        )
+                        expect(data.status).to.equal('shipped')
+                        expect(data.item).to.have.property('productName', 'Laptop Pro')
+                        expect(num(data.item.unitPrice)).to.be.greaterThan(100)
+                        expect(data.item).to.not.have.property('price')
+                        expect(data.item).to.not.have.property('name')
+                    })
+
                     it('$filter within to-many expand (Scenario A)', async () => {
                         const { data } = await GET(`${base}/${Customers}('C001')?$expand=orders($filter=status eq 'shipped')`)
                         expect(data.orders).to.be.an('array')
