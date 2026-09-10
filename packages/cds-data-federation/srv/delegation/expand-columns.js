@@ -59,6 +59,19 @@ function localFieldName(name, remoteToLocal) {
     return name
 }
 
+/**
+ * Combines WHERE clauses with `and`, parenthesizing each so a clause containing
+ * a top-level `or` cannot swallow the others.
+ */
+function andWhere(...clauses) {
+    const present = clauses.filter(clause => Array.isArray(clause) && clause.length > 0)
+    if (present.length === 0) return null
+    if (present.length === 1) return present[0]
+    return present
+        .map(clause => (clause.length > 1 ? [{ xpr: clause }] : clause))
+        .reduce((acc, clause) => [...acc, 'and', ...clause])
+}
+
 function projectedScalarColumns(viewMapping, remoteEntityDef) {
     const projectedColumns = viewMapping?.projectedColumns || []
     if (!viewMapping?.isWildcard && projectedColumns.length > 0) {
@@ -190,6 +203,7 @@ function buildInnerColumns(
 }
 
 module.exports = {
+    andWhere,
     buildInnerColumns,
     localFieldName,
     projectedScalarColumns,

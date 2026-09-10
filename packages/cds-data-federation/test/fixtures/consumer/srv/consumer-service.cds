@@ -14,6 +14,8 @@ service ConsumerService {
     @cds.redirection.target
     entity Orders    as projection on consumer.Orders;
     entity ShippedOrders as projection on consumer.ShippedOrders;
+    entity ShippedOrdersScoped as projection on consumer.ShippedOrdersScoped;
+    entity ShippedOrderFlat as projection on consumer.ShippedOrderFlat;
     entity Suppliers as projection on consumer.Suppliers;
 
     // Selective write test entity (create + update, no delete)

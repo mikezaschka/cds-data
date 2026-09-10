@@ -130,6 +130,27 @@ entity ShippedOrders as projection on remote.Orders {
     modifiedAt
 } where status = 'shipped';
 
+// Static filter whose expand target carries a static filter of its own —
+// guards that the direct-remote path applies the target view's scope.
+@federation.delegate
+entity ShippedOrdersScoped as projection on remote.Orders {
+    ID      as orderId,
+    product as item : redirected to ElectronicsProducts,
+    quantity,
+    status
+} where status = 'shipped';
+
+// Static filter + flattened association path — guards that the direct-remote
+// path keeps projection aliases for path expressions (HCQL only).
+@federation.delegate
+entity ShippedOrderFlat as projection on remote.Orders {
+    ID            as orderId,
+    customer.name as buyerName,
+    product.name  as itemName,
+    quantity,
+    status
+} where status = 'shipped';
+
 // Entity-level rename: reframes remote "Customers" as local "Suppliers"
 // Same remote data, completely different local domain purpose.
 @federation.delegate

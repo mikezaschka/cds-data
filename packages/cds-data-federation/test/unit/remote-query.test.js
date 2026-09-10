@@ -189,6 +189,55 @@ describe('Direct remote query columns', () => {
         expect(expand.orderBy[0].ref).toEqual(['productName'])
     })
 
+    it('applies the expand target static where alongside the client filter', () => {
+        const staticWhere = [{ ref: ['category'] }, '=', { val: 'Electronics' }]
+        const scopedRegistry = {
+            ...registry,
+            'App.Products': { ...productMapping, staticWhere },
+        }
+        const expand = {
+            ref: ['item'],
+            expand: [{ ref: ['productName'] }],
+            // A top-level `or` must not widen the target view's permanent scope.
+            where: [{ ref: ['unitPrice'] }, '>', { val: 100 }, 'or', { ref: ['unitPrice'] }, '<', { val: 10 }],
+        }
+        const columns = buildDirectRemoteColumns(
+            { columns: ['*', expand] },
+            topMapping,
+            remoteOrders,
+            'App.ShippedOrders',
+            scopedRegistry,
+        )
+
+        const item = columns.find(col => col.ref?.[0] === 'product' && col.expand)
+        expect(item.where).toEqual([
+            { xpr: [{ ref: ['price'] }, '>', { val: 100 }, 'or', { ref: ['price'] }, '<', { val: 10 }] },
+            'and',
+            { xpr: staticWhere },
+        ])
+        expect(scopedRegistry['App.Products'].staticWhere).toEqual(staticWhere)
+    })
+
+    it('applies the expand target static where when the client sends no filter', () => {
+        const scopedRegistry = {
+            ...registry,
+            'App.Products': {
+                ...productMapping,
+                staticWhere: [{ ref: ['category'] }, '=', { val: 'Electronics' }],
+            },
+        }
+        const columns = buildDirectRemoteColumns(
+            { columns: ['*', { ref: ['item'], expand: [{ ref: ['productName'] }] }] },
+            topMapping,
+            remoteOrders,
+            'App.ShippedOrders',
+            scopedRegistry,
+        )
+
+        const item = columns.find(col => col.ref?.[0] === 'product' && col.expand)
+        expect(item.where).toEqual([{ ref: ['category'] }, '=', { val: 'Electronics' }])
+    })
+
     it('replaces projected associations with their remote foreign keys', () => {
         const columns = buildDirectRemoteColumns(
             {},

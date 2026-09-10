@@ -12,6 +12,7 @@
 const cds = require('@sap/cds')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
 const {
+    andWhere,
     buildInnerColumns,
     localFieldName,
     projectedScalarColumns,
@@ -73,6 +74,11 @@ function translateWhere(where, localToRemote) {
     return result
 }
 
+/** Static scopes come from the model and are reused across requests. */
+function cloneWhere(where) {
+    return Array.isArray(where) ? JSON.parse(JSON.stringify(where)) : null
+}
+
 function translateRef(ref, localToRemote) {
     return ref.map(seg =>
         typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
@@ -114,11 +120,16 @@ function normalizeExpandColumn(
     )
 
     const normalized = { ...col, ref: translatedRef, expand: innerColumns }
-    if (col.where) {
-        normalized.where = translateExpandWhere(
-            col.where,
-            targetMapping.localToRemote || {},
-        )
+    // Bypassing CAP's projection chain also bypasses the target consumption
+    // view's own static scope, so re-apply it alongside the client filter.
+    const scopedWhere = andWhere(
+        col.where ? translateExpandWhere(col.where, targetMapping.localToRemote || {}) : null,
+        cloneWhere(targetMapping.staticWhere),
+    )
+    if (scopedWhere) {
+        normalized.where = scopedWhere
+    } else {
+        delete normalized.where
     }
     if (col.orderBy) {
         normalized.orderBy = translateOrderBy(
@@ -210,21 +221,21 @@ async function runDirectRemoteQuery(
     if (containsLambda(sel.where)) reasons.push('lambda')
     LOG.debug(`Bypassing CAP projection chain for ${remoteEntity}${reasons.length ? ` (reason: ${reasons.join(', ')})` : ''}`)
 
-    const remoteWhere = localToRemote
-        ? translateWhere(sel.where, localToRemote)
-        : sel.where
+    // A key predicate (`Entity('K')`) lives on the from-segment, not in
+    // SELECT.where. Rebuilding `from` here would drop it and return an
+    // arbitrary row of the static scope instead of the requested one.
+    const fromSegment = Array.isArray(sel.from?.ref) ? sel.from.ref[0] : null
+    const segmentWhere = typeof fromSegment === 'object' ? fromSegment.where : null
 
     const q = SELECT.from(remoteEntity)
+    // `staticWhere` is a permanent scope: parenthesize the client clauses so a
+    // top-level `or` in the request cannot widen it.
+    const remoteWhere = andWhere(
+        translateWhere(segmentWhere, localToRemote),
+        translateWhere(sel.where, localToRemote),
+        cloneWhere(staticWhere),
+    )
     if (remoteWhere) q.SELECT.where = remoteWhere
-
-    if (staticWhere) {
-        const clonedWhere = JSON.parse(JSON.stringify(staticWhere))
-        if (q.SELECT.where) {
-            q.SELECT.where.push('and', ...clonedWhere)
-        } else {
-            q.SELECT.where = clonedWhere
-        }
-    }
 
     const remoteColumns = buildDirectRemoteColumns(
         sel,
