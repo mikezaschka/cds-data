@@ -49,13 +49,17 @@ for (const message of warnings) LOG.warn(message)
 
 if (reuseConsole) {
     const consolePath = path.join(__dirname, 'app', 'pipeline-console')
-    const consoleProbe = path.join(consolePath, 'index.html')
+    const consoleProbe = path.join(consolePath, 'Component.js')
     if (!fs.existsSync(consoleProbe)) {
         LOG.warn(
-            'cds-data-pipeline Pipeline Console static resources are incomplete (missing index.html). ' +
+            'cds-data-pipeline Pipeline Console is not built (missing app/pipeline-console/Component.js). ' +
                 'Run "npm run build:pipeline-console" in the cds-data-pipeline package before using management.reuse.console.',
         )
     }
+    const { resolveUi5Url, createIndexHandler } = require('./lib/pipeline-console-bootstrap')
+    const { url: ui5Url, warnings: ui5Warnings } = resolveUi5Url(pipelineEntries)
+    for (const message of ui5Warnings) LOG.warn(message)
+
     cds.once('bootstrap', (app) => {
         if (typeof app.serve !== 'function') {
             LOG.warn(
@@ -63,9 +67,13 @@ if (reuseConsole) {
             )
             return
         }
+        const serveIndex = createIndexHandler(consolePath, ui5Url)
+        app.use('/pipeline-console', (req, res, next) =>
+            req.path === '/' || req.path === '/index.html' ? serveIndex(req, res, next) : next(),
+        )
         app.serve('/pipeline-console').from('cds-data-pipeline', 'app/pipeline-console')
         ;(app._app_links ??= []).push('/pipeline-console')
-        LOG.info('Serving Pipeline Console at /pipeline-console')
+        LOG.info(`Serving Pipeline Console at /pipeline-console (UI5 from ${ui5Url})`)
     })
 }
 

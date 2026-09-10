@@ -98,6 +98,7 @@ cds deploy && cds watch
 |---|---|
 | `management.reuse.api` | Plugin injects tracker schema + management service via `index.cds` |
 | `management.reuse.console` | Plugin serves pre-built UI at `/pipeline-console/`; implies `reuse.api: true` |
+| `management.ui5Url` | Optional HTTP(S) URL or absolute path for the SAPUI5 runtime; defaults to pinned SAPUI5 `1.150.0` on `ui5.sap.com` |
 
 ### API only (reuse API, no UI)
 

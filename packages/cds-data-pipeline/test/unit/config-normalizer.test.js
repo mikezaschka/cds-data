@@ -32,6 +32,18 @@ describe('config-normalizer', () => {
         expect(normalized.reuse.console).toBe(true)
     })
 
+    it('preserves a custom Pipeline Console UI5 runtime URL', () => {
+        const normalized = normalizePipelineConfig({
+            impl: 'cds-data-pipeline',
+            management: {
+                reuse: { console: true },
+                ui5Url: '/ui5/resources/sap-ui-core.js',
+            },
+        })
+
+        expect(normalized.management.ui5Url).toBe('/ui5/resources/sap-ui-core.js')
+    })
+
     it('collects data-pipeline requires entries by impl', () => {
         const entries = getPipelineRequiresEntries({
             db: { kind: 'sqlite' },

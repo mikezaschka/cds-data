@@ -47,6 +47,6 @@ docs/.vitepress/cache
 .cache/
 .venv/
 
-# Vendored UI5 runtime (offline Pipeline Console build output)
+# UI5 framework resources are loaded externally and must not be committed
 app/pipeline-console/resources/
 app/pipeline-console/test-resources/

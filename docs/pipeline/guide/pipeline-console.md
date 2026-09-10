@@ -2,7 +2,7 @@
 
 The **Pipeline Console** is a pre-built SAPUI5 freestyle app (flexible column layout) for inspecting and operating pipelines at runtime. It reads and writes the management OData API at `/pipeline/` — list pipelines, inspect source and target data, review run history, trigger runs, and manage in-process schedules.
 
-The console ships **inside the `cds-data-pipeline` npm package** at `app/pipeline-console/` (pre-built static assets). The UI runtime uses **SAPUI5** (including `sap.suite.ui.commons` for the data-flow network graph); the self-contained build is subject to the [SAP Developer License](https://www.sap.com/about/trust-center/agreements/developer.html), not the Apache 2.0 license of OpenUI5.
+The console's pre-built application assets ship **inside the `cds-data-pipeline` npm package** at `app/pipeline-console/`. SAPUI5 loads from the pinned `1.150.0` runtime on `ui5.sap.com` by default; the framework itself is not duplicated in the package. Deployments that cannot reach that CDN can point the console at a self-hosted runtime with `management.ui5Url`.
 
 ## What you get
 
@@ -73,6 +73,17 @@ cds watch
 Open `http://localhost:4004/pipeline-console/index.html` (port from your profile).
 
 No `server.js` changes, no local UI copy. See [Feature activation](feature-activation.md) for reuse vs own decision rules.
+
+For an air-gapped deployment or a content-security policy that only permits same-origin scripts, configure an HTTP(S) URL or absolute path:
+
+```json
+"management": {
+  "reuse": { "api": true, "console": true },
+  "ui5Url": "/ui5/1.150.0/resources/sap-ui-core.js"
+}
+```
+
+Keep a custom runtime compatible with the `minUI5Version` in the console manifest.
 
 ## Developing the UI (TypeScript)
 

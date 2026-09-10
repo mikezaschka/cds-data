@@ -17,6 +17,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      - run: npm run build:pipeline-console -w cds-data-pipeline
+      - run: npm run check:package -w cds-data-pipeline
 
   test-cds10:
     name: test (node ${{ matrix.node-version }}, cds 10)
