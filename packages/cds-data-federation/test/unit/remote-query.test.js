@@ -1,5 +1,6 @@
 const cds = require('@sap/cds')
 const { applyExpandedSemantics, evaluateWhere } = require('../../srv/delegation/cqn-evaluator')
+const { localFieldName, remoteFieldName } = require('../../srv/delegation/expand-columns')
 const { buildDirectRemoteColumns } = require('../../srv/delegation/remote-query')
 
 describe('Direct remote query columns', () => {
@@ -38,12 +39,16 @@ describe('Direct remote query columns', () => {
         localToRemote: {
             orderId: 'ID',
             buyer: 'customer',
+            buyer_ID: 'customer_ID',
             item: 'product',
+            item_ID: 'product_ID',
         },
         remoteToLocal: {
             ID: 'orderId',
             customer: 'buyer',
+            customer_ID: 'buyer_ID',
             product: 'item',
+            product_ID: 'item_ID',
         },
     }
     const productMapping = {
@@ -387,6 +392,54 @@ describe('Direct remote query columns', () => {
                 entity,
             )).toBe(false)
         }
+    })
+
+    it('preserves OData null semantics in string functions', () => {
+        const row = { value: null }
+
+        for (const func of ['contains', 'startswith', 'endswith']) {
+            expect(evaluateWhere([
+                { func, args: [{ ref: ['value'] }, { val: '' }] },
+            ], row)).toBe(false)
+        }
+        for (const func of ['tolower', 'toupper', 'trim']) {
+            expect(evaluateWhere([
+                { func, args: [{ ref: ['value'] }] }, '=', { val: '' },
+            ], row)).toBe(false)
+        }
+        expect(evaluateWhere([
+            { func: 'length', args: [{ ref: ['value'] }] }, '=', { val: 0 },
+        ], row)).toBe(false)
+        expect(evaluateWhere([
+            { func: 'concat', args: [{ ref: ['value'] }, { val: 'suffix' }] }, '=', { val: 'suffix' },
+        ], row)).toBe(true)
+    })
+
+    it('handles scaled Decimal zero without producing an empty coefficient', () => {
+        const entity = { elements: { amount: { type: 'cds.Decimal' } } }
+        expect(evaluateWhere(
+            [{ ref: ['amount'] }, '=', { val: 0 }],
+            { amount: '0.00' },
+            entity,
+        )).toBe(true)
+    })
+
+    it('translates only exact association foreign-key mappings', () => {
+        const localToRemote = {
+            productName: 'name',
+            buyer: 'customer',
+            buyer_ID: 'customer_ID',
+        }
+        const remoteToLocal = {
+            name: 'productName',
+            customer: 'buyer',
+            customer_ID: 'buyer_ID',
+        }
+
+        expect(remoteFieldName('buyer_ID', localToRemote)).toBe('customer_ID')
+        expect(localFieldName('customer_ID', remoteToLocal)).toBe('buyer_ID')
+        expect(remoteFieldName('productName_suffix', localToRemote)).toBe('productName_suffix')
+        expect(localFieldName('name_suffix', remoteToLocal)).toBe('name_suffix')
     })
 
     it('replaces projected associations with their remote foreign keys', () => {

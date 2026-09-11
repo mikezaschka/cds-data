@@ -46,6 +46,7 @@ function decimalParts(value) {
     if (digits.length + Math.abs(exponent) > 10000) {
         throw new UnsupportedCqnPredicateError('Numeric CQN value is outside the supported range')
     }
+    if (digits === '0') return { coefficient: 0n, scale: 0 }
     let scale = fraction.length - exponent
     if (scale < 0) {
         digits += '0'.repeat(-scale)
@@ -131,23 +132,30 @@ function evaluateFunction(token, row, entityDef) {
     const args = (token.args || []).map(arg => evaluateOperand(arg, row, entityDef))
     switch (name) {
     case 'contains':
-        return String(args[0] ?? '').includes(String(args[1] ?? ''))
+        return args[0] == null || args[1] == null
+            ? null
+            : String(args[0]).includes(String(args[1]))
     case 'startswith':
-        return String(args[0] ?? '').startsWith(String(args[1] ?? ''))
+        return args[0] == null || args[1] == null
+            ? null
+            : String(args[0]).startsWith(String(args[1]))
     case 'endswith':
-        return String(args[0] ?? '').endsWith(String(args[1] ?? ''))
+        return args[0] == null || args[1] == null
+            ? null
+            : String(args[0]).endsWith(String(args[1]))
     case 'tolower':
     case 'lower':
-        return String(args[0] ?? '').toLowerCase()
+        return args[0] == null ? null : String(args[0]).toLowerCase()
     case 'toupper':
     case 'upper':
-        return String(args[0] ?? '').toUpperCase()
+        return args[0] == null ? null : String(args[0]).toUpperCase()
     case 'trim':
-        return String(args[0] ?? '').trim()
+        return args[0] == null ? null : String(args[0]).trim()
     case 'length':
-        return String(args[0] ?? '').length
+        return args[0] == null ? null : String(args[0]).length
     case 'concat':
-        return args.map(value => String(value ?? '')).join('')
+        if (args.every(value => value == null)) return null
+        return args.filter(value => value != null).map(String).join('')
     default:
         throw new UnsupportedCqnPredicateError(`Unsupported CQN predicate function: ${name || '<missing>'}`)
     }

@@ -31,32 +31,16 @@ function associationForeignKeyRefs(assocName, remoteEntityDef) {
         .map(name => ({ ref: [name] }))
 }
 
-/**
- * Translates a local field name to its remote counterpart, including the foreign
- * keys of renamed associations (`buyer_ID` → `customer_ID` for `customer as buyer`).
- */
+/** Translates a local field name using exact scalar and association-FK mappings. */
 function remoteFieldName(name, localToRemote) {
     if (!localToRemote) return name
-    if (localToRemote[name]) return localToRemote[name]
-    for (const [local, remote] of Object.entries(localToRemote)) {
-        const prefix = `${local}_`
-        if (name.startsWith(prefix)) return `${remote}_${name.slice(prefix.length)}`
-    }
-    return name
+    return localToRemote[name] || name
 }
 
-/**
- * Inverse of {@link remoteFieldName}: maps a remote result key back to the local
- * name, including foreign keys of renamed associations.
- */
+/** Inverse of {@link remoteFieldName}; mappings are exact to avoid prefix collisions. */
 function localFieldName(name, remoteToLocal) {
     if (!remoteToLocal) return name
-    if (remoteToLocal[name]) return remoteToLocal[name]
-    for (const [remote, local] of Object.entries(remoteToLocal)) {
-        const prefix = `${remote}_`
-        if (name.startsWith(prefix)) return `${local}_${name.slice(prefix.length)}`
-    }
-    return name
+    return remoteToLocal[name] || name
 }
 
 /**

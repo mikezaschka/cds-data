@@ -220,6 +220,46 @@ describe('Unit Tests', () => {
             ])
         })
 
+        it('should add exact mappings for renamed association foreign keys', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const { configs } = scanAnnotations({
+                definitions: {
+                    Remote: { kind: 'service' },
+                    'Svc.Orders': {
+                        '@federation.delegate': true,
+                        projection: {
+                            from: { ref: ['Remote', 'Orders'] },
+                            columns: [
+                                { ref: ['customer'], as: 'buyer' },
+                                { ref: ['name'], as: 'productName' },
+                            ],
+                        },
+                        elements: {
+                            buyer: {
+                                type: 'cds.Association',
+                                target: 'Remote.Customers',
+                                keys: [{ ref: ['ID'], $generatedFieldName: 'buyer_ID' }],
+                            },
+                            buyer_ID: { type: 'cds.String', '@odata.foreignKey4': 'buyer' },
+                            productName: { type: 'cds.String' },
+                        },
+                    },
+                },
+            })
+
+            const { viewMapping } = configs[0]
+            expect(viewMapping.localToRemote).to.deep.equal({
+                buyer: 'customer',
+                buyer_ID: 'customer_ID',
+                productName: 'name',
+            })
+            expect(viewMapping.remoteToLocal).to.include({
+                customer: 'buyer',
+                customer_ID: 'buyer_ID',
+                name: 'productName',
+            })
+        })
+
         it('should extract options from @federation.replicate annotation value', () => {
             const { scanAnnotations } = require('../../srv/annotation-scanner')
             const { configs } = scanAnnotations({

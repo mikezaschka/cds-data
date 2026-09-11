@@ -324,8 +324,28 @@ function extractViewMapping(entityDef) {
     projectedColumns.push(...mapped.projectedColumns)
     Object.assign(localToRemote, mapped.localToRemote)
     Object.assign(remoteToLocal, mapped.remoteToLocal)
+    addAssociationForeignKeyMappings(entityDef, columns, localToRemote, remoteToLocal)
 
     return { isWildcard: false, projectedColumns, localToRemote, remoteToLocal, staticWhere }
+}
+
+function addAssociationForeignKeyMappings(entityDef, columns, localToRemote, remoteToLocal) {
+    for (const column of columns) {
+        if (!column?.ref || column.ref.length !== 1) continue
+        const remoteAssociation = column.ref[0]
+        const localAssociation = column.as || remoteAssociation
+        const element = entityDef.elements?.[localAssociation]
+        if (!element?.target || !Array.isArray(element.keys)) continue
+
+        for (const key of element.keys) {
+            if (!Array.isArray(key.ref) || key.ref.length === 0) continue
+            const suffix = key.ref.join('_')
+            const localForeignKey = key.$generatedFieldName || `${localAssociation}_${suffix}`
+            const remoteForeignKey = `${remoteAssociation}_${suffix}`
+            localToRemote[localForeignKey] = remoteForeignKey
+            remoteToLocal[remoteForeignKey] = localForeignKey
+        }
+    }
 }
 
 /**
