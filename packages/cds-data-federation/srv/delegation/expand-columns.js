@@ -117,14 +117,7 @@ function translateExpandWhere(where, localToRemote) {
 }
 
 function translateOrderBy(orderBy, localToRemote) {
-    if (!Array.isArray(orderBy)) return orderBy
-    return orderBy.map(item => {
-        if (!item?.ref) return item
-        const translatedRef = item.ref.map(seg =>
-            typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
-        )
-        return { ...item, ref: translatedRef }
-    })
+    return translateExpandWhere(orderBy, localToRemote)
 }
 
 /**

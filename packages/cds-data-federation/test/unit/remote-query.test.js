@@ -1,7 +1,7 @@
 const cds = require('@sap/cds')
 const { applyExpandedSemantics, evaluateWhere } = require('../../srv/delegation/cqn-evaluator')
 const { localFieldName, remoteFieldName } = require('../../srv/delegation/expand-columns')
-const { buildDirectRemoteColumns } = require('../../srv/delegation/remote-query')
+const { buildDirectRemoteColumns, hiddenEvaluationFields } = require('../../srv/delegation/remote-query')
 
 describe('Direct remote query columns', () => {
     const remoteOrders = {
@@ -162,7 +162,17 @@ describe('Direct remote query columns', () => {
                     args: [{ ref: ['productName'] }, { val: 'Pro' }],
                 },
             ],
-            orderBy: [{ ref: ['productName'], sort: 'asc' }],
+            orderBy: [
+                {
+                    func: 'tolower',
+                    args: [{ ref: ['productName'] }],
+                    sort: 'asc',
+                },
+                {
+                    xpr: [{ ref: ['unitPrice'] }],
+                    sort: 'desc',
+                },
+            ],
         }
         const columns = buildDirectRemoteColumns(
             {
@@ -190,9 +200,20 @@ describe('Direct remote query columns', () => {
                 args: [{ ref: ['name'] }, { val: 'Pro' }],
             },
         ])
-        expect(item.orderBy).toEqual([{ ref: ['name'], sort: 'asc' }])
+        expect(item.orderBy).toEqual([
+            {
+                func: 'tolower',
+                args: [{ ref: ['name'] }],
+                sort: 'asc',
+            },
+            {
+                xpr: [{ ref: ['price'] }],
+                sort: 'desc',
+            },
+        ])
         expect(expand.where[0].ref).toEqual(['unitPrice'])
-        expect(expand.orderBy[0].ref).toEqual(['productName'])
+        expect(expand.orderBy[0].args[0].ref).toEqual(['productName'])
+        expect(expand.orderBy[1].xpr[0].ref).toEqual(['unitPrice'])
     })
 
     it('applies the expand target static where alongside the client filter', () => {
@@ -413,6 +434,73 @@ describe('Direct remote query columns', () => {
         expect(evaluateWhere([
             { func: 'concat', args: [{ ref: ['value'] }, { val: 'suffix' }] }, '=', { val: 'suffix' },
         ], row)).toBe(true)
+    })
+
+    it('preserves unknown predicates through NOT and boolean operators', () => {
+        const row = { stock: null, name: null }
+
+        expect(evaluateWhere([
+            'not', { xpr: [{ ref: ['stock'] }, '<', { val: 100 }] },
+        ], row)).toBe(false)
+        expect(evaluateWhere([
+            'not', { func: 'contains', args: [{ ref: ['name'] }, { val: 'x' }] },
+        ], row)).toBe(false)
+        expect(evaluateWhere([
+            { ref: ['stock'] }, 'not', 'between', { val: 1 }, 'and', { val: 100 },
+        ], row)).toBe(false)
+        expect(evaluateWhere([
+            { ref: ['stock'] }, 'not', 'in', { list: [{ val: 1 }, { val: 2 }] },
+        ], row)).toBe(false)
+        expect(evaluateWhere([
+            { xpr: [{ ref: ['stock'] }, '<', { val: 100 }] },
+            'or',
+            { val: true },
+        ], row)).toBe(true)
+        expect(evaluateWhere([
+            'not',
+            {
+                xpr: [
+                    { xpr: [{ ref: ['stock'] }, '<', { val: 100 }] },
+                    'or',
+                    { val: false },
+                ],
+            },
+        ], row)).toBe(false)
+        expect(evaluateWhere([
+            'not',
+            {
+                xpr: [
+                    { xpr: [{ ref: ['stock'] }, '<', { val: 100 }] },
+                    'and',
+                    { val: true },
+                ],
+            },
+        ], row)).toBe(false)
+    })
+
+    it('hides V2 evaluation fields excluded from or unrelated to the projection', () => {
+        expect(hiddenEvaluationFields(
+            {
+                isWildcard: true,
+                excludedColumns: ['stock'],
+                projectedColumns: [],
+                remoteToLocal: {},
+            },
+            [{ ref: ['stock'] }, '>', { val: 0 }],
+            null,
+            null,
+        )).toEqual(['stock'])
+
+        expect(hiddenEvaluationFields(
+            {
+                isWildcard: false,
+                projectedColumns: ['name'],
+                remoteToLocal: { name: 'productName' },
+            },
+            [{ ref: ['name_suffix'] }, '=', { val: 'x' }],
+            null,
+            null,
+        )).toEqual(['name_suffix'])
     })
 
     it('handles scaled Decimal zero without producing an empty coefficient', () => {

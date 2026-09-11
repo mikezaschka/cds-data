@@ -94,7 +94,7 @@ function equalValues(left, right, type) {
 
 function compareValues(left, operator, right, type) {
     const isOrderedComparison = operator === '>' || operator === '>=' || operator === '<' || operator === '<='
-    if (isOrderedComparison && (left == null || right == null)) return false
+    if (isOrderedComparison && (left == null || right == null)) return null
 
     switch (operator) {
     case '=':
@@ -114,6 +114,22 @@ function compareValues(left, operator, right, type) {
     default:
         throw new UnsupportedCqnPredicateError(`Unsupported CQN predicate operator: ${String(operator)}`)
     }
+}
+
+function triNot(value) {
+    return value == null ? null : !value
+}
+
+function triAnd(left, right) {
+    if (left === false || right === false) return false
+    if (left == null || right == null) return null
+    return Boolean(left && right)
+}
+
+function triOr(left, right) {
+    if (left === true || right === true) return true
+    if (left == null || right == null) return null
+    return Boolean(left || right)
 }
 
 function refValue(ref, row) {
@@ -167,7 +183,7 @@ function evaluateOperand(token, row, entityDef) {
     if (Array.isArray(token.ref)) return refValue(token.ref, row)
     if (Array.isArray(token.list)) return token.list.map(item => evaluateOperand(item, row, entityDef))
     if (token.func) return evaluateFunction(token, row, entityDef)
-    if (Array.isArray(token.xpr)) return evaluateWhere(token.xpr, row, entityDef)
+    if (Array.isArray(token.xpr)) return evaluatePredicate(token.xpr, row, entityDef)
     throw new UnsupportedCqnPredicateError('Unsupported CQN predicate operand')
 }
 
@@ -213,13 +229,17 @@ class PredicateParser {
     }
 
     parse() {
+        return this.parseValue() === true
+    }
+
+    parseValue() {
         const result = this.parseOr()
         if (this.index !== this.tokens.length) {
             throw new UnsupportedCqnPredicateError(
                 `Unsupported CQN predicate near token ${this.index}: ${String(this.tokens[this.index])}`
             )
         }
-        return Boolean(result)
+        return result
     }
 
     parseOr() {
@@ -227,7 +247,7 @@ class PredicateParser {
         while (isKeyword(this.tokens[this.index], 'or')) {
             this.index += 1
             const right = this.parseAnd()
-            result = result || right
+            result = triOr(result, right)
         }
         return result
     }
@@ -237,7 +257,7 @@ class PredicateParser {
         while (isKeyword(this.tokens[this.index], 'and')) {
             this.index += 1
             const right = this.parseNot()
-            result = result && right
+            result = triAnd(result, right)
         }
         return result
     }
@@ -245,7 +265,7 @@ class PredicateParser {
     parseNot() {
         if (isKeyword(this.tokens[this.index], 'not')) {
             this.index += 1
-            return !this.parseNot()
+            return triNot(this.parseNot())
         }
         return this.parsePredicate()
     }
@@ -254,7 +274,7 @@ class PredicateParser {
         const token = this.tokens[this.index]
         if (token?.xpr && Array.isArray(token.xpr)) {
             this.index += 1
-            return evaluateWhere(token.xpr, this.row, this.entityDef)
+            return evaluatePredicate(token.xpr, this.row, this.entityDef)
         }
         if (token === '(') {
             this.index += 1
@@ -278,7 +298,7 @@ class PredicateParser {
         const operatorToken = this.tokens[this.index]
         if (operatorToken == null || operatorToken === ')' || isKeyword(operatorToken, 'and') || isKeyword(operatorToken, 'or')) {
             if (negated) throw new UnsupportedCqnPredicateError('Incomplete CQN predicate after NOT')
-            return Boolean(left)
+            return left == null ? null : Boolean(left)
         }
 
         const operator = String(operatorToken).toLowerCase()
@@ -291,10 +311,13 @@ class PredicateParser {
             }
             this.index += 1
             const upper = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
-            result = compareValues(left, '>=', lower, type) && compareValues(left, '<=', upper, type)
+            result = triAnd(
+                compareValues(left, '>=', lower, type),
+                compareValues(left, '<=', upper, type),
+            )
         } else if (operator === 'in') {
             const values = evaluateList(this.tokens[this.index++], this.row, this.entityDef)
-            result = values.some(value => equalValues(left, value, type))
+            result = left == null ? null : values.some(value => equalValues(left, value, type))
         } else if (operator === 'like') {
             const pattern = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
             let escapeCharacter
@@ -302,7 +325,9 @@ class PredicateParser {
                 this.index += 1
                 escapeCharacter = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
             }
-            result = left != null && likeRegex(pattern, escapeCharacter).test(String(left))
+            result = left == null || pattern == null
+                ? null
+                : likeRegex(pattern, escapeCharacter).test(String(left))
         } else if (operator === 'is') {
             let isNot = false
             if (isKeyword(this.tokens[this.index], 'not')) {
@@ -323,8 +348,12 @@ class PredicateParser {
                 type,
             )
         }
-        return negated ? !result : result
+        return negated ? triNot(result) : result
     }
+}
+
+function evaluatePredicate(where, row, entityDef) {
+    return new PredicateParser(where, row, entityDef).parseValue()
 }
 
 function evaluateWhere(where, row, entityDef) {

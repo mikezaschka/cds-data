@@ -260,6 +260,59 @@ describe('Unit Tests', () => {
             })
         })
 
+        it('should derive aliased association foreign keys from the remote source', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const { configs } = scanAnnotations({
+                definitions: {
+                    Remote: { kind: 'service' },
+                    'Remote.Orders': {
+                        kind: 'entity',
+                        elements: {
+                            customer: {
+                                type: 'cds.Association',
+                                target: 'Remote.Customers',
+                                keys: [{
+                                    ref: ['ID'],
+                                    as: 'customerKey',
+                                    $generatedFieldName: 'customer_customerKey',
+                                }],
+                            },
+                            customer_customerKey: {
+                                type: 'cds.String',
+                                '@odata.foreignKey4': 'customer',
+                            },
+                        },
+                    },
+                    'Svc.Orders': {
+                        '@federation.delegate': true,
+                        projection: {
+                            from: { ref: ['Remote', 'Orders'] },
+                            columns: [{ ref: ['customer'], as: 'buyer' }],
+                        },
+                        elements: {
+                            buyer: {
+                                type: 'cds.Association',
+                                target: 'Remote.Customers',
+                                keys: [{
+                                    ref: ['ID'],
+                                    as: 'customerKey',
+                                    $generatedFieldName: 'buyer_customerKey',
+                                }],
+                            },
+                            buyer_customerKey: {
+                                type: 'cds.String',
+                                '@odata.foreignKey4': 'buyer',
+                            },
+                        },
+                    },
+                },
+            })
+
+            const { viewMapping } = configs[0]
+            expect(viewMapping.localToRemote.buyer_customerKey).to.equal('customer_customerKey')
+            expect(viewMapping.remoteToLocal.customer_customerKey).to.equal('buyer_customerKey')
+        })
+
         it('should extract options from @federation.replicate annotation value', () => {
             const { scanAnnotations } = require('../../srv/annotation-scanner')
             const { configs } = scanAnnotations({

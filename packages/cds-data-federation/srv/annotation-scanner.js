@@ -125,7 +125,7 @@ function scanAnnotations(csn) {
             }
         }
 
-        const config = buildConfigFromAnnotation(name, def)
+        const config = buildConfigFromAnnotation(name, def, csn)
         if (!config) continue
 
         // For projection-inferred sources, verify the source is a service definition.
@@ -216,7 +216,7 @@ function collectFlattenedOptions(entityDef, prefix) {
  *   @federation.replicate: { mode: 'delta', schedule: '...' }    -> replicate with options
  *     CSN may flatten to: @federation.replicate.mode: 'delta', etc.
  */
-function buildConfigFromAnnotation(entityName, entityDef) {
+function buildConfigFromAnnotation(entityName, entityDef, csn) {
     let strategy = null
     let options = {}
 
@@ -265,7 +265,10 @@ function buildConfigFromAnnotation(entityName, entityDef) {
     const serviceName = inferServiceName(entityName)
 
     // Extract column mapping from the projection (renames via `as`)
-    const viewMapping = extractViewMapping(entityDef)
+    const sourceEntityDef = sourceEntity
+        ? csn?.definitions?.[`${sourceService}.${sourceEntity}`]
+        : null
+    const viewMapping = extractViewMapping(entityDef, sourceEntityDef)
     if (sourceEntity) viewMapping.sourceEntity = sourceEntity
 
     return {
@@ -294,7 +297,7 @@ function buildConfigFromAnnotation(entityName, entityDef) {
  * - remoteToLocal: map from remote field name → local field name
  * - isWildcard: true if projection uses { * } (no column restriction)
  */
-function extractViewMapping(entityDef) {
+function extractViewMapping(entityDef, sourceEntityDef) {
     // `as projection on` stores columns under `.projection`; `as select from`
     // stores them under `.query.SELECT`. Infer source already falls back to
     // query.SELECT — keep the same dual-shape handling here so renames are
@@ -324,24 +327,44 @@ function extractViewMapping(entityDef) {
     projectedColumns.push(...mapped.projectedColumns)
     Object.assign(localToRemote, mapped.localToRemote)
     Object.assign(remoteToLocal, mapped.remoteToLocal)
-    addAssociationForeignKeyMappings(entityDef, columns, localToRemote, remoteToLocal)
+    addAssociationForeignKeyMappings(
+        entityDef,
+        sourceEntityDef,
+        columns,
+        localToRemote,
+        remoteToLocal,
+    )
 
     return { isWildcard: false, projectedColumns, localToRemote, remoteToLocal, staticWhere }
 }
 
-function addAssociationForeignKeyMappings(entityDef, columns, localToRemote, remoteToLocal) {
+function addAssociationForeignKeyMappings(
+    entityDef,
+    sourceEntityDef,
+    columns,
+    localToRemote,
+    remoteToLocal,
+) {
     for (const column of columns) {
         if (!column?.ref || column.ref.length !== 1) continue
         const remoteAssociation = column.ref[0]
         const localAssociation = column.as || remoteAssociation
         const element = entityDef.elements?.[localAssociation]
         if (!element?.target || !Array.isArray(element.keys)) continue
+        const sourceKeys = sourceEntityDef?.elements?.[remoteAssociation]?.keys || []
 
-        for (const key of element.keys) {
+        for (const [index, key] of element.keys.entries()) {
             if (!Array.isArray(key.ref) || key.ref.length === 0) continue
             const suffix = key.ref.join('_')
-            const localForeignKey = key.$generatedFieldName || `${localAssociation}_${suffix}`
-            const remoteForeignKey = `${remoteAssociation}_${suffix}`
+            const keyName = key.as || suffix
+            const localForeignKey = key.$generatedFieldName || `${localAssociation}_${keyName}`
+            const sourceKey = sourceKeys.find(candidate =>
+                (key.as && candidate.as === key.as)
+                || candidate.ref?.join('_') === suffix
+            ) || sourceKeys[index]
+            const remoteKeyName = sourceKey?.as || sourceKey?.ref?.join('_') || suffix
+            const remoteForeignKey = sourceKey?.$generatedFieldName
+                || `${remoteAssociation}_${remoteKeyName}`
             localToRemote[localForeignKey] = remoteForeignKey
             remoteToLocal[remoteForeignKey] = localForeignKey
         }

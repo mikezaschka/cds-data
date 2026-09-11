@@ -118,13 +118,15 @@ function ensureExpandRefs(columns, refNames) {
 }
 
 function hasProjectedRemoteField(targetMapping, remoteField) {
-    if (!targetMapping || targetMapping.isWildcard) return true
-    if (targetMapping.remoteToLocal?.[remoteField]) return true
-    const [assocPrefix] = remoteField.split('_')
+    if (!targetMapping) return true
+    if (targetMapping.isWildcard) {
+        return !(targetMapping.excludedColumns || []).includes(remoteField)
+    }
+    if (Object.prototype.hasOwnProperty.call(targetMapping.remoteToLocal || {}, remoteField)) return true
     for (const col of targetMapping.projectedColumns || []) {
-        if (typeof col === 'string' && (col === remoteField || col === assocPrefix)) return true
+        if (typeof col === 'string' && col === remoteField) return true
         const ref = col?.ref
-        if (Array.isArray(ref) && ref.length === 1 && (ref[0] === remoteField || ref[0] === assocPrefix)) {
+        if (Array.isArray(ref) && ref.length === 1 && ref[0] === remoteField) {
             return true
         }
     }
@@ -488,6 +490,7 @@ function propagateRemoteError(err, _sourceServiceName) {
 module.exports = {
     buildDirectRemoteColumns,
     containsLambda,
+    hiddenEvaluationFields,
     runDirectRemoteQuery,
     propagateRemoteError,
 }
