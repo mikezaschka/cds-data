@@ -1,6 +1,10 @@
 const cds = require('@sap/cds')
 const { applyExpandedSemantics, evaluateWhere } = require('../../srv/delegation/cqn-evaluator')
-const { localFieldName, remoteFieldName } = require('../../srv/delegation/expand-columns')
+const {
+    localFieldName,
+    projectedScalarColumns,
+    remoteFieldName,
+} = require('../../srv/delegation/expand-columns')
 const { buildDirectRemoteColumns, hiddenEvaluationFields } = require('../../srv/delegation/remote-query')
 
 describe('Direct remote query columns', () => {
@@ -370,6 +374,23 @@ describe('Direct remote query columns', () => {
         ).map(row => row.name)).toEqual(['Hub'])
     })
 
+    it('evaluates wrapped order expressions as typed scalar values', () => {
+        const rows = [
+            { price: '20.00' },
+            { price: '3.00' },
+            { price: '10.00' },
+        ]
+        const entity = { elements: { price: { type: 'cds.Decimal' } } }
+
+        expect(applyExpandedSemantics(
+            rows,
+            null,
+            [{ xpr: [{ ref: ['price'] }], sort: 'asc' }],
+            null,
+            entity,
+        ).map(row => row.price)).toEqual(['3.00', '10.00', '20.00'])
+    })
+
     it('compares IEEE-754-compatible Int64 and Decimal strings without losing precision', () => {
         const entity = {
             elements: {
@@ -545,6 +566,20 @@ describe('Direct remote query columns', () => {
             { ref: ['product_ID'] },
             { ref: ['status'] },
         ])
+    })
+
+    it('uses managed-key aliases for generated foreign-key fallbacks', () => {
+        expect(projectedScalarColumns(
+            { isWildcard: true, projectedColumns: [] },
+            {
+                elements: {
+                    customer: {
+                        target: 'Remote.Customers',
+                        keys: [{ ref: ['ID'], as: 'customerKey' }],
+                    },
+                },
+            },
+        )).toEqual([{ ref: ['customer_customerKey'] }])
     })
 
     it('translates renamed association foreign keys in an explicit select', () => {

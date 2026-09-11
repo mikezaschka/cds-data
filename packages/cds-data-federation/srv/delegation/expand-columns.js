@@ -26,6 +26,7 @@ function associationForeignKeyRefs(assocName, remoteEntityDef) {
     if (!element || element.is2many || !element.keys?.length) return []
     return element.keys
         .map(key => key.$generatedFieldName
+            || (key.as ? `${assocName}_${key.as}` : null)
             || (Array.isArray(key.ref) ? `${assocName}_${key.ref.join('_')}` : null))
         .filter(Boolean)
         .map(name => ({ ref: [name] }))

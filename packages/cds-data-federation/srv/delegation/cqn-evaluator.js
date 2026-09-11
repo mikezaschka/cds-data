@@ -361,6 +361,12 @@ function evaluateWhere(where, row, entityDef) {
     return new PredicateParser(where, row, entityDef).parse()
 }
 
+function scalarOrderOperand(order) {
+    if (!Array.isArray(order?.xpr)) return order
+    if (order.xpr.length === 1) return scalarOrderOperand(order.xpr[0])
+    throw new UnsupportedCqnPredicateError('Unsupported CQN scalar order expression')
+}
+
 function applyExpandedSemantics(records, where, orderBy, limit, entityDef) {
     let result = Array.isArray(records) ? [...records] : []
     if (Array.isArray(where) && where.length > 0) {
@@ -371,10 +377,11 @@ function applyExpandedSemantics(records, where, orderBy, limit, entityDef) {
             .map((record, index) => ({ record, index }))
             .sort((left, right) => {
                 for (const order of orderBy) {
+                    const operand = scalarOrderOperand(order)
                     const comparison = compareScalarValues(
-                        evaluateOperand(order, left.record, entityDef),
-                        evaluateOperand(order, right.record, entityDef),
-                        operandType(order, entityDef),
+                        evaluateOperand(operand, left.record, entityDef),
+                        evaluateOperand(operand, right.record, entityDef),
+                        operandType(operand, entityDef),
                     )
                     if (comparison !== 0) {
                         return String(order.sort).toLowerCase() === 'desc' ? -comparison : comparison
