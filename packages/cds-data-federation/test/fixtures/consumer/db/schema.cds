@@ -140,8 +140,17 @@ entity ShippedOrdersScoped as projection on remote.Orders {
     status
 } where status = 'shipped';
 
-// Static filter + flattened association path — guards that the direct-remote
-// path keeps projection aliases for path expressions (HCQL only).
+// Static parent scope + two renamed association levels exercises recursive
+// direct-query normalization: purchases (orders) -> item (product).
+@federation.delegate
+entity ActiveCustomersWithPurchases as projection on remote.Customers {
+    ID,
+    name   as customerName,
+    orders as purchases : redirected to Orders
+} where blocked = false;
+
+// Pending HCQL direct-query fixture. Static `where` currently sends this path
+// through a direct HCQL query that fails before alias mapping is exercised.
 @federation.delegate
 entity ShippedOrderFlat as projection on remote.Orders {
     ID            as orderId,
@@ -239,6 +248,13 @@ entity ShippedOrdersScopedV2 as projection on remoteV2.Orders {
     quantity,
     status
 } where status = 'shipped';
+
+@federation.delegate
+entity ActiveCustomersWithPurchasesV2 as projection on remoteV2.Customers {
+    ID,
+    name   as customerName,
+    orders as purchases : redirected to OrdersV2
+} where blocked = false;
 
 // V2 Suppliers: entity-level rename via V2 protocol
 @federation.delegate

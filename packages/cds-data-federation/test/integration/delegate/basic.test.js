@@ -21,7 +21,16 @@ describe('Delegate Strategy', () => {
     })
 
     function describeQueryCapabilities(protocol, entities) {
-        const { Customers, Products, Orders, ShippedOrders, ShippedOrdersScoped, Suppliers, isV2 } = entities
+        const {
+            Customers,
+            Products,
+            Orders,
+            ShippedOrders,
+            ShippedOrdersScoped,
+            ActiveCustomersWithPurchases,
+            Suppliers,
+            isV2,
+        } = entities
         // cds 10 defaults `ieee754compatible: true` (and `count_as_string: true`),
         // so Decimal/Int64 and `@odata.count` arrive as JSON strings on V4 too —
         // not just V2. Coerce unconditionally to stay compatible with cds 9 and 10.
@@ -408,6 +417,18 @@ describe('Delegate Strategy', () => {
                     expect(items).to.deep.equal({ O001: 'Laptop Pro', O003: null, O006: 'USB-C Hub' })
                 })
 
+                it('[4.1.6] static where + delegated expand: recursively maps renamed nested expands', async () => {
+                    const { data } = await GET(
+                        `${base}/${ActiveCustomersWithPurchases}('C001')?$expand=purchases($expand=item)`
+                    )
+                    expect(data.customerName).to.equal('Acme Corp')
+                    expect(data.purchases).to.have.length(2)
+                    expect(data.purchases.map(order => order.orderId)).to.have.members(['O001', 'O002'])
+                    expect(data.purchases.map(order => order.item.productName))
+                        .to.have.members(['Laptop Pro', 'Wireless Mouse'])
+                    expect(data.purchases.every(order => !('product' in order))).to.be.true
+                })
+
                 if (isV2) {
                     it('[4.1.6] static where + delegated expand: applies client filter locally for V2', async () => {
                         const { data } = await GET(`${base}/${ShippedOrdersScoped}?$expand=item($filter=unitPrice lt 100)`)
@@ -552,12 +573,14 @@ describe('Delegate Strategy', () => {
     describeQueryCapabilities('OData V4', {
         Customers: 'Customers', Products: 'Products',
         Orders: 'Orders', ShippedOrders: 'ShippedOrders', ShippedOrdersScoped: 'ShippedOrdersScoped',
+        ActiveCustomersWithPurchases: 'ActiveCustomersWithPurchases',
         Suppliers: 'Suppliers', isV2: false
     })
 
     describeQueryCapabilities('OData V2', {
         Customers: 'CustomersV2', Products: 'ProductsV2',
         Orders: 'OrdersV2', ShippedOrders: 'ShippedOrdersV2', ShippedOrdersScoped: 'ShippedOrdersScopedV2',
+        ActiveCustomersWithPurchases: 'ActiveCustomersWithPurchasesV2',
         Suppliers: 'SuppliersV2', isV2: true
     })
 })

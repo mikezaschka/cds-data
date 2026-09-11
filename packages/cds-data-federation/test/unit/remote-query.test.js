@@ -373,6 +373,22 @@ describe('Direct remote query columns', () => {
         )).toBe(true)
     })
 
+    it('does not match null operands in ordered comparisons', () => {
+        const entity = { elements: { stock: { type: 'cds.Integer' } } }
+        for (const operator of ['<', '<=', '>', '>=']) {
+            expect(evaluateWhere(
+                [{ ref: ['stock'] }, operator, { val: 100 }],
+                { stock: null },
+                entity,
+            )).toBe(false)
+            expect(evaluateWhere(
+                [{ ref: ['stock'] }, operator, { val: null }],
+                { stock: 50 },
+                entity,
+            )).toBe(false)
+        }
+    })
+
     it('replaces projected associations with their remote foreign keys', () => {
         const columns = buildDirectRemoteColumns(
             {},

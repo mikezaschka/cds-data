@@ -92,6 +92,9 @@ function equalValues(left, right, type) {
 }
 
 function compareValues(left, operator, right, type) {
+    const isOrderedComparison = operator === '>' || operator === '>=' || operator === '<' || operator === '<='
+    if (isOrderedComparison && (left == null || right == null)) return false
+
     switch (operator) {
     case '=':
     case '==':
