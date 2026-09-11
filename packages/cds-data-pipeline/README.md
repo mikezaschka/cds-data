@@ -170,6 +170,8 @@ Pre-built UI for `/pipeline` — enable via config reuse or `cds add pipeline-co
 }
 ```
 
+The console loads pinned SAPUI5 `1.150.0` from `ui5.sap.com`. Set `management.ui5Url` to an HTTP(S) URL or same-origin absolute path when you host the runtime yourself.
+
 ![Pipeline landscape — services and data flows grouped by remote service](https://raw.githubusercontent.com/mikezaschka/cds-data/main/docs/images/pipeline-landscape.png)
 
 ![Pipeline detail — list, schedules, and per-run statistics](https://raw.githubusercontent.com/mikezaschka/cds-data/main/docs/images/pipeline-runs.png)

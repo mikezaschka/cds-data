@@ -39,6 +39,14 @@ describe('add-pipeline-console', () => {
             true,
         )
         expect(fs.existsSync(path.join(tmp, 'app', 'pipeline-console', 'ui5.yaml'))).toBe(true)
+        expect(
+            fs.existsSync(
+                path.join(tmp, 'app', 'pipeline-console', 'webapp', 'Component-preload.js'),
+            ),
+        ).toBe(true)
+        expect(
+            fs.existsSync(path.join(tmp, 'app', 'pipeline-console', 'webapp', 'resources')),
+        ).toBe(false)
         expect(fs.existsSync(path.join(tmp, 'srv', 'pipeline-management.cds'))).toBe(true)
         expect(fs.readFileSync(path.join(tmp, 'srv', 'pipeline-management.cds'), 'utf8')).toContain(
             "using from 'cds-data-pipeline/index.cds'",
