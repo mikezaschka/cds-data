@@ -300,8 +300,15 @@ class PredicateParser {
             return left == null ? null : Boolean(left)
         }
 
-        const operator = String(operatorToken).toLowerCase()
+        let operator = String(operatorToken).toLowerCase()
         this.index += 1
+        if (operator.startsWith('not ')) {
+            negated = !negated
+            operator = operator.slice(4)
+        } else if (operator === 'is not') {
+            negated = !negated
+            operator = 'is'
+        }
         let result
         if (operator === 'between') {
             const lowerToken = this.tokens[this.index++]
