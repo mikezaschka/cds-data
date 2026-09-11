@@ -1,7 +1,12 @@
 const cds = require('@sap/cds')
-const { projectedColumnToRemoteSelectRef } = require('cds-data-pipeline/srv/lib/columnRefPath')
 const { resolveRemoteNavigationFilters } = require('./remote-navigation-filters')
 const { rewriteRemoteToLocalNavigation } = require('./cross-service-navigation')
+const {
+    buildInnerColumns,
+    localFieldName,
+    translateOrderBy,
+    translateExpandWhere,
+} = require('./expand-columns')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -160,29 +165,6 @@ function parseOnCondition(on, assocName) {
         return { localField, remoteField }
     }
     return null
-}
-
-/**
- * Translates field refs in an inner expand WHERE clause from local to remote names.
- * Returns a new array (does not mutate the original).
- */
-function translateExpandWhere(where, localToRemote) {
-    if (!Array.isArray(where)) return where
-    return where.map(node => {
-        if (node?.ref) {
-            const translatedRef = node.ref.map(seg =>
-                typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
-            )
-            return { ...node, ref: translatedRef }
-        }
-        if (node?.func && Array.isArray(node.args)) {
-            return { ...node, args: translateExpandWhere(node.args, localToRemote) }
-        }
-        if (node?.xpr) {
-            return { ...node, xpr: translateExpandWhere(node.xpr, localToRemote) }
-        }
-        return node
-    })
 }
 
 // ─── Remote Lambda Filter Resolution (cross-service filter: local → remote) ─
@@ -372,7 +354,7 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
         throw new Error(`Entity '${sourceEntity}' not found in remote service '${sourceService}'`)
     }
 
-    let innerColumns = buildInnerColumns(expandItem, localToRemote, viewMapping, keyDefs)
+    let innerColumns = buildInnerColumns(expandItem, localToRemote, viewMapping, keyDefs, remoteEntity)
 
     if (innerColumns.length === 0 && viewMapping?.excludedColumns?.length > 0 && remoteEntity.elements) {
         const excluded = new Set(viewMapping.excludedColumns)
@@ -393,13 +375,7 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
         : null
 
     const expandOrderBy = expandItem.orderBy
-        ? expandItem.orderBy.map(o => {
-            if (!o.ref) return o
-            const translatedRef = o.ref.map(seg =>
-                typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
-            )
-            return { ...o, ref: translatedRef }
-        })
+        ? translateOrderBy(expandItem.orderBy, localToRemote)
         : null
 
     const allResults = []
@@ -514,7 +490,7 @@ async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMapp
         ? `${remoteFieldTranslated}_${findAssocKeyName(remoteEntity.elements[remoteFieldTranslated])}`
         : remoteFieldTranslated
 
-    let innerColumns = buildInnerColumns(expandItem, localToRemote, viewMapping, null)
+    let innerColumns = buildInnerColumns(expandItem, localToRemote, viewMapping, null, remoteEntity)
     if (innerColumns.length === 0 && viewMapping?.excludedColumns?.length > 0 && remoteEntity.elements) {
         const excluded = new Set(viewMapping.excludedColumns)
         for (const [elemName, elem] of Object.entries(remoteEntity.elements)) {
@@ -532,13 +508,7 @@ async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMapp
         : null
 
     const expandOrderBy = expandItem.orderBy
-        ? expandItem.orderBy.map(o => {
-            if (!o.ref) return o
-            const translatedRef = o.ref.map(seg =>
-                typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
-            )
-            return { ...o, ref: translatedRef }
-        })
+        ? translateOrderBy(expandItem.orderBy, localToRemote)
         : null
 
     const allResults = []
@@ -622,75 +592,9 @@ function mapResultWithNestedExpands(row, remoteToLocal, remoteEntityDef, viewMap
 function mapFlatWithFKs(row, remoteToLocal) {
     const mapped = {}
     for (const [k, v] of Object.entries(row)) {
-        let localKey = remoteToLocal[k]
-        if (!localKey) {
-            for (const [remoteName, localName] of Object.entries(remoteToLocal)) {
-                const prefix = remoteName + '_'
-                if (k.startsWith(prefix)) {
-                    localKey = localName + '_' + k.substring(prefix.length)
-                    break
-                }
-            }
-        }
-        mapped[localKey || k] = v
+        mapped[localFieldName(k, remoteToLocal)] = v
     }
     return mapped
-}
-
-/**
- * Builds the column list for the inner (remote batch-fetch) query.
- * Handles explicit $select, nested $expand forwarding, projected columns, and key inclusion.
- *
- * $expand=product($select=productName,unitPrice)
- *   Input  expand columns: [{ ref: ['productName'] }, { ref: ['unitPrice'] }]
- *   Output remote columns: [{ ref: ['name'] }, { ref: ['price'] }]  (via localToRemote)
- *
- * @param {Array|null} keyDefs - array of key definitions (null for to-many)
- */
-function buildInnerColumns(expandItem, localToRemote, viewMapping, keyDefs) {
-    const innerColumns = []
-    let hasWildcardWithExpand = false
-
-    if (expandItem.expand && Array.isArray(expandItem.expand)) {
-        const hasInnerWildcard = expandItem.expand.some(c => c === '*' || c['*'])
-        const innerExpands = expandItem.expand.filter(c => c.expand)
-
-        if (!hasInnerWildcard) {
-            for (const col of expandItem.expand) {
-                if (col.expand) {
-                    const translatedRef = col.ref.map(seg =>
-                        typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
-                    )
-                    innerColumns.push({ ...col, ref: translatedRef })
-                } else if (col.ref) {
-                    innerColumns.push({ ref: [localToRemote[col.ref[0]] || col.ref[0]] })
-                }
-            }
-        } else if (innerExpands.length > 0) {
-            innerColumns.push('*')
-            for (const col of innerExpands) {
-                const translatedRef = col.ref.map(seg =>
-                    typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
-                )
-                innerColumns.push({ ...col, ref: translatedRef })
-            }
-            hasWildcardWithExpand = true
-        }
-    }
-
-    if (innerColumns.length === 0 && !viewMapping?.isWildcard && viewMapping?.projectedColumns?.length > 0) {
-        for (const col of viewMapping.projectedColumns) {
-            innerColumns.push(projectedColumnToRemoteSelectRef(col))
-        }
-    }
-    if (innerColumns.length > 0 && !hasWildcardWithExpand && keyDefs) {
-        for (const kd of keyDefs) {
-            if (!innerColumns.some(c => c.ref?.[0] === kd.remote)) {
-                innerColumns.push({ ref: [kd.remote] })
-            }
-        }
-    }
-    return innerColumns
 }
 
 module.exports = { registerLocalExpandResolvers }

@@ -37,7 +37,16 @@ const LOG = cds.log('cds-data-federation')
 // The plugin adds navigation path translation for association renames in $filter
 // (e.g., buyer/name → customer/name) which CAP does not handle automatically.
 
-function registerDelegateHandler(service, entityName, sourceServiceName, viewMapping, assocTargets, localAssocs = [], writeFlags = {}) {
+function registerDelegateHandler(
+    service,
+    entityName,
+    sourceServiceName,
+    viewMapping,
+    assocTargets,
+    localAssocs = [],
+    writeFlags = {},
+    directQueryContext = {},
+) {
     const localAssocsByName = new Map(localAssocs.map(a => [a.name, a]))
 
     service.prepend(function () {
@@ -79,7 +88,13 @@ function registerDelegateHandler(service, entityName, sourceServiceName, viewMap
                 const useDirect = needsDirectRemoteQuery(viewMapping, effectiveQuery?.SELECT?.where, localFilterRewritten)
                 if (useDirect) {
                     LOG.debug(`Delegate READ ${entityName}: using direct remote query (bypass CAP projection chain)`)
-                    results = await runDirectRemoteQuery(remote, sourceServiceName, effectiveQuery, viewMapping)
+                    results = await runDirectRemoteQuery(
+                        remote,
+                        sourceServiceName,
+                        effectiveQuery,
+                        viewMapping,
+                        directQueryContext,
+                    )
                 } else {
                     LOG.debug(`Delegate READ ${entityName}: using CAP projection chain via paged remote query`)
                     results = await runPagedRemoteQuery(remote, effectiveQuery)
@@ -140,7 +155,17 @@ function normalizeTags(entityName, cacheOptions = {}) {
     return tags
 }
 
-async function registerCachedDelegateHandler(service, entityName, sourceServiceName, cacheOptions = {}, viewMapping, assocTargets, localAssocs = [], writeFlags = {}) {
+async function registerCachedDelegateHandler(
+    service,
+    entityName,
+    sourceServiceName,
+    cacheOptions = {},
+    viewMapping,
+    assocTargets,
+    localAssocs = [],
+    writeFlags = {},
+    directQueryContext = {},
+) {
     const cacheServiceName = cacheOptions.service || 'caching'
 
     let cachingAvailable = false
@@ -153,7 +178,16 @@ async function registerCachedDelegateHandler(service, entityName, sourceServiceN
 
     if (!cachingAvailable) {
         LOG.warn(`Cache service '${cacheServiceName}' not available, cache option ignored for '${entityName}'`)
-        registerDelegateHandler(service, entityName, sourceServiceName, viewMapping, assocTargets, localAssocs, writeFlags)
+        registerDelegateHandler(
+            service,
+            entityName,
+            sourceServiceName,
+            viewMapping,
+            assocTargets,
+            localAssocs,
+            writeFlags,
+            directQueryContext,
+        )
         return
     }
 
@@ -200,7 +234,13 @@ async function registerCachedDelegateHandler(service, entityName, sourceServiceN
                     const useDirect = needsDirectRemoteQuery(viewMapping, effectiveQuery?.SELECT?.where, localFilterRewritten)
                     if (useDirect) {
                         LOG.debug(`Cached delegate READ ${entityName}: using direct remote query (bypass CAP projection chain)`)
-                        return await runDirectRemoteQuery(remote, sourceServiceName, effectiveQuery, viewMapping)
+                        return await runDirectRemoteQuery(
+                            remote,
+                            sourceServiceName,
+                            effectiveQuery,
+                            viewMapping,
+                            directQueryContext,
+                        )
                     }
                     LOG.debug(`Cached delegate READ ${entityName}: using CAP projection chain via paged remote query`)
                     return await runPagedRemoteQuery(remote, effectiveQuery)
@@ -242,6 +282,7 @@ function registerEntityCachedDelegateHandler(
     writeFlags = {},
     entityFullName,
     entityCacheMeta,
+    directQueryContext = {},
 ) {
     if (
         !entityCacheMeta?.pipelineName
@@ -250,7 +291,16 @@ function registerEntityCachedDelegateHandler(
         LOG.warn(
             `Entity cache unavailable for '${entityName}' (${entityFullName}) — pipelines not bound or model skipped. Falling back to live delegate.`,
         )
-        registerDelegateHandler(service, entityName, sourceServiceName, viewMapping, assocTargets, localAssocs, writeFlags)
+        registerDelegateHandler(
+            service,
+            entityName,
+            sourceServiceName,
+            viewMapping,
+            assocTargets,
+            localAssocs,
+            writeFlags,
+            directQueryContext,
+        )
         return
     }
 
@@ -281,7 +331,13 @@ function registerEntityCachedDelegateHandler(
                     let res
                     if (useDirect) {
                         LOG.debug(`Entity-cache READ ${entityName}: falling back to direct remote query`)
-                        res = await runDirectRemoteQuery(remote, sourceServiceName, innerQuery, viewMapping)
+                        res = await runDirectRemoteQuery(
+                            remote,
+                            sourceServiceName,
+                            innerQuery,
+                            viewMapping,
+                            directQueryContext,
+                        )
                     } else {
                         LOG.debug(`Entity-cache READ ${entityName}: falling back to paged remote query`)
                         res = await runPagedRemoteQuery(remote, innerQuery)

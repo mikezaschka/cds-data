@@ -13,6 +13,10 @@ service ConsumerService {
     entity SelectFromProductDetail as projection on consumer.SelectFromProductDetail;
     @cds.redirection.target
     entity Orders    as projection on consumer.Orders;
+    entity ShippedOrders as projection on consumer.ShippedOrders;
+    entity ShippedOrdersScoped as projection on consumer.ShippedOrdersScoped;
+    entity ActiveCustomersWithPurchases as projection on consumer.ActiveCustomersWithPurchases;
+    entity ShippedOrderFlat as projection on consumer.ShippedOrderFlat;
     entity Suppliers as projection on consumer.Suppliers;
 
     // Selective write test entity (create + update, no delete)
@@ -21,8 +25,14 @@ service ConsumerService {
     // Federated entities: OData V2 provider (same data, different protocol)
     @cds.redirection.target
     entity CustomersV2  as projection on consumer.CustomersV2;
+    @cds.redirection.target
     entity ProductsV2   as projection on consumer.ProductsV2;
+    @cds.redirection.target
     entity OrdersV2     as projection on consumer.OrdersV2;
+    entity ShippedOrdersV2 as projection on consumer.ShippedOrdersV2;
+    entity ElectronicsProductsV2 as projection on consumer.ElectronicsProductsV2;
+    entity ShippedOrdersScopedV2 as projection on consumer.ShippedOrdersScopedV2;
+    entity ActiveCustomersWithPurchasesV2 as projection on consumer.ActiveCustomersWithPurchasesV2;
     entity SuppliersV2  as projection on consumer.SuppliersV2;
 
     // Federated entities: Inventory provider (second OData V4 service)

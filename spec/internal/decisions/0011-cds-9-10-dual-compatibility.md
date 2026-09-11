@@ -38,6 +38,7 @@ All new CAP-10-only APIs are **feature-detected** at runtime — no hard depende
 - Root and package devDependencies pin **`@sap/cds` ^10**, **`@cap-js/sqlite` ^3**, **`vitest` ^4**, **`@cap-js/cds-test` ^1**.
 - All three plugin test suites run on **Vitest** with serial execution (`maxWorkers: 1`, `fileParallelism: false`) to preserve the former Jest `--runInBand` fixture-port isolation.
 - Jest is removed from plugin `package.json` scripts and configs; examples may still carry legacy lockfiles until separately refreshed.
+- `@cap-js/mcp` is pinned to `~1.1.0` in `packages/cds-data-federation/examples/mcp-federation/consumer`. The CDS 9 image resolves without the lockfile, and 1.4.x changed the `query` tool contract (a `cql` string instead of structured `select` / `from`), which the MCP tests target. Widening the range requires updating those tests first.
 
 ### 4. CI matrix
 

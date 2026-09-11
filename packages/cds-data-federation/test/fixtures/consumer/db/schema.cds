@@ -116,6 +116,50 @@ entity Orders as projection on remote.Orders {
     modifiedAt
 };
 
+// Restricted projection + static filter exercises the direct-remote query path
+// for delegated expands.
+@federation.delegate
+entity ShippedOrders as projection on remote.Orders {
+    ID        as orderId,
+    customer  as buyer,
+    product   as item,
+    quantity,
+    total     as amount,
+    status,
+    orderDate as placedOn,
+    modifiedAt
+} where status = 'shipped';
+
+// Static filter whose expand target carries a static filter of its own —
+// guards that the direct-remote path applies the target view's scope.
+@federation.delegate
+entity ShippedOrdersScoped as projection on remote.Orders {
+    ID      as orderId,
+    product as item : redirected to ElectronicsProducts,
+    quantity,
+    status
+} where status = 'shipped';
+
+// Static parent scope + two renamed association levels exercises recursive
+// direct-query normalization: purchases (orders) -> item (product).
+@federation.delegate
+entity ActiveCustomersWithPurchases as projection on remote.Customers {
+    ID,
+    name   as customerName,
+    orders as purchases : redirected to Orders
+} where blocked = false;
+
+// Pending HCQL direct-query fixture. Static `where` currently sends this path
+// through a direct HCQL query that fails before alias mapping is exercised.
+@federation.delegate
+entity ShippedOrderFlat as projection on remote.Orders {
+    ID            as orderId,
+    customer.name as buyerName,
+    product.name  as itemName,
+    quantity,
+    status
+} where status = 'shipped';
+
 // Entity-level rename: reframes remote "Customers" as local "Suppliers"
 // Same remote data, completely different local domain purpose.
 @federation.delegate
@@ -175,6 +219,42 @@ entity OrdersV2 as projection on remoteV2.Orders {
     orderDate as placedOn,
     modifiedAt
 };
+
+// V2 mirror used to guard direct-query expand column generation.
+@federation.delegate
+entity ShippedOrdersV2 as projection on remoteV2.Orders {
+    ID        as orderId,
+    customer  as buyer,
+    product   as item,
+    quantity,
+    total     as amount,
+    status,
+    orderDate as placedOn,
+    modifiedAt
+} where status = 'shipped';
+
+@federation.delegate
+entity ElectronicsProductsV2 as projection on remoteV2.Products {
+    ID    as productId,
+    name  as productName,
+    price as unitPrice,
+    currency
+} where category in ('Electronics');
+
+@federation.delegate
+entity ShippedOrdersScopedV2 as projection on remoteV2.Orders {
+    ID      as orderId,
+    product as item : redirected to ElectronicsProductsV2,
+    quantity,
+    status
+} where status = 'shipped';
+
+@federation.delegate
+entity ActiveCustomersWithPurchasesV2 as projection on remoteV2.Customers {
+    ID,
+    name   as customerName,
+    orders as purchases : redirected to OrdersV2
+} where blocked = false;
 
 // V2 Suppliers: entity-level rename via V2 protocol
 @federation.delegate

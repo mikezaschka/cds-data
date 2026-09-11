@@ -77,6 +77,18 @@ describe('Delegate Strategy', () => {
                 expect(data.value.length).to.equal(2)
                 expect(data.value.every(c => c.blocked === false && c.country === 'DE')).to.be.true
             })
+
+            it('should return the requested record when read by key', async () => {
+                const { data } = await GET`/odata/v4/consumer/ActiveCustomers('C005')`
+                expect(data.ID).to.equal('C005')
+                expect(data.name).to.equal('Stark Industries')
+            })
+
+            it('should keep the static where intact against a client $filter containing OR', async () => {
+                // C003 (Initech) is blocked: an OR filter must not widen the view's scope.
+                const { data } = await GET`/odata/v4/consumer/ActiveCustomers?$filter=name eq 'Initech Ltd' or name eq 'Acme Corp'`
+                expect(data.value.map(c => c.name)).to.deep.equal(['Acme Corp'])
+            })
         })
 
         describe('Where + renames (ElectronicsProducts)', () => {
@@ -113,6 +125,35 @@ describe('Delegate Strategy', () => {
                 const prices = data.value.map(p => Number(p.unitPrice))
                 expect(prices[0]).to.be.greaterThanOrEqual(prices[1])
                 expect(prices[1]).to.be.greaterThanOrEqual(prices[2])
+            })
+
+            it('should return the requested record when read by renamed key', async () => {
+                const { data } = await GET`/odata/v4/consumer/ElectronicsProducts('P005')`
+                expect(data.productId).to.equal('P005')
+                expect(data.productName).to.equal('USB-C Hub')
+            })
+
+            it('should keep the static where intact against a client $filter containing OR', async () => {
+                // P003 (Office Desk) is Furniture: an OR filter must not widen the view's scope.
+                const { data } = await GET`/odata/v4/consumer/ElectronicsProducts?$filter=productName eq 'Office Desk' or productName eq 'Laptop Pro'`
+                expect(data.value.map(p => p.productName)).to.deep.equal(['Laptop Pro'])
+            })
+        })
+
+        describe('Static where on an expand target (ShippedOrdersScoped)', () => {
+            // `item` is redirected to ElectronicsProducts (category = 'Electronics'),
+            // and the view's own static where forces the direct-remote query path.
+            it('should apply the expand target\'s static where', async () => {
+                const { data } = await GET`/odata/v4/consumer/ShippedOrdersScoped?$expand=item`
+                const items = Object.fromEntries(data.value.map(o => [o.orderId, o.item?.productName ?? null]))
+                // O003 -> P003 (Office Desk) is Furniture, so it falls outside the target view.
+                expect(items).to.deep.equal({ O001: 'Laptop Pro', O003: null, O006: 'USB-C Hub' })
+            })
+
+            it('should combine a client expand $filter with the target static where', async () => {
+                const { data } = await GET`/odata/v4/consumer/ShippedOrdersScoped?$expand=item($filter=unitPrice lt 100)`
+                const items = data.value.map(o => o.item?.productName ?? null)
+                expect(items).to.deep.equal([null, null, 'USB-C Hub'])
             })
         })
 

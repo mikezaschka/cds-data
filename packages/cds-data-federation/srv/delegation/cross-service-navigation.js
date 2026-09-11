@@ -1,5 +1,5 @@
 const cds = require('@sap/cds')
-const { projectedColumnToSelectArg } = require('cds-data-pipeline/srv/lib/columnRefPath')
+const { localFieldName, projectedScalarColumns, remoteFieldName } = require('./expand-columns')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -71,13 +71,14 @@ async function resolveLocalToRemoteNavigation(req, remote, service, sourceServic
     LOG.debug(`Cross-service navigation (local → remote): querying ${remoteEntityFullName} by ${remoteKeyName}=${fkValue}`)
     const q = SELECT.one.from(remoteEntityFullName).where({ [remoteKeyName]: fkValue })
 
+    const remoteEntityDef = cds.model?.definitions?.[remoteEntityFullName]
     const columns = req.query.SELECT.columns
     if (columns && !columns.some(c => c === '*' || c['*'])) {
         const remoteCols = []
         for (const col of columns) {
             if (col.ref) {
                 const translated = col.ref.map(seg =>
-                    typeof seg === 'string' ? (localToRemote[seg] || seg) : seg
+                    typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
                 )
                 remoteCols.push({ ref: translated })
             }
@@ -87,7 +88,7 @@ async function resolveLocalToRemoteNavigation(req, remote, service, sourceServic
         }
         if (remoteCols.length > 0) q.columns(remoteCols)
     } else if (!isWildcard && projectedColumns?.length > 0) {
-        q.columns(projectedColumns.map(c => projectedColumnToSelectArg(c)))
+        q.columns(projectedScalarColumns(viewMapping, remoteEntityDef))
     }
 
     const result = await remote.run(q)
@@ -96,7 +97,7 @@ async function resolveLocalToRemoteNavigation(req, remote, service, sourceServic
     if (remoteToLocal && Object.keys(remoteToLocal).length > 0) {
         const mapped = {}
         for (const [k, v] of Object.entries(result)) {
-            mapped[remoteToLocal[k] || k] = v
+            mapped[localFieldName(k, remoteToLocal)] = v
         }
         return mapped
     }

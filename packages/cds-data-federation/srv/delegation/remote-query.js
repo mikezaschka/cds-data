@@ -11,7 +11,16 @@
 
 const cds = require('@sap/cds')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
-const { projectedColumnToSelectArg } = require('cds-data-pipeline/srv/lib/columnRefPath')
+const { applyExpandedSemantics } = require('./cqn-evaluator')
+const {
+    andWhere,
+    buildInnerColumns,
+    localFieldName,
+    projectedScalarColumns,
+    remoteFieldName,
+    translateOrderBy,
+    translateExpandWhere,
+} = require('./expand-columns')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -43,9 +52,9 @@ function translateWhere(where, localToRemote) {
         if (typeof item === 'object' && item !== null) {
             if (item.ref) {
                 const translated = item.ref.map(seg => {
-                    if (typeof seg === 'string') return localToRemote[seg] || seg
+                    if (typeof seg === 'string') return remoteFieldName(seg, localToRemote)
                     if (seg.id) {
-                        const newSeg = { ...seg, id: localToRemote[seg.id] || seg.id }
+                        const newSeg = { ...seg, id: remoteFieldName(seg.id, localToRemote) }
                         if (seg.where) newSeg.where = translateWhere(seg.where, localToRemote)
                         return newSeg
                     }
@@ -66,6 +75,246 @@ function translateWhere(where, localToRemote) {
     return result
 }
 
+/** Static scopes come from the model and are reused across requests. */
+function cloneWhere(where) {
+    return Array.isArray(where) ? JSON.parse(JSON.stringify(where)) : null
+}
+
+function translateRef(ref, localToRemote) {
+    return ref.map(seg =>
+        typeof seg === 'string' ? remoteFieldName(seg, localToRemote) : seg
+    )
+}
+
+function isODataV2Remote(remote, sourceServiceName) {
+    const kinds = [
+        remote?.kind,
+        remote?.options?.kind,
+        cds.env?.requires?.[sourceServiceName]?.kind,
+    ]
+    return kinds.some(kind => kind === 'odata-v2')
+}
+
+function collectWhereRefs(where, refs = new Set()) {
+    if (!Array.isArray(where)) return refs
+    for (const token of where) {
+        if (token?.ref?.length) {
+            const head = token.ref[0]
+            if (typeof head === 'string') refs.add(head)
+        }
+        if (token?.xpr) collectWhereRefs(token.xpr, refs)
+        if (token?.args) collectWhereRefs(token.args, refs)
+    }
+    return refs
+}
+
+function ensureExpandRefs(columns, refNames) {
+    if (!Array.isArray(columns) || !refNames?.size) return
+    for (const name of refNames) {
+        if (!columns.some(col => col?.ref?.length === 1 && col.ref[0] === name)) {
+            columns.push({ ref: [name] })
+        }
+    }
+}
+
+function hasProjectedRemoteField(targetMapping, remoteField) {
+    if (!targetMapping) return true
+    if (targetMapping.isWildcard) {
+        return !(targetMapping.excludedColumns || []).includes(remoteField)
+    }
+    if (Object.prototype.hasOwnProperty.call(targetMapping.remoteToLocal || {}, remoteField)) return true
+    for (const col of targetMapping.projectedColumns || []) {
+        if (typeof col === 'string' && col === remoteField) return true
+        const ref = col?.ref
+        if (Array.isArray(ref) && ref.length === 1 && ref[0] === remoteField) {
+            return true
+        }
+    }
+    return false
+}
+
+function requestedExpandFields(columns, targetMapping) {
+    if (!Array.isArray(columns) || columns.some(col => col === '*' || col?.['*'])) return null
+    const fields = new Set()
+    for (const col of columns) {
+        if (col?.ref?.length === 1) {
+            fields.add(remoteFieldName(col.ref[0], targetMapping?.localToRemote || {}))
+        }
+    }
+    return fields
+}
+
+function hiddenEvaluationFields(targetMapping, where, orderBy, requestedFields) {
+    const refs = collectWhereRefs(where)
+    collectWhereRefs(orderBy, refs)
+    return [...refs].filter(remoteField => {
+        if (requestedFields instanceof Set) return !requestedFields.has(remoteField)
+        return !hasProjectedRemoteField(targetMapping, remoteField)
+    })
+}
+
+function stripHiddenScopeFields(record, remoteToLocal, hiddenRemoteFields) {
+    if (!record || !hiddenRemoteFields?.length) return record
+    for (const remoteField of hiddenRemoteFields) {
+        delete record[localFieldName(remoteField, remoteToLocal)]
+    }
+    return record
+}
+
+function normalizeExpandColumn(
+    col,
+    viewMapping,
+    remoteEntityDef,
+    entityFullName,
+    viewMappingRegistry,
+    options = {},
+) {
+    const localToRemote = viewMapping?.localToRemote || {}
+    const translatedRef = translateRef(col.ref, localToRemote)
+    const localAssocName = col.ref?.[0]
+    const remoteAssocName = translatedRef?.[0]
+    const localEntityDef = cds.model?.definitions?.[entityFullName]
+    const localTargetName = localEntityDef?.elements?.[localAssocName]?.target
+    const targetMapping = viewMappingRegistry?.[localTargetName] || {}
+    const remoteTargetName = remoteEntityDef?.elements?.[remoteAssocName]?.target
+    const remoteTargetDef = cds.model?.definitions?.[remoteTargetName]
+
+    const innerColumns = buildInnerColumns(
+        col,
+        targetMapping.localToRemote || {},
+        targetMapping,
+        null,
+        remoteTargetDef,
+        {
+            mapExpand: nested => normalizeExpandColumn(
+                nested,
+                targetMapping,
+                remoteTargetDef,
+                localTargetName,
+                viewMappingRegistry,
+                options,
+            ),
+        },
+    )
+
+    const normalized = { ...col, ref: translatedRef, expand: innerColumns }
+    // Bypassing CAP's projection chain also bypasses the target consumption
+    // view's own static scope, so re-apply it alongside the client filter.
+    const scopedWhere = andWhere(
+        col.where ? translateExpandWhere(col.where, targetMapping.localToRemote || {}) : null,
+        cloneWhere(targetMapping.staticWhere),
+    )
+    const translatedOrderBy = col.orderBy
+        ? translateOrderBy(col.orderBy, targetMapping.localToRemote || {})
+        : null
+    if (options.isODataV2) {
+        const evaluationRefs = collectWhereRefs(scopedWhere)
+        collectWhereRefs(translatedOrderBy, evaluationRefs)
+        ensureExpandRefs(normalized.expand, evaluationRefs)
+    }
+    if (scopedWhere && !options.isODataV2) {
+        normalized.where = scopedWhere
+    } else {
+        delete normalized.where
+    }
+    if (col.orderBy && !options.isODataV2) {
+        normalized.orderBy = translatedOrderBy
+    } else if (options.isODataV2) {
+        delete normalized.orderBy
+        delete normalized.limit
+    }
+    return normalized
+}
+
+function buildV2ExpandPlan(columns, viewMapping, remoteEntityDef, entityFullName, viewMappingRegistry) {
+    const plan = {}
+    for (const col of columns || []) {
+        if (!col?.expand || !col.ref?.length) continue
+
+        const remoteAssocName = translateRef(col.ref, viewMapping?.localToRemote || {})[0]
+        const localAssocName = col.ref[0]
+        const localEntityDef = cds.model?.definitions?.[entityFullName]
+        const localTargetName = localEntityDef?.elements?.[localAssocName]?.target
+        const targetMapping = viewMappingRegistry?.[localTargetName] || {}
+        const remoteTargetName = remoteEntityDef?.elements?.[remoteAssocName]?.target
+        const remoteTargetDef = cds.model?.definitions?.[remoteTargetName]
+        const clientWhere = col.where
+            ? translateExpandWhere(col.where, targetMapping.localToRemote || {})
+            : null
+        const orderBy = col.orderBy
+            ? translateOrderBy(col.orderBy, targetMapping.localToRemote || {})
+            : null
+        const where = andWhere(clientWhere, cloneWhere(targetMapping.staticWhere))
+        const requestedFields = requestedExpandFields(col.expand, targetMapping)
+
+        plan[remoteAssocName] = {
+            where,
+            orderBy,
+            limit: col.limit ? JSON.parse(JSON.stringify(col.limit)) : null,
+            hiddenFields: hiddenEvaluationFields(targetMapping, where, orderBy, requestedFields),
+            children: buildV2ExpandPlan(
+                col.expand,
+                targetMapping,
+                remoteTargetDef,
+                localTargetName,
+                viewMappingRegistry,
+            ),
+        }
+    }
+    return plan
+}
+
+function buildDirectRemoteColumns(
+    sel,
+    viewMapping,
+    remoteEntityDef,
+    entityFullName,
+    viewMappingRegistry,
+    options = {},
+) {
+    const { localToRemote, projectedColumns, isWildcard } = viewMapping || {}
+
+    if (!sel.columns) {
+        if (isWildcard || !projectedColumns?.length) return null
+        return projectedScalarColumns(viewMapping, remoteEntityDef)
+    }
+
+    const hasWildcard = sel.columns.some(col => col === '*' || col?.['*'])
+    if (hasWildcard) {
+        const remoteCols = projectedScalarColumns(viewMapping, remoteEntityDef)
+        for (const col of sel.columns.filter(item => item?.expand)) {
+            remoteCols.push(normalizeExpandColumn(
+                col,
+                viewMapping,
+                remoteEntityDef,
+                entityFullName,
+                viewMappingRegistry,
+                options,
+            ))
+        }
+        return remoteCols
+    }
+
+    const remoteCols = []
+    for (const col of sel.columns) {
+        if (col?.expand) {
+            remoteCols.push(normalizeExpandColumn(
+                col,
+                viewMapping,
+                remoteEntityDef,
+                entityFullName,
+                viewMappingRegistry,
+                options,
+            ))
+        } else if (col?.ref) {
+            remoteCols.push({ ...col, ref: translateRef(col.ref, localToRemote) })
+        } else {
+            remoteCols.push(col)
+        }
+    }
+    return remoteCols
+}
+
 /**
  * Builds and runs a CQN that targets the remote entity directly, bypassing
  * CAP's cds.ql.resolve() projection chain traversal. This is required when:
@@ -80,99 +329,139 @@ function translateWhere(where, localToRemote) {
  *   Output from: ProviderService.Products, where: price,      columns: name
  *   (bypasses projection chain; results mapped back via remoteToLocal)
  */
-async function runDirectRemoteQuery(remote, sourceServiceName, originalQuery, viewMapping) {
+async function runDirectRemoteQuery(
+    remote,
+    sourceServiceName,
+    originalQuery,
+    viewMapping,
+    { entityFullName, viewMappingRegistry } = {},
+) {
     const sel = originalQuery.SELECT
-    const { localToRemote, remoteToLocal, projectedColumns, staticWhere, sourceEntity, isWildcard } = viewMapping || {}
+    const { localToRemote, remoteToLocal, staticWhere, sourceEntity } = viewMapping || {}
 
     const entityName = sourceEntity || sel.from?.ref?.[0]?.id || sel.from?.ref?.[0] || sel.from
     const remoteEntity = `${sourceServiceName}.${entityName}`
+    const remoteEntityDef = cds.model?.definitions?.[remoteEntity]
+    const isV2 = isODataV2Remote(remote, sourceServiceName)
 
     const reasons = []
     if (staticWhere) reasons.push('staticWhere')
     if (containsLambda(sel.where)) reasons.push('lambda')
     LOG.debug(`Bypassing CAP projection chain for ${remoteEntity}${reasons.length ? ` (reason: ${reasons.join(', ')})` : ''}`)
 
-    const remoteWhere = localToRemote
-        ? translateWhere(sel.where, localToRemote)
-        : sel.where
+    // A key predicate (`Entity('K')`) lives on the from-segment, not in
+    // SELECT.where. Rebuilding `from` here would drop it and return an
+    // arbitrary row of the static scope instead of the requested one.
+    const fromSegment = Array.isArray(sel.from?.ref) ? sel.from.ref[0] : null
+    const segmentWhere = typeof fromSegment === 'object' ? fromSegment.where : null
 
     const q = SELECT.from(remoteEntity)
+    // `staticWhere` is a permanent scope: parenthesize the client clauses so a
+    // top-level `or` in the request cannot widen it.
+    const remoteWhere = andWhere(
+        translateWhere(segmentWhere, localToRemote),
+        translateWhere(sel.where, localToRemote),
+        cloneWhere(staticWhere),
+    )
     if (remoteWhere) q.SELECT.where = remoteWhere
 
-    if (staticWhere) {
-        const clonedWhere = JSON.parse(JSON.stringify(staticWhere))
-        if (q.SELECT.where) {
-            q.SELECT.where.push('and', ...clonedWhere)
-        } else {
-            q.SELECT.where = clonedWhere
-        }
-    }
-
-    if (sel.columns) {
-        const hasWildcard = sel.columns.some(c => c === '*' || c['*'])
-        if (hasWildcard && !isWildcard && projectedColumns?.length) {
-            const remoteCols = projectedColumns.map(c => projectedColumnToSelectArg(c))
-            const expandCols = sel.columns.filter(c => c.expand)
-            for (const col of expandCols) {
-                const translatedRef = localToRemote
-                    ? col.ref.map(seg => (typeof seg === 'string' ? localToRemote[seg] || seg : seg))
-                    : col.ref
-                remoteCols.push({ ...col, ref: translatedRef })
-            }
-            q.SELECT.columns = remoteCols
-        } else {
-            const remoteCols = []
-            for (const col of sel.columns) {
-                if (col.expand) {
-                    const translatedRef = localToRemote
-                        ? col.ref.map(seg => (typeof seg === 'string' ? localToRemote[seg] || seg : seg))
-                        : col.ref
-                    remoteCols.push({ ...col, ref: translatedRef })
-                } else if (col.ref) {
-                    const translatedRef = col.ref.map(seg =>
-                        typeof seg === 'string' ? (localToRemote?.[seg] || seg) : seg
-                    )
-                    remoteCols.push({ ...col, ref: translatedRef })
-                } else if (col === '*' || col['*']) {
-                    remoteCols.push(col)
-                } else {
-                    remoteCols.push(col)
-                }
-            }
-            if (remoteCols.length > 0) q.SELECT.columns = remoteCols
-        }
-    } else if (projectedColumns?.length) {
-        q.SELECT.columns = projectedColumns.map(c => projectedColumnToSelectArg(c))
-    }
+    const remoteColumns = buildDirectRemoteColumns(
+        sel,
+        viewMapping,
+        remoteEntityDef,
+        entityFullName,
+        viewMappingRegistry,
+        { isODataV2: isV2 },
+    )
+    if (remoteColumns?.length) q.SELECT.columns = remoteColumns
 
     if (sel.limit) q.SELECT.limit = sel.limit
     if (sel.orderBy) {
         q.SELECT.orderBy = localToRemote
-            ? sel.orderBy.map(o => {
-                if (o.ref) {
-                    const mapped = o.ref.map(r => (typeof r === 'string' ? localToRemote[r] || r : r))
-                    return { ...o, ref: mapped }
-                }
-                return o
-            })
+            ? translateOrderBy(sel.orderBy, localToRemote)
             : sel.orderBy
     }
     if (sel.count) q.SELECT.count = sel.count
 
     const results = await runPagedRemoteQuery(remote, q)
 
-    if (!remoteToLocal || Object.keys(remoteToLocal).length === 0) return results
-
     if (!Array.isArray(results)) return results
-    const mapped = results.map(row => mapRow(row, remoteToLocal))
+    const hasTopLevelMapping = remoteToLocal && Object.keys(remoteToLocal).length > 0
+    if (!hasTopLevelMapping && (!entityFullName || !viewMappingRegistry)) return results
+    const v2ExpandPlan = isV2
+        ? buildV2ExpandPlan(sel.columns, viewMapping, remoteEntityDef, entityFullName, viewMappingRegistry)
+        : null
+    const mapped = results.map(row => mapRow(
+        row,
+        remoteToLocal || {},
+        remoteEntityDef,
+        entityFullName,
+        viewMappingRegistry,
+        { isODataV2: isV2, expandPlan: v2ExpandPlan },
+    ))
     if ('$count' in results) mapped.$count = results.$count
     return mapped
 }
 
-function mapRow(row, remoteToLocal) {
+function mapRow(row, remoteToLocal, remoteEntityDef, entityFullName, viewMappingRegistry, options = {}) {
     const mapped = {}
     for (const [key, val] of Object.entries(row)) {
-        mapped[remoteToLocal[key] || key] = val
+        const localKey = localFieldName(key, remoteToLocal)
+        const remoteElement = remoteEntityDef?.elements?.[key]
+        if (remoteElement?.target && val != null && typeof val === 'object') {
+            const localEntityDef = cds.model?.definitions?.[entityFullName]
+            const localTargetName = localEntityDef?.elements?.[localKey]?.target
+            const targetMapping = viewMappingRegistry?.[localTargetName] || {}
+            const remoteTargetDef = cds.model?.definitions?.[remoteElement.target]
+            const expandPlan = options.expandPlan?.[key]
+            const localWhere = options.isODataV2
+                ? expandPlan?.where || cloneWhere(targetMapping.staticWhere)
+                : null
+            const localOrderBy = options.isODataV2 ? expandPlan?.orderBy : null
+            const localLimit = options.isODataV2 ? expandPlan?.limit : null
+            const hiddenFields = options.isODataV2
+                ? expandPlan?.hiddenFields || hiddenEvaluationFields(targetMapping, localWhere, localOrderBy)
+                : []
+            const childOptions = { ...options, expandPlan: expandPlan?.children }
+            if (Array.isArray(val)) {
+                mapped[localKey] = applyExpandedSemantics(
+                    val,
+                    localWhere,
+                    localOrderBy,
+                    localLimit,
+                    remoteTargetDef,
+                )
+                    .map(item => mapRow(
+                        item,
+                        targetMapping.remoteToLocal || {},
+                        remoteTargetDef,
+                        localTargetName,
+                        viewMappingRegistry,
+                        childOptions,
+                    ))
+                    .map(item => stripHiddenScopeFields(item, targetMapping.remoteToLocal || {}, hiddenFields))
+            } else {
+                const selected = applyExpandedSemantics(
+                    [val],
+                    localWhere,
+                    localOrderBy,
+                    localLimit,
+                    remoteTargetDef,
+                )[0]
+                mapped[localKey] = selected
+                    ? stripHiddenScopeFields(mapRow(
+                        selected,
+                        targetMapping.remoteToLocal || {},
+                        remoteTargetDef,
+                        localTargetName,
+                        viewMappingRegistry,
+                        childOptions,
+                    ), targetMapping.remoteToLocal || {}, hiddenFields)
+                    : null
+            }
+        } else {
+            mapped[localKey] = val
+        }
     }
     return mapped
 }
@@ -198,4 +487,10 @@ function propagateRemoteError(err, _sourceServiceName) {
     return err
 }
 
-module.exports = { containsLambda, runDirectRemoteQuery, propagateRemoteError }
+module.exports = {
+    buildDirectRemoteColumns,
+    containsLambda,
+    hiddenEvaluationFields,
+    runDirectRemoteQuery,
+    propagateRemoteError,
+}

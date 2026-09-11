@@ -21,7 +21,16 @@ describe('Delegate Strategy', () => {
     })
 
     function describeQueryCapabilities(protocol, entities) {
-        const { Customers, Products, Orders, Suppliers, isV2 } = entities
+        const {
+            Customers,
+            Products,
+            Orders,
+            ShippedOrders,
+            ShippedOrdersScoped,
+            ActiveCustomersWithPurchases,
+            Suppliers,
+            isV2,
+        } = entities
         // cds 10 defaults `ieee754compatible: true` (and `count_as_string: true`),
         // so Decimal/Int64 and `@odata.count` arrive as JSON strings on V4 too —
         // not just V2. Coerce unconditionally to stay compatible with cds 9 and 10.
@@ -357,12 +366,102 @@ describe('Delegate Strategy', () => {
                     expect(data.buyer).to.have.property('ID', 'C001')
                     expect(data.buyer).to.have.property('name', 'Acme Corp')
                 })
+
+                it('[4.1.6] static where + delegated expand: narrows a trimmed expand target', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrders}('O001')?$expand=item`)
+                    expect(data.orderId).to.equal('O001')
+                    expect(data.status).to.equal('shipped')
+                    expect(data.item).to.have.property('productId')
+                    expect(data.item).to.have.property('productName')
+                    expect(data.item).to.have.property('unitPrice')
+                    expect(data.item).to.not.have.property('stock')
+                    expect(data.item).to.not.have.property('modifiedAt')
+                })
+
+                it('[4.1.6] static where + delegated expand: supports multiple expands', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrders}?$expand=buyer,item`)
+                    expect(data.value).to.have.length(3)
+                    expect(data.value.every(order => order.status === 'shipped')).to.be.true
+                    expect(data.value[0].buyer).to.have.property('name')
+                    expect(data.value[0].item).to.have.property('productName')
+                    expect(data.value[0].item).to.not.have.property('stock')
+                })
+
+                it('[4.1.6] static where: exposes renamed association foreign keys', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrders}('O001')`)
+                    expect(data).to.have.property('buyer_ID', 'C001')
+                    expect(data).to.have.property('item_ID', 'P001')
+                    expect(data).to.not.have.property('customer_ID')
+                    expect(data).to.not.have.property('product_ID')
+                })
+
+                it('[4.1.6] static where: selects a renamed association foreign key', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrders}('O001')?$select=orderId,buyer_ID`)
+                    expect(data).to.have.property('orderId', 'O001')
+                    expect(data).to.have.property('buyer_ID', 'C001')
+                })
+
+                it('[4.1.6] static where: filters and orders by a renamed association foreign key', async () => {
+                    const filtered = await GET(`${base}/${ShippedOrders}?$filter=buyer_ID eq 'C001'`)
+                    expect(filtered.data.value).to.have.length(1)
+                    expect(filtered.data.value[0].orderId).to.equal('O001')
+
+                    const ordered = await GET(`${base}/${ShippedOrders}?$orderby=buyer_ID desc`)
+                    const buyers = ordered.data.value.map(row => row.buyer_ID)
+                    expect(buyers).to.deep.equal([...buyers].sort().reverse())
+                })
+
+                it('[4.1.6] static where + delegated expand: applies static scope on expand target', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrdersScoped}?$expand=item`)
+                    const items = Object.fromEntries(data.value.map(o => [o.orderId, o.item?.productName ?? null]))
+                    expect(items).to.deep.equal({ O001: 'Laptop Pro', O003: null, O006: 'USB-C Hub' })
+                })
+
+                it('[4.1.6] static where + delegated expand: recursively maps renamed nested expands', async () => {
+                    const { data } = await GET(
+                        `${base}/${ActiveCustomersWithPurchases}('C001')?$expand=purchases($expand=item)`
+                    )
+                    expect(data.customerName).to.equal('Acme Corp')
+                    expect(data.purchases).to.have.length(2)
+                    expect(data.purchases.map(order => order.orderId)).to.have.members(['O001', 'O002'])
+                    expect(data.purchases.map(order => order.item.productName))
+                        .to.have.members(['Laptop Pro', 'Wireless Mouse'])
+                    expect(data.purchases.every(order => !('product' in order))).to.be.true
+                })
+
+                if (isV2) {
+                    it('[4.1.6] static where + delegated expand: applies client filter locally for V2', async () => {
+                        const { data } = await GET(`${base}/${ShippedOrdersScoped}?$expand=item($filter=unitPrice lt 100)`)
+                        const items = Object.fromEntries(data.value.map(o => [o.orderId, o.item?.productName ?? null]))
+                        expect(items).to.deep.equal({ O001: null, O003: null, O006: 'USB-C Hub' })
+                    })
+
+                    it('[4.1.6] static where + delegated expand: hides V2 evaluation-only fields', async () => {
+                        const { data } = await GET(
+                            `${base}/${ShippedOrdersScoped}?$expand=item($select=productName;$filter=unitPrice lt 100)`
+                        )
+                        const item = data.value.find(row => row.orderId === 'O006').item
+                        expect(item).to.include({ productName: 'USB-C Hub' })
+                        expect(item).to.not.have.property('unitPrice')
+                    })
+                }
             })
 
             // ── $expand options (V4 only — V2 does not support nested query options in $expand) ──
 
             if (!isV2) {
                 describe('$filter / $orderby / $top / $skip within $expand', () => {
+
+                    it('[4.1.6] static where + delegated expand: translates renamed filter and orderby fields', async () => {
+                        const { data } = await GET(
+                            `${base}/${ShippedOrders}('O001')?$expand=item($filter=unitPrice gt 100;$orderby=productName asc)`
+                        )
+                        expect(data.status).to.equal('shipped')
+                        expect(data.item).to.have.property('productName', 'Laptop Pro')
+                        expect(num(data.item.unitPrice)).to.be.greaterThan(100)
+                        expect(data.item).to.not.have.property('price')
+                        expect(data.item).to.not.have.property('name')
+                    })
 
                     it('$filter within to-many expand (Scenario A)', async () => {
                         const { data } = await GET(`${base}/${Customers}('C001')?$expand=orders($filter=status eq 'shipped')`)
@@ -473,11 +572,15 @@ describe('Delegate Strategy', () => {
 
     describeQueryCapabilities('OData V4', {
         Customers: 'Customers', Products: 'Products',
-        Orders: 'Orders', Suppliers: 'Suppliers', isV2: false
+        Orders: 'Orders', ShippedOrders: 'ShippedOrders', ShippedOrdersScoped: 'ShippedOrdersScoped',
+        ActiveCustomersWithPurchases: 'ActiveCustomersWithPurchases',
+        Suppliers: 'Suppliers', isV2: false
     })
 
     describeQueryCapabilities('OData V2', {
         Customers: 'CustomersV2', Products: 'ProductsV2',
-        Orders: 'OrdersV2', Suppliers: 'SuppliersV2', isV2: true
+        Orders: 'OrdersV2', ShippedOrders: 'ShippedOrdersV2', ShippedOrdersScoped: 'ShippedOrdersScopedV2',
+        ActiveCustomersWithPurchases: 'ActiveCustomersWithPurchasesV2',
+        Suppliers: 'SuppliersV2', isV2: true
     })
 })

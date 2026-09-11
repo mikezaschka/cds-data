@@ -10,6 +10,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 
+# install-cds9.sh resolves the whole workspace graph from scratch (no lockfile),
+# which npm 10 cannot do here: it crashes with "Cannot read properties of null
+# (reading 'edgesOut')" while loading the vitest peer set. npm >= 11.14 fixes
+# that but gates the lifecycle scripts better-sqlite3 needs, so pin in between.
+RUN npm install -g npm@11.13.0
+
 COPY . .
 
 RUN bash docker/install-cds9.sh
