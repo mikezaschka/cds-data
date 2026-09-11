@@ -13,7 +13,7 @@ See [`spec/reference/requirements.md`](./requirements.md) for the requirement de
 | Requirement | Status | Tagged tests |
 |---|---|---|
 | 4.1.3 | Implemented (HCQL remote; OData-only limitation remains) | 1 |
-| 4.1.6 | Implemented | 6 |
+| 4.1.6 | Implemented | 8 |
 | 4.2.5 | Implemented | 25 |
 | 4.2.6 | Implemented | 10 |
 | 4.2.12 | Implemented | 5 |
@@ -54,6 +54,8 @@ Status: **Implemented**
 - `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where: exposes renamed association foreign keys
 - `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where: selects a renamed association foreign key
 - `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where: filters and orders by a renamed association foreign key
+- `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where + delegated expand: applies static scope on expand target
+- `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where + delegated expand: applies client filter locally for V2
 - `packages/cds-data-federation/test/integration/delegate/basic.test.js` — [4.1.6] static where + delegated expand: translates renamed filter and orderby fields
 
 ### 4.2.5

@@ -1,4 +1,5 @@
 const cds = require('@sap/cds')
+const { applyExpandedSemantics, evaluateWhere } = require('../../srv/delegation/cqn-evaluator')
 const { buildDirectRemoteColumns } = require('../../srv/delegation/remote-query')
 
 describe('Direct remote query columns', () => {
@@ -268,6 +269,66 @@ describe('Direct remote query columns', () => {
         const item = columns.find(col => col.ref?.[0] === 'product' && col.expand)
         expect(item).not.toHaveProperty('where')
         expect(item).not.toHaveProperty('orderBy')
+    })
+
+    it('evaluates the CDS predicate operators used by V2 static scopes', () => {
+        const row = { category: 'Electronics', price: '29.99', stock: null }
+
+        expect(evaluateWhere([
+            { ref: ['category'] }, 'in', { list: [{ val: 'Electronics' }, { val: 'Hardware' }] },
+            'and',
+            { ref: ['price'] }, 'between', { val: 20 }, 'and', { val: 40 },
+            'and',
+            { ref: ['category'] }, 'like', { val: 'Ele%' },
+            'and',
+            { ref: ['stock'] }, 'is', { val: null },
+        ], row)).toBe(true)
+        expect(evaluateWhere([
+            'not', { ref: ['category'] }, '=', { val: 'Furniture' },
+        ], row)).toBe(true)
+        expect(evaluateWhere([
+            { ref: ['price'] }, '=', { val: 29.99 },
+        ], row)).toBe(true)
+    })
+
+    it('fully consumes mixed boolean expressions instead of short-circuiting the parser', () => {
+        const where = [
+            { ref: ['category'] }, '=', { val: 'Furniture' },
+            'and',
+            { ref: ['price'] }, '>', { val: 100 },
+            'or',
+            { ref: ['category'] }, '=', { val: 'Electronics' },
+        ]
+
+        expect(evaluateWhere(where, { category: 'Electronics', price: '29.99' })).toBe(true)
+    })
+
+    it('fails closed when a V2 scope uses an unsupported predicate', () => {
+        expect(() => evaluateWhere([
+            { ref: ['category'] }, 'matches', { val: '.*' },
+        ], { category: 'Furniture' })).toThrow(/Unsupported CQN predicate operator/)
+    })
+
+    it('applies translated client filters and ordering to V2 expanded collections', () => {
+        const rows = [
+            { name: 'Mouse', price: '29.99' },
+            { name: 'Hub', price: '79.99' },
+            { name: 'Laptop', price: '1299.99' },
+        ]
+
+        expect(applyExpandedSemantics(
+            rows,
+            [{ ref: ['price'] }, '<', { val: 100 }],
+            [{ ref: ['name'], sort: 'desc' }],
+        )).toEqual([
+            { name: 'Mouse', price: '29.99' },
+            { name: 'Hub', price: '79.99' },
+        ])
+        expect(applyExpandedSemantics(
+            rows,
+            null,
+            [{ ref: ['price'], sort: 'desc' }],
+        ).map(row => row.name)).toEqual(['Laptop', 'Hub', 'Mouse'])
     })
 
     it('replaces projected associations with their remote foreign keys', () => {

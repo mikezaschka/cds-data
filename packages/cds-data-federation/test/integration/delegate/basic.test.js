@@ -407,6 +407,14 @@ describe('Delegate Strategy', () => {
                     const items = Object.fromEntries(data.value.map(o => [o.orderId, o.item?.productName ?? null]))
                     expect(items).to.deep.equal({ O001: 'Laptop Pro', O003: null, O006: 'USB-C Hub' })
                 })
+
+                if (isV2) {
+                    it('[4.1.6] static where + delegated expand: applies client filter locally for V2', async () => {
+                        const { data } = await GET(`${base}/${ShippedOrdersScoped}?$expand=item($filter=unitPrice lt 100)`)
+                        const items = Object.fromEntries(data.value.map(o => [o.orderId, o.item?.productName ?? null]))
+                        expect(items).to.deep.equal({ O001: null, O003: null, O006: 'USB-C Hub' })
+                    })
+                }
             })
 
             // ── $expand options (V4 only — V2 does not support nested query options in $expand) ──

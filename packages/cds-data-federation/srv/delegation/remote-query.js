@@ -11,6 +11,7 @@
 
 const cds = require('@sap/cds')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
+const { applyExpandedSemantics, evaluateWhere } = require('./cqn-evaluator')
 const {
     andWhere,
     buildInnerColumns,
@@ -94,71 +95,6 @@ function isODataV2Remote(remote, sourceServiceName) {
     return kinds.some(kind => kind === 'odata-v2')
 }
 
-function compareValues(left, op, right) {
-    switch (op) {
-    case '=':
-    case '==':
-        return left === right
-    case '!=':
-    case '<>':
-        return left !== right
-    case '>':
-        return left > right
-    case '>=':
-        return left >= right
-    case '<':
-        return left < right
-    case '<=':
-        return left <= right
-    default:
-        return true
-    }
-}
-
-function evalWhereValue(token, row) {
-    if (!token || typeof token !== 'object') return token
-    if (Object.prototype.hasOwnProperty.call(token, 'val')) return token.val
-    if (token.ref?.length) {
-        const [head, ...tail] = token.ref
-        const first = typeof head === 'string' ? row?.[head] : undefined
-        return tail.reduce((acc, seg) => (acc == null ? acc : acc[seg]), first)
-    }
-    return undefined
-}
-
-function evalStaticWhere(where, row) {
-    if (!Array.isArray(where) || where.length === 0) return true
-
-    let i = 0
-    function parsePrimary() {
-        const token = where[i]
-        if (token?.xpr && Array.isArray(token.xpr)) {
-            i += 1
-            return evalStaticWhere(token.xpr, row)
-        }
-        const left = evalWhereValue(where[i++], row)
-        const op = where[i++]
-        const right = evalWhereValue(where[i++], row)
-        return compareValues(left, op, right)
-    }
-
-    function parseAnd() {
-        let value = parsePrimary()
-        while (where[i] === 'and') {
-            i += 1
-            value = value && parsePrimary()
-        }
-        return value
-    }
-
-    let value = parseAnd()
-    while (where[i] === 'or') {
-        i += 1
-        value = value || parseAnd()
-    }
-    return value
-}
-
 function collectWhereRefs(where, refs = new Set()) {
     if (!Array.isArray(where)) return refs
     for (const token of where) {
@@ -195,8 +131,9 @@ function hasProjectedRemoteField(targetMapping, remoteField) {
     return false
 }
 
-function hiddenStaticScopeFields(targetMapping) {
-    const refs = collectWhereRefs(targetMapping?.staticWhere)
+function hiddenEvaluationFields(targetMapping, where, orderBy) {
+    const refs = collectWhereRefs(where)
+    collectWhereRefs(orderBy, refs)
     return [...refs].filter(remoteField => !hasProjectedRemoteField(targetMapping, remoteField))
 }
 
@@ -251,8 +188,13 @@ function normalizeExpandColumn(
         col.where ? translateExpandWhere(col.where, targetMapping.localToRemote || {}) : null,
         cloneWhere(targetMapping.staticWhere),
     )
-    if (options.isODataV2 && Array.isArray(targetMapping.staticWhere)) {
-        ensureExpandRefs(normalized.expand, collectWhereRefs(targetMapping.staticWhere))
+    const translatedOrderBy = col.orderBy
+        ? translateOrderBy(col.orderBy, targetMapping.localToRemote || {})
+        : null
+    if (options.isODataV2) {
+        const evaluationRefs = collectWhereRefs(scopedWhere)
+        collectWhereRefs(translatedOrderBy, evaluationRefs)
+        ensureExpandRefs(normalized.expand, evaluationRefs)
     }
     if (scopedWhere && !options.isODataV2) {
         normalized.where = scopedWhere
@@ -260,14 +202,47 @@ function normalizeExpandColumn(
         delete normalized.where
     }
     if (col.orderBy && !options.isODataV2) {
-        normalized.orderBy = translateOrderBy(
-            col.orderBy,
-            targetMapping.localToRemote || {},
-        )
+        normalized.orderBy = translatedOrderBy
     } else if (options.isODataV2) {
         delete normalized.orderBy
     }
     return normalized
+}
+
+function buildV2ExpandPlan(columns, viewMapping, remoteEntityDef, entityFullName, viewMappingRegistry) {
+    const plan = {}
+    for (const col of columns || []) {
+        if (!col?.expand || !col.ref?.length) continue
+
+        const remoteAssocName = translateRef(col.ref, viewMapping?.localToRemote || {})[0]
+        const localAssocName = col.ref[0]
+        const localEntityDef = cds.model?.definitions?.[entityFullName]
+        const localTargetName = localEntityDef?.elements?.[localAssocName]?.target
+        const targetMapping = viewMappingRegistry?.[localTargetName] || {}
+        const remoteTargetName = remoteEntityDef?.elements?.[remoteAssocName]?.target
+        const remoteTargetDef = cds.model?.definitions?.[remoteTargetName]
+        const clientWhere = col.where
+            ? translateExpandWhere(col.where, targetMapping.localToRemote || {})
+            : null
+        const orderBy = col.orderBy
+            ? translateOrderBy(col.orderBy, targetMapping.localToRemote || {})
+            : null
+        const where = andWhere(clientWhere, cloneWhere(targetMapping.staticWhere))
+
+        plan[remoteAssocName] = {
+            where,
+            orderBy,
+            hiddenFields: hiddenEvaluationFields(targetMapping, where, orderBy),
+            children: buildV2ExpandPlan(
+                col.expand,
+                targetMapping,
+                remoteTargetDef,
+                localTargetName,
+                viewMappingRegistry,
+            ),
+        }
+    }
+    return plan
 }
 
 function buildDirectRemoteColumns(
@@ -394,13 +369,16 @@ async function runDirectRemoteQuery(
     if (!Array.isArray(results)) return results
     const hasTopLevelMapping = remoteToLocal && Object.keys(remoteToLocal).length > 0
     if (!hasTopLevelMapping && (!entityFullName || !viewMappingRegistry)) return results
+    const v2ExpandPlan = isV2
+        ? buildV2ExpandPlan(sel.columns, viewMapping, remoteEntityDef, entityFullName, viewMappingRegistry)
+        : null
     const mapped = results.map(row => mapRow(
         row,
         remoteToLocal || {},
         remoteEntityDef,
         entityFullName,
         viewMappingRegistry,
-        { isODataV2: isV2 },
+        { isODataV2: isV2, expandPlan: v2ExpandPlan },
     ))
     if ('$count' in results) mapped.$count = results.$count
     return mapped
@@ -416,31 +394,36 @@ function mapRow(row, remoteToLocal, remoteEntityDef, entityFullName, viewMapping
             const localTargetName = localEntityDef?.elements?.[localKey]?.target
             const targetMapping = viewMappingRegistry?.[localTargetName] || {}
             const remoteTargetDef = cds.model?.definitions?.[remoteElement.target]
-            const applyStaticScope = options.isODataV2 && Array.isArray(targetMapping.staticWhere)
-            const inStaticScope = record => !applyStaticScope || evalStaticWhere(targetMapping.staticWhere, record)
-            const hiddenScopeFields = options.isODataV2 ? hiddenStaticScopeFields(targetMapping) : []
+            const expandPlan = options.expandPlan?.[key]
+            const localWhere = options.isODataV2
+                ? expandPlan?.where || cloneWhere(targetMapping.staticWhere)
+                : null
+            const localOrderBy = options.isODataV2 ? expandPlan?.orderBy : null
+            const hiddenFields = options.isODataV2
+                ? expandPlan?.hiddenFields || hiddenEvaluationFields(targetMapping, localWhere, localOrderBy)
+                : []
+            const childOptions = { ...options, expandPlan: expandPlan?.children }
             if (Array.isArray(val)) {
-                mapped[localKey] = val
-                    .filter(inStaticScope)
+                mapped[localKey] = applyExpandedSemantics(val, localWhere, localOrderBy)
                     .map(item => mapRow(
                         item,
                         targetMapping.remoteToLocal || {},
                         remoteTargetDef,
                         localTargetName,
                         viewMappingRegistry,
-                        options,
+                        childOptions,
                     ))
-                    .map(item => stripHiddenScopeFields(item, targetMapping.remoteToLocal || {}, hiddenScopeFields))
+                    .map(item => stripHiddenScopeFields(item, targetMapping.remoteToLocal || {}, hiddenFields))
             } else {
-                mapped[localKey] = inStaticScope(val)
+                mapped[localKey] = !localWhere || evaluateWhere(localWhere, val)
                     ? stripHiddenScopeFields(mapRow(
                         val,
                         targetMapping.remoteToLocal || {},
                         remoteTargetDef,
                         localTargetName,
                         viewMappingRegistry,
-                        options,
-                    ), targetMapping.remoteToLocal || {}, hiddenScopeFields)
+                        childOptions,
+                    ), targetMapping.remoteToLocal || {}, hiddenFields)
                     : null
             }
         } else {

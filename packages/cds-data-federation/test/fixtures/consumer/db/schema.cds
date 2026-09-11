@@ -230,7 +230,7 @@ entity ElectronicsProductsV2 as projection on remoteV2.Products {
     name  as productName,
     price as unitPrice,
     currency
-} where category = 'Electronics';
+} where category in ('Electronics');
 
 @federation.delegate
 entity ShippedOrdersScopedV2 as projection on remoteV2.Orders {
