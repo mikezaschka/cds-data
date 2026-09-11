@@ -21,7 +21,7 @@ describe('Delegate Strategy', () => {
     })
 
     function describeQueryCapabilities(protocol, entities) {
-        const { Customers, Products, Orders, ShippedOrders, Suppliers, isV2 } = entities
+        const { Customers, Products, Orders, ShippedOrders, ShippedOrdersScoped, Suppliers, isV2 } = entities
         // cds 10 defaults `ieee754compatible: true` (and `count_as_string: true`),
         // so Decimal/Int64 and `@odata.count` arrive as JSON strings on V4 too —
         // not just V2. Coerce unconditionally to stay compatible with cds 9 and 10.
@@ -401,6 +401,12 @@ describe('Delegate Strategy', () => {
                     const buyers = ordered.data.value.map(row => row.buyer_ID)
                     expect(buyers).to.deep.equal([...buyers].sort().reverse())
                 })
+
+                it('[4.1.6] static where + delegated expand: applies static scope on expand target', async () => {
+                    const { data } = await GET(`${base}/${ShippedOrdersScoped}?$expand=item`)
+                    const items = Object.fromEntries(data.value.map(o => [o.orderId, o.item?.productName ?? null]))
+                    expect(items).to.deep.equal({ O001: 'Laptop Pro', O003: null, O006: 'USB-C Hub' })
+                })
             })
 
             // ── $expand options (V4 only — V2 does not support nested query options in $expand) ──
@@ -528,13 +534,13 @@ describe('Delegate Strategy', () => {
 
     describeQueryCapabilities('OData V4', {
         Customers: 'Customers', Products: 'Products',
-        Orders: 'Orders', ShippedOrders: 'ShippedOrders',
+        Orders: 'Orders', ShippedOrders: 'ShippedOrders', ShippedOrdersScoped: 'ShippedOrdersScoped',
         Suppliers: 'Suppliers', isV2: false
     })
 
     describeQueryCapabilities('OData V2', {
         Customers: 'CustomersV2', Products: 'ProductsV2',
-        Orders: 'OrdersV2', ShippedOrders: 'ShippedOrdersV2',
+        Orders: 'OrdersV2', ShippedOrders: 'ShippedOrdersV2', ShippedOrdersScoped: 'ShippedOrdersScopedV2',
         Suppliers: 'SuppliersV2', isV2: true
     })
 })

@@ -238,6 +238,38 @@ describe('Direct remote query columns', () => {
         expect(item.where).toEqual([{ ref: ['category'] }, '=', { val: 'Electronics' }])
     })
 
+    it('skips nested expand where/orderBy on OData V2 direct queries', () => {
+        const scopedRegistry = {
+            ...registry,
+            'App.Products': {
+                ...productMapping,
+                staticWhere: [{ ref: ['category'] }, '=', { val: 'Electronics' }],
+            },
+        }
+        const columns = buildDirectRemoteColumns(
+            {
+                columns: [
+                    '*',
+                    {
+                        ref: ['item'],
+                        expand: [{ ref: ['productName'] }],
+                        where: [{ ref: ['unitPrice'] }, '>', { val: 100 }],
+                        orderBy: [{ ref: ['productName'], sort: 'asc' }],
+                    },
+                ],
+            },
+            topMapping,
+            remoteOrders,
+            'App.ShippedOrders',
+            scopedRegistry,
+            { isODataV2: true },
+        )
+
+        const item = columns.find(col => col.ref?.[0] === 'product' && col.expand)
+        expect(item).not.toHaveProperty('where')
+        expect(item).not.toHaveProperty('orderBy')
+    })
+
     it('replaces projected associations with their remote foreign keys', () => {
         const columns = buildDirectRemoteColumns(
             {},

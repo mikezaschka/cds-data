@@ -224,6 +224,22 @@ entity ShippedOrdersV2 as projection on remoteV2.Orders {
     modifiedAt
 } where status = 'shipped';
 
+@federation.delegate
+entity ElectronicsProductsV2 as projection on remoteV2.Products {
+    ID    as productId,
+    name  as productName,
+    price as unitPrice,
+    currency
+} where category = 'Electronics';
+
+@federation.delegate
+entity ShippedOrdersScopedV2 as projection on remoteV2.Orders {
+    ID      as orderId,
+    product as item : redirected to ElectronicsProductsV2,
+    quantity,
+    status
+} where status = 'shipped';
+
 // V2 Suppliers: entity-level rename via V2 protocol
 @federation.delegate
 entity SuppliersV2 as projection on remoteV2.Customers {
