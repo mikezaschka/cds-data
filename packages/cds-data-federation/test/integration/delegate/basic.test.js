@@ -414,6 +414,15 @@ describe('Delegate Strategy', () => {
                         const items = Object.fromEntries(data.value.map(o => [o.orderId, o.item?.productName ?? null]))
                         expect(items).to.deep.equal({ O001: null, O003: null, O006: 'USB-C Hub' })
                     })
+
+                    it('[4.1.6] static where + delegated expand: hides V2 evaluation-only fields', async () => {
+                        const { data } = await GET(
+                            `${base}/${ShippedOrdersScoped}?$expand=item($select=productName;$filter=unitPrice lt 100)`
+                        )
+                        const item = data.value.find(row => row.orderId === 'O006').item
+                        expect(item).to.include({ productName: 'USB-C Hub' })
+                        expect(item).to.not.have.property('unitPrice')
+                    })
                 }
             })
 

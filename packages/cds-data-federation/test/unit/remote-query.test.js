@@ -256,6 +256,7 @@ describe('Direct remote query columns', () => {
                         expand: [{ ref: ['productName'] }],
                         where: [{ ref: ['unitPrice'] }, '>', { val: 100 }],
                         orderBy: [{ ref: ['productName'], sort: 'asc' }],
+                        limit: { rows: { val: 1 }, offset: { val: 1 } },
                     },
                 ],
             },
@@ -269,10 +270,12 @@ describe('Direct remote query columns', () => {
         const item = columns.find(col => col.ref?.[0] === 'product' && col.expand)
         expect(item).not.toHaveProperty('where')
         expect(item).not.toHaveProperty('orderBy')
+        expect(item).not.toHaveProperty('limit')
     })
 
     it('evaluates the CDS predicate operators used by V2 static scopes', () => {
         const row = { category: 'Electronics', price: '29.99', stock: null }
+        const entity = { elements: { price: { type: 'cds.Decimal' } } }
 
         expect(evaluateWhere([
             { ref: ['category'] }, 'in', { list: [{ val: 'Electronics' }, { val: 'Hardware' }] },
@@ -282,13 +285,13 @@ describe('Direct remote query columns', () => {
             { ref: ['category'] }, 'like', { val: 'Ele%' },
             'and',
             { ref: ['stock'] }, 'is', { val: null },
-        ], row)).toBe(true)
+        ], row, entity)).toBe(true)
         expect(evaluateWhere([
             'not', { ref: ['category'] }, '=', { val: 'Furniture' },
-        ], row)).toBe(true)
+        ], row, entity)).toBe(true)
         expect(evaluateWhere([
             { ref: ['price'] }, '=', { val: 29.99 },
-        ], row)).toBe(true)
+        ], row, entity)).toBe(true)
     })
 
     it('fully consumes mixed boolean expressions instead of short-circuiting the parser', () => {
@@ -315,6 +318,7 @@ describe('Direct remote query columns', () => {
             { name: 'Hub', price: '79.99' },
             { name: 'Laptop', price: '1299.99' },
         ]
+        const entity = { elements: { price: { type: 'cds.Decimal' } } }
 
         expect(applyExpandedSemantics(
             rows,
@@ -328,7 +332,45 @@ describe('Direct remote query columns', () => {
             rows,
             null,
             [{ ref: ['price'], sort: 'desc' }],
+            null,
+            entity,
         ).map(row => row.name)).toEqual(['Laptop', 'Hub', 'Mouse'])
+        expect(applyExpandedSemantics(
+            rows,
+            null,
+            [{ ref: ['price'], sort: 'asc' }],
+            { rows: { val: 1 }, offset: { val: 1 } },
+            entity,
+        ).map(row => row.name)).toEqual(['Hub'])
+    })
+
+    it('compares IEEE-754-compatible Int64 and Decimal strings without losing precision', () => {
+        const entity = {
+            elements: {
+                sequence: { type: 'cds.Integer64' },
+                amount: { type: 'cds.Decimal' },
+            },
+        }
+        const lower = '9007199254740992'
+        const higher = '9007199254740993'
+
+        expect(evaluateWhere(
+            [{ ref: ['sequence'] }, '=', { val: higher }],
+            { sequence: lower },
+            entity,
+        )).toBe(false)
+        expect(applyExpandedSemantics(
+            [{ sequence: higher }, { sequence: lower }],
+            null,
+            [{ ref: ['sequence'], sort: 'asc' }],
+            null,
+            entity,
+        ).map(row => row.sequence)).toEqual([lower, higher])
+        expect(evaluateWhere(
+            [{ ref: ['amount'] }, '=', { val: 0.1 }],
+            { amount: '0.10' },
+            entity,
+        )).toBe(true)
     })
 
     it('replaces projected associations with their remote foreign keys', () => {

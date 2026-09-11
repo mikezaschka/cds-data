@@ -9,36 +9,104 @@ function isKeyword(token, keyword) {
     return typeof token === 'string' && token.toLowerCase() === keyword
 }
 
-function numericValue(value) {
-    if (typeof value === 'number') return Number.isNaN(value) ? null : value
-    if (typeof value !== 'string' || value.trim() === '') return null
-    const parsed = Number(value)
-    return Number.isNaN(parsed) ? null : parsed
+const NUMERIC_TYPES = new Set([
+    'cds.Decimal',
+    'cds.DecimalFloat',
+    'cds.Double',
+    'cds.Integer',
+    'cds.Integer64',
+    'cds.UInt8',
+    'cds.Int16',
+    'cds.Int32',
+    'cds.Int64',
+])
+
+function decimalParts(value) {
+    if (typeof value === 'number') {
+        if (!Number.isFinite(value)) return null
+        if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+            throw new UnsupportedCqnPredicateError(
+                'Unsafe numeric CQN value; represent Int64 and Decimal values as strings'
+            )
+        }
+    } else if (typeof value !== 'string' || value.trim() === '') {
+        return null
+    }
+
+    const match = String(value).trim().match(/^([+-]?)(\d+)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/)
+    if (!match) return null
+
+    const negative = match[1] === '-'
+    const fraction = match[3] || ''
+    const exponent = Number(match[4] || 0)
+    if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > 10000) {
+        throw new UnsupportedCqnPredicateError('Numeric CQN exponent is outside the supported range')
+    }
+    let digits = `${match[2]}${fraction}`.replace(/^0+/, '') || '0'
+    if (digits.length + Math.abs(exponent) > 10000) {
+        throw new UnsupportedCqnPredicateError('Numeric CQN value is outside the supported range')
+    }
+    let scale = fraction.length - exponent
+    if (scale < 0) {
+        digits += '0'.repeat(-scale)
+        scale = 0
+    }
+    while (scale > 0 && digits.endsWith('0')) {
+        digits = digits.slice(0, -1)
+        scale -= 1
+    }
+    const coefficient = BigInt(digits) * (negative && digits !== '0' ? -1n : 1n)
+    return { coefficient, scale }
 }
 
-function equalValues(left, right) {
+function compareDecimals(left, right) {
+    const leftParts = decimalParts(left)
+    const rightParts = decimalParts(right)
+    if (!leftParts || !rightParts) return null
+    const scale = Math.max(leftParts.scale, rightParts.scale)
+    const leftCoefficient = leftParts.coefficient * (10n ** BigInt(scale - leftParts.scale))
+    const rightCoefficient = rightParts.coefficient * (10n ** BigInt(scale - rightParts.scale))
+    if (leftCoefficient === rightCoefficient) return 0
+    return leftCoefficient < rightCoefficient ? -1 : 1
+}
+
+function operandType(token, entityDef) {
+    const name = token?.ref?.[0]
+    return typeof name === 'string' ? entityDef?.elements?.[name]?.type : null
+}
+
+function compareScalarValues(left, right, type) {
+    if (NUMERIC_TYPES.has(type)) {
+        const comparison = compareDecimals(left, right)
+        if (comparison !== null) return comparison
+    }
+    if (left === right) return 0
+    if (left == null) return -1
+    if (right == null) return 1
+    return left < right ? -1 : 1
+}
+
+function equalValues(left, right, type) {
     if (left === right) return true
-    const leftNumber = numericValue(left)
-    const rightNumber = numericValue(right)
-    return leftNumber !== null && rightNumber !== null && leftNumber === rightNumber
+    return NUMERIC_TYPES.has(type) && compareDecimals(left, right) === 0
 }
 
-function compareValues(left, operator, right) {
+function compareValues(left, operator, right, type) {
     switch (operator) {
     case '=':
     case '==':
-        return equalValues(left, right)
+        return equalValues(left, right, type)
     case '!=':
     case '<>':
-        return !equalValues(left, right)
+        return !equalValues(left, right, type)
     case '>':
-        return left > right
+        return compareScalarValues(left, right, type) > 0
     case '>=':
-        return left >= right
+        return compareScalarValues(left, right, type) >= 0
     case '<':
-        return left < right
+        return compareScalarValues(left, right, type) < 0
     case '<=':
-        return left <= right
+        return compareScalarValues(left, right, type) <= 0
     default:
         throw new UnsupportedCqnPredicateError(`Unsupported CQN predicate operator: ${String(operator)}`)
     }
@@ -55,9 +123,9 @@ function refValue(ref, row) {
     }, row)
 }
 
-function evaluateFunction(token, row) {
+function evaluateFunction(token, row, entityDef) {
     const name = String(token.func || '').toLowerCase()
-    const args = (token.args || []).map(arg => evaluateOperand(arg, row))
+    const args = (token.args || []).map(arg => evaluateOperand(arg, row, entityDef))
     switch (name) {
     case 'contains':
         return String(args[0] ?? '').includes(String(args[1] ?? ''))
@@ -82,26 +150,26 @@ function evaluateFunction(token, row) {
     }
 }
 
-function evaluateOperand(token, row) {
+function evaluateOperand(token, row, entityDef) {
     if (token == null || typeof token !== 'object') return token
     if (Object.prototype.hasOwnProperty.call(token, 'val')) return token.val
     if (Array.isArray(token.ref)) return refValue(token.ref, row)
-    if (Array.isArray(token.list)) return token.list.map(item => evaluateOperand(item, row))
-    if (token.func) return evaluateFunction(token, row)
-    if (Array.isArray(token.xpr)) return evaluateWhere(token.xpr, row)
+    if (Array.isArray(token.list)) return token.list.map(item => evaluateOperand(item, row, entityDef))
+    if (token.func) return evaluateFunction(token, row, entityDef)
+    if (Array.isArray(token.xpr)) return evaluateWhere(token.xpr, row, entityDef)
     throw new UnsupportedCqnPredicateError('Unsupported CQN predicate operand')
 }
 
-function evaluateList(token, row) {
+function evaluateList(token, row, entityDef) {
     if (Array.isArray(token?.list)) {
-        return token.list.map(item => evaluateOperand(item, row))
+        return token.list.map(item => evaluateOperand(item, row, entityDef))
     }
     // The CDS compiler represents a single-value IN list as `{ xpr: [{ val }] }`.
     if (Array.isArray(token?.xpr)) {
         const values = []
         for (const item of token.xpr) {
             if (item === ',') continue
-            values.push(evaluateOperand(item, row))
+            values.push(evaluateOperand(item, row, entityDef))
         }
         return values
     }
@@ -126,9 +194,10 @@ function likeRegex(pattern, escapeCharacter) {
 }
 
 class PredicateParser {
-    constructor(tokens, row) {
+    constructor(tokens, row, entityDef) {
         this.tokens = tokens
         this.row = row
+        this.entityDef = entityDef
         this.index = 0
     }
 
@@ -174,7 +243,7 @@ class PredicateParser {
         const token = this.tokens[this.index]
         if (token?.xpr && Array.isArray(token.xpr)) {
             this.index += 1
-            return evaluateWhere(token.xpr, this.row)
+            return evaluateWhere(token.xpr, this.row, this.entityDef)
         }
         if (token === '(') {
             this.index += 1
@@ -186,7 +255,9 @@ class PredicateParser {
             return result
         }
 
-        const left = evaluateOperand(this.tokens[this.index++], this.row)
+        const leftToken = this.tokens[this.index++]
+        const left = evaluateOperand(leftToken, this.row, this.entityDef)
+        const type = operandType(leftToken, this.entityDef)
         let negated = false
         if (isKeyword(this.tokens[this.index], 'not')) {
             negated = true
@@ -203,22 +274,22 @@ class PredicateParser {
         this.index += 1
         let result
         if (operator === 'between') {
-            const lower = evaluateOperand(this.tokens[this.index++], this.row)
+            const lower = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
             if (!isKeyword(this.tokens[this.index], 'and')) {
                 throw new UnsupportedCqnPredicateError('BETWEEN predicate is missing AND')
             }
             this.index += 1
-            const upper = evaluateOperand(this.tokens[this.index++], this.row)
-            result = left >= lower && left <= upper
+            const upper = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
+            result = compareValues(left, '>=', lower, type) && compareValues(left, '<=', upper, type)
         } else if (operator === 'in') {
-            const values = evaluateList(this.tokens[this.index++], this.row)
-            result = values.some(value => equalValues(left, value))
+            const values = evaluateList(this.tokens[this.index++], this.row, this.entityDef)
+            result = values.some(value => equalValues(left, value, type))
         } else if (operator === 'like') {
-            const pattern = evaluateOperand(this.tokens[this.index++], this.row)
+            const pattern = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
             let escapeCharacter
             if (isKeyword(this.tokens[this.index], 'escape')) {
                 this.index += 1
-                escapeCharacter = evaluateOperand(this.tokens[this.index++], this.row)
+                escapeCharacter = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
             }
             result = left != null && likeRegex(pattern, escapeCharacter).test(String(left))
         } else if (operator === 'is') {
@@ -227,45 +298,43 @@ class PredicateParser {
                 isNot = true
                 this.index += 1
             }
-            result = equalValues(left, evaluateOperand(this.tokens[this.index++], this.row))
+            result = equalValues(
+                left,
+                evaluateOperand(this.tokens[this.index++], this.row, this.entityDef),
+                type,
+            )
             if (isNot) result = !result
         } else {
-            result = compareValues(left, operator, evaluateOperand(this.tokens[this.index++], this.row))
+            result = compareValues(
+                left,
+                operator,
+                evaluateOperand(this.tokens[this.index++], this.row, this.entityDef),
+                type,
+            )
         }
         return negated ? !result : result
     }
 }
 
-function evaluateWhere(where, row) {
+function evaluateWhere(where, row, entityDef) {
     if (!Array.isArray(where) || where.length === 0) return true
-    return new PredicateParser(where, row).parse()
+    return new PredicateParser(where, row, entityDef).parse()
 }
 
-function compareOrderValues(left, right) {
-    if (equalValues(left, right)) return 0
-    if (left == null) return -1
-    if (right == null) return 1
-    const leftNumber = numericValue(left)
-    const rightNumber = numericValue(right)
-    if (leftNumber !== null && rightNumber !== null) {
-        return leftNumber < rightNumber ? -1 : 1
-    }
-    return left < right ? -1 : 1
-}
-
-function applyExpandedSemantics(records, where, orderBy) {
+function applyExpandedSemantics(records, where, orderBy, limit, entityDef) {
     let result = Array.isArray(records) ? [...records] : []
     if (Array.isArray(where) && where.length > 0) {
-        result = result.filter(record => evaluateWhere(where, record))
+        result = result.filter(record => evaluateWhere(where, record, entityDef))
     }
     if (Array.isArray(orderBy) && orderBy.length > 0) {
         result = result
             .map((record, index) => ({ record, index }))
             .sort((left, right) => {
                 for (const order of orderBy) {
-                    const comparison = compareOrderValues(
-                        evaluateOperand(order, left.record),
-                        evaluateOperand(order, right.record),
+                    const comparison = compareScalarValues(
+                        evaluateOperand(order, left.record, entityDef),
+                        evaluateOperand(order, right.record, entityDef),
+                        operandType(order, entityDef),
                     )
                     if (comparison !== 0) {
                         return String(order.sort).toLowerCase() === 'desc' ? -comparison : comparison
@@ -274,6 +343,14 @@ function applyExpandedSemantics(records, where, orderBy) {
                 return left.index - right.index
             })
             .map(item => item.record)
+    }
+    if (limit) {
+        const offset = Number(limit.offset?.val || 0)
+        const rows = limit.rows?.val == null ? undefined : Number(limit.rows.val)
+        if (!Number.isSafeInteger(offset) || offset < 0 || (rows !== undefined && (!Number.isSafeInteger(rows) || rows < 0))) {
+            throw new UnsupportedCqnPredicateError('Invalid CQN expand limit')
+        }
+        result = result.slice(offset, rows === undefined ? undefined : offset + rows)
     }
     return result
 }

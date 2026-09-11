@@ -11,7 +11,7 @@
 
 const cds = require('@sap/cds')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
-const { applyExpandedSemantics, evaluateWhere } = require('./cqn-evaluator')
+const { applyExpandedSemantics } = require('./cqn-evaluator')
 const {
     andWhere,
     buildInnerColumns,
@@ -131,10 +131,24 @@ function hasProjectedRemoteField(targetMapping, remoteField) {
     return false
 }
 
-function hiddenEvaluationFields(targetMapping, where, orderBy) {
+function requestedExpandFields(columns, targetMapping) {
+    if (!Array.isArray(columns) || columns.some(col => col === '*' || col?.['*'])) return null
+    const fields = new Set()
+    for (const col of columns) {
+        if (col?.ref?.length === 1) {
+            fields.add(remoteFieldName(col.ref[0], targetMapping?.localToRemote || {}))
+        }
+    }
+    return fields
+}
+
+function hiddenEvaluationFields(targetMapping, where, orderBy, requestedFields) {
     const refs = collectWhereRefs(where)
     collectWhereRefs(orderBy, refs)
-    return [...refs].filter(remoteField => !hasProjectedRemoteField(targetMapping, remoteField))
+    return [...refs].filter(remoteField => {
+        if (requestedFields instanceof Set) return !requestedFields.has(remoteField)
+        return !hasProjectedRemoteField(targetMapping, remoteField)
+    })
 }
 
 function stripHiddenScopeFields(record, remoteToLocal, hiddenRemoteFields) {
@@ -205,6 +219,7 @@ function normalizeExpandColumn(
         normalized.orderBy = translatedOrderBy
     } else if (options.isODataV2) {
         delete normalized.orderBy
+        delete normalized.limit
     }
     return normalized
 }
@@ -228,11 +243,13 @@ function buildV2ExpandPlan(columns, viewMapping, remoteEntityDef, entityFullName
             ? translateOrderBy(col.orderBy, targetMapping.localToRemote || {})
             : null
         const where = andWhere(clientWhere, cloneWhere(targetMapping.staticWhere))
+        const requestedFields = requestedExpandFields(col.expand, targetMapping)
 
         plan[remoteAssocName] = {
             where,
             orderBy,
-            hiddenFields: hiddenEvaluationFields(targetMapping, where, orderBy),
+            limit: col.limit ? JSON.parse(JSON.stringify(col.limit)) : null,
+            hiddenFields: hiddenEvaluationFields(targetMapping, where, orderBy, requestedFields),
             children: buildV2ExpandPlan(
                 col.expand,
                 targetMapping,
@@ -399,12 +416,19 @@ function mapRow(row, remoteToLocal, remoteEntityDef, entityFullName, viewMapping
                 ? expandPlan?.where || cloneWhere(targetMapping.staticWhere)
                 : null
             const localOrderBy = options.isODataV2 ? expandPlan?.orderBy : null
+            const localLimit = options.isODataV2 ? expandPlan?.limit : null
             const hiddenFields = options.isODataV2
                 ? expandPlan?.hiddenFields || hiddenEvaluationFields(targetMapping, localWhere, localOrderBy)
                 : []
             const childOptions = { ...options, expandPlan: expandPlan?.children }
             if (Array.isArray(val)) {
-                mapped[localKey] = applyExpandedSemantics(val, localWhere, localOrderBy)
+                mapped[localKey] = applyExpandedSemantics(
+                    val,
+                    localWhere,
+                    localOrderBy,
+                    localLimit,
+                    remoteTargetDef,
+                )
                     .map(item => mapRow(
                         item,
                         targetMapping.remoteToLocal || {},
@@ -415,9 +439,16 @@ function mapRow(row, remoteToLocal, remoteEntityDef, entityFullName, viewMapping
                     ))
                     .map(item => stripHiddenScopeFields(item, targetMapping.remoteToLocal || {}, hiddenFields))
             } else {
-                mapped[localKey] = !localWhere || evaluateWhere(localWhere, val)
+                const selected = applyExpandedSemantics(
+                    [val],
+                    localWhere,
+                    localOrderBy,
+                    localLimit,
+                    remoteTargetDef,
+                )[0]
+                mapped[localKey] = selected
                     ? stripHiddenScopeFields(mapRow(
-                        val,
+                        selected,
                         targetMapping.remoteToLocal || {},
                         remoteTargetDef,
                         localTargetName,
