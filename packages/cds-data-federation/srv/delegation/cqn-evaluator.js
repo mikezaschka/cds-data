@@ -288,7 +288,6 @@ class PredicateParser {
 
         const leftToken = this.tokens[this.index++]
         const left = evaluateOperand(leftToken, this.row, this.entityDef)
-        const type = operandType(leftToken, this.entityDef)
         let negated = false
         if (isKeyword(this.tokens[this.index], 'not')) {
             negated = true
@@ -305,18 +304,25 @@ class PredicateParser {
         this.index += 1
         let result
         if (operator === 'between') {
-            const lower = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
+            const lowerToken = this.tokens[this.index++]
+            const lower = evaluateOperand(lowerToken, this.row, this.entityDef)
             if (!isKeyword(this.tokens[this.index], 'and')) {
                 throw new UnsupportedCqnPredicateError('BETWEEN predicate is missing AND')
             }
             this.index += 1
-            const upper = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
+            const upperToken = this.tokens[this.index++]
+            const upper = evaluateOperand(upperToken, this.row, this.entityDef)
+            const type = operandType(leftToken, this.entityDef)
+                || operandType(lowerToken, this.entityDef)
+                || operandType(upperToken, this.entityDef)
             result = triAnd(
                 compareValues(left, '>=', lower, type),
                 compareValues(left, '<=', upper, type),
             )
         } else if (operator === 'in') {
-            const values = evaluateList(this.tokens[this.index++], this.row, this.entityDef)
+            const listToken = this.tokens[this.index++]
+            const values = evaluateList(listToken, this.row, this.entityDef)
+            const type = operandType(leftToken, this.entityDef)
             result = left == null ? null : values.some(value => equalValues(left, value, type))
         } else if (operator === 'like') {
             const pattern = evaluateOperand(this.tokens[this.index++], this.row, this.entityDef)
@@ -334,17 +340,21 @@ class PredicateParser {
                 isNot = true
                 this.index += 1
             }
+            const rightToken = this.tokens[this.index++]
+            const type = operandType(leftToken, this.entityDef) || operandType(rightToken, this.entityDef)
             result = equalValues(
                 left,
-                evaluateOperand(this.tokens[this.index++], this.row, this.entityDef),
+                evaluateOperand(rightToken, this.row, this.entityDef),
                 type,
             )
             if (isNot) result = !result
         } else {
+            const rightToken = this.tokens[this.index++]
+            const type = operandType(leftToken, this.entityDef) || operandType(rightToken, this.entityDef)
             result = compareValues(
                 left,
                 operator,
-                evaluateOperand(this.tokens[this.index++], this.row, this.entityDef),
+                evaluateOperand(rightToken, this.row, this.entityDef),
                 type,
             )
         }

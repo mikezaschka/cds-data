@@ -420,6 +420,31 @@ describe('Direct remote query columns', () => {
         )).toBe(true)
     })
 
+    it('infers Decimal and Int64 types from the right operand for reversed predicates', () => {
+        const entity = {
+            elements: {
+                sequence: { type: 'cds.Integer64' },
+                amount: { type: 'cds.Decimal' },
+            },
+        }
+
+        expect(evaluateWhere(
+            [{ val: 0.1 }, '=', { ref: ['amount'] }],
+            { amount: '0.10' },
+            entity,
+        )).toBe(true)
+        expect(evaluateWhere(
+            [{ val: '9007199254740992' }, '<', { ref: ['sequence'] }],
+            { sequence: '9007199254740993' },
+            entity,
+        )).toBe(true)
+        expect(evaluateWhere(
+            [{ val: '9007199254740993' }, '=', { ref: ['sequence'] }],
+            { sequence: '9007199254740992' },
+            entity,
+        )).toBe(false)
+    })
+
     it('does not match null operands in ordered comparisons', () => {
         const entity = { elements: { stock: { type: 'cds.Integer' } } }
         for (const operator of ['<', '<=', '>', '>=']) {
