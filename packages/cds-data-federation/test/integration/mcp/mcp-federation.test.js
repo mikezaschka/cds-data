@@ -106,6 +106,17 @@ describe('MCP + federation', () => {
         expect(payload.data.some(c => c.ID === 'C001' && c.name === 'Acme Corp')).to.be.true
     })
 
+    it('agent CQN gets the total count instead of the page size', async () => {
+        const srv = await cds.connect.to('FederationAgentService')
+        const query = SELECT.from('FederationAgentService.Customers').limit(2)
+        query.SELECT.count = true
+
+        const rows = await srv.run(query)
+
+        expect(rows).to.have.length(2)
+        expect(rows.$count).to.equal(5)
+    })
+
     it('MCP query applies consumption-view renames on delegated Products', async () => {
         const result = await mcpCallTool(t.url, 'query', {
             entity: 'Products',
@@ -125,11 +136,12 @@ describe('MCP + federation', () => {
     it('MCP query reads replicated local Customers', async () => {
         const result = await mcpCallTool(t.url, 'query', {
             entity: 'ReplicatedCustomers',
-            select: cqnSelect('ID', 'name'),
+            select: cqnSelect('ID', 'name', 'lastReplicatedAt'),
             limit: 5,
         })
         const payload = parseToolPayload(result)
         expect(payload.count).to.be.greaterThan(0)
         expect(payload.data.some(c => c.ID === 'C001')).to.be.true
+        expect(payload.data.every(c => c.lastReplicatedAt)).to.be.true
     })
 })

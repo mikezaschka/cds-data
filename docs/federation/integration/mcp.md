@@ -58,6 +58,23 @@ npm add @cap-js/mcp
 
 The entities are now reachable both over OData (`/odata/v4/federation-agent/...`) and over MCP (`/mcp/agent`).
 
+## Make replicated freshness visible
+
+Replication deliberately trades freshness for local performance and availability. An MCP client cannot infer from `describe` whether a row is live or a scheduled copy, so expose freshness metadata when the distinction matters:
+
+```cds
+using { User } from '@sap/cds/common';
+
+@federation.replicate: { schedule: '*/5 * * * *' }
+entity ReplicatedCustomers as projection on remote.Customers {
+  *,
+  null as lastReplicatedAt : Timestamp,
+  null as lastReplicatedBy : User
+} excluding { orders };
+```
+
+The federation pipeline stamps both fields immediately before every full, delta, or event write; unrelated local updates do not change them. Include `lastReplicatedAt` in agent queries so answers can state their data timestamp. For entity-level monitoring and failed-run diagnosis, use the [pipeline management service](/pipeline/reference/management-service), which exposes `Pipelines.lastSync` and run history.
+
 ## Query format
 
 The MCP `query` tool expects **CQN-style** `select` entries (objects with `ref` arrays), not plain field-name strings:

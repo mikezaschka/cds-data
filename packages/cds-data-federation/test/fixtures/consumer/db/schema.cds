@@ -1,4 +1,5 @@
 using { plugin.data_federation as federation } from 'cds-data-federation';
+using { User } from '@sap/cds/common';
 using { ProviderService as remote } from '../srv/external/ProviderService';
 using { ProviderServiceV2 as remoteV2 } from '../srv/external/ProviderServiceV2';
 using { InventoryService as inv } from '../srv/external/InventoryService';
@@ -398,7 +399,11 @@ entity NwCustomersV2 as projection on nwV2.Customers {
 // Exclude `orders` association: it points back to remote ProviderService.Customers
 // which cannot be resolved in a local persistence table.
 @federation.replicate
-entity ReplicatedCustomers as projection on remote.Customers excluding { orders };
+entity ReplicatedCustomers as projection on remote.Customers {
+    *,
+    null as lastReplicatedAt : Timestamp,
+    null as lastReplicatedBy : User
+} excluding { orders };
 
 // Column restriction + renames — tests that MAP phase applies viewMapping renames.
 // Remote: ID, name, category, price, currency, stock, modifiedAt (7 fields)

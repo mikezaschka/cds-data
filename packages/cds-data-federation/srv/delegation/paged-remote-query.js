@@ -62,6 +62,10 @@ async function runPagedRemoteQuery(remote, query, { pageSize = 1000, maxPages = 
         const remaining = needed === Infinity ? pageSize : Math.min(pageSize, needed - collected.length)
         const pageQuery = cds.ql.clone(query)
         pageQuery.SELECT.limit = { rows: { val: remaining }, offset: { val: skip } }
+        // The total is independent of paging. Request it once: repeated remote
+        // counts can be expensive, especially when MCP sets SELECT.count on
+        // every CQL query.
+        if (page > 0) pageQuery.SELECT.count = false
 
         const batch = await remote.run(pageQuery)
 

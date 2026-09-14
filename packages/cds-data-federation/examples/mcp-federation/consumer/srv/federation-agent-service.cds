@@ -5,7 +5,7 @@ using { example } from '../db/schema';
  * Use `describe` to inspect entities, then `query` to read.
  */
 @mcp: 'agent'
-@mcp.instructions: 'Customers and Products are live-delegated from a remote OData provider (renamed fields on Products). ReplicatedCustomers is a local SQLite copy — run the ReplicatedCustomers pipeline first if empty.'
+@mcp.instructions: 'Customers and Products are live-delegated from a remote OData provider (renamed fields on Products). ReplicatedCustomers is a local SQLite copy; include lastReplicatedAt when reporting its data and run the ReplicatedCustomers pipeline first if empty.'
 annotate FederationAgentService with @odata;
 
 service FederationAgentService {

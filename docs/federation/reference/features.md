@@ -46,7 +46,7 @@ Scheduled sync that copies remote data into the local database. Once replicated,
 | **Auto-persistence** | `replicate` entities automatically get `@cds.persistence.table: true`; no manual table setup. |
 | **Pipeline events** | `before` / `on` / `after` hooks on `PIPELINE.READ`, `PIPELINE.MAP`, `PIPELINE.WRITE` for custom transformation or filtering logic — see the [pipeline event hooks reference](/pipeline/reference/management-service#event-hooks). |
 | **Rename mapping during MAP** | Field renames from the consumption view are applied during the MAP phase — no per-entity mapping code. |
-| **Replicated aspect** | `lastReplicatedAt` / `lastReplicatedBy` are auto-populated on every record. |
+| **Replicated aspect** | Opt in to `lastReplicatedAt` / `lastReplicatedBy`; both are stamped on every sync so consumers can assess freshness. |
 
 ## Caching
 

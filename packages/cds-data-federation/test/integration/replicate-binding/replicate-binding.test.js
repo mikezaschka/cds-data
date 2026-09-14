@@ -39,6 +39,41 @@ describe('Replicate binding (@federation.replicate → pipeline)', () => {
         expect(data.value).to.be.an('array')
     })
 
+    it('[4.7.4] binding: replication freshness advances on every sync', async () => {
+        const pipeline = await cds.connect.to('data-pipeline')
+        await pipeline.execute('ReplicatedCustomers', { mode: 'full', trigger: 'event' })
+        const first = await SELECT.one
+            .from('consumer.ReplicatedCustomers')
+            .columns('lastReplicatedAt', 'lastReplicatedBy')
+            .where({ ID: 'C001' })
+
+        await UPDATE('consumer.ReplicatedCustomers')
+            .set({ name: 'Local edit' })
+            .where({ ID: 'C001' })
+        const afterLocalUpdate = await SELECT.one
+            .from('consumer.ReplicatedCustomers')
+            .columns('lastReplicatedAt', 'lastReplicatedBy')
+            .where({ ID: 'C001' })
+
+        await new Promise(resolve => setTimeout(resolve, 10))
+        await pipeline.execute('ReplicatedCustomers', {
+            trigger: 'event',
+            event: { read: 'key', action: 'upsert', keys: { ID: 'C001' } },
+        })
+        const second = await SELECT.one
+            .from('consumer.ReplicatedCustomers')
+            .columns('lastReplicatedAt', 'lastReplicatedBy')
+            .where({ ID: 'C001' })
+
+        expect(first.lastReplicatedAt).to.exist
+        expect(first.lastReplicatedBy).to.exist
+        expect(afterLocalUpdate).to.deep.equal(first)
+        expect(second.lastReplicatedAt).to.exist
+        expect(second.lastReplicatedBy).to.exist
+        expect(new Date(second.lastReplicatedAt).getTime())
+            .to.be.greaterThan(new Date(first.lastReplicatedAt).getTime())
+    })
+
     it('[4.4.1] binding: replicated products entity exposes consumption-view renames', () => {
         const entity = cds.model.definitions['consumer.ReplicatedProducts']
         expect(entity.elements.productId).to.exist
