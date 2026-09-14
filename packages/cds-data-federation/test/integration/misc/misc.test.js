@@ -230,5 +230,20 @@ describe('Delegate Strategy', () => {
             expect(data['@odata.count']).to.equal(5)
             expect(data.value).to.have.length(5)
         })
+
+        it('should request the remote count only on the first page', async () => {
+            const remote = await cds.connect.to('ProviderService')
+            const countFlags = []
+            remote.before('READ', 'PagedCustomers', req => {
+                countFlags.push(req.query?.SELECT?.count)
+            })
+
+            const { data } = await GET`/odata/v4/consumer/PagedCustomers?$count=true&$top=10`
+
+            expect(data['@odata.count']).to.equal(5)
+            expect(countFlags).to.have.length.greaterThan(1)
+            expect(countFlags[0]).to.equal(true)
+            expect(countFlags.slice(1)).to.not.include(true)
+        })
     })
 })
