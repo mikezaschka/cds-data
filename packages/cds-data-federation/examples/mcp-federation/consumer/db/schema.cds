@@ -1,4 +1,6 @@
 using { ProviderService as remote } from '../srv/external/ProviderService';
+using { plugin.data_federation as federation } from 'cds-data-federation';
+using { User } from '@sap/cds/common';
 
 namespace example;
 
@@ -30,4 +32,8 @@ entity Products as projection on remote.Products {
  * local table is populated on first boot without any bootstrap code.
  */
 @federation.replicate: { preload: true }
-entity ReplicatedCustomers as projection on remote.Customers excluding { orders };
+entity ReplicatedCustomers as projection on remote.Customers {
+    *,
+    null as lastReplicatedAt : Timestamp @cds.on.insert: $now  @cds.on.update: $now,
+    null as lastReplicatedBy : User @cds.on.insert: $user @cds.on.update: $user
+} excluding { orders };

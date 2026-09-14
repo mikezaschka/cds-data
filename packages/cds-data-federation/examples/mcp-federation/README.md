@@ -6,7 +6,7 @@ Runnable demo showing how SAP CAP’s [`@cap-js/mcp`](https://cap.cloud.sap/docs
 |---|---|---|
 | `Customers` | `@federation.delegate` | Live OData proxy → ProviderService |
 | `Products` | `@federation.delegate` (renames) | Live proxy with `productId` / `unitPrice` mapping |
-| `ReplicatedCustomers` | `@federation.replicate: { preload: { mode: 'full' } }` | Local SQLite table (pipeline-fed, preloaded at startup) |
+| `ReplicatedCustomers` | `@federation.replicate: { preload: { mode: 'full' } }` | Local SQLite table with per-row `lastReplicatedAt` freshness |
 
 All three are exposed on a single **`FederationAgentService`** annotated with `@mcp:'agent'`.
 
@@ -99,7 +99,7 @@ MCP does **not** call remote services directly. It runs CQN on the application s
 
 ## Replicated data
 
-`ReplicatedCustomers` uses `@federation.replicate: { preload: { mode: 'full' } }`, so the pipeline runs a **full** replicate at server startup — no bootstrap code needed. The `preload` run happens in the background (non-blocking); a failed remote read is logged, not fatal. To refresh manually:
+`ReplicatedCustomers` uses `@federation.replicate: { preload: { mode: 'full' } }`, so the pipeline runs a **full** replicate at server startup — no bootstrap code needed. Its `lastReplicatedAt` and `lastReplicatedBy` fields are stamped on every sync; include `lastReplicatedAt` in agent queries when answers need to state their data timestamp. The `preload` run happens in the background (non-blocking); a failed remote read is logged, not fatal. To refresh manually:
 
 ```http
 POST http://localhost:4120/pipeline/Pipelines(name='ReplicatedCustomers')/start

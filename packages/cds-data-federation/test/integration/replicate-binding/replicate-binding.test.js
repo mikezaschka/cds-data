@@ -39,6 +39,27 @@ describe('Replicate binding (@federation.replicate → pipeline)', () => {
         expect(data.value).to.be.an('array')
     })
 
+    it('[4.7.4] binding: replication freshness advances on every sync', async () => {
+        const pipeline = await cds.connect.to('data-pipeline')
+        await pipeline.execute('ReplicatedCustomers', { mode: 'full', trigger: 'event' })
+        const first = await SELECT.one
+            .from('consumer.ReplicatedCustomers')
+            .columns('lastReplicatedAt')
+            .where({ ID: 'C001' })
+
+        await new Promise(resolve => setTimeout(resolve, 10))
+        await pipeline.execute('ReplicatedCustomers', { mode: 'full', trigger: 'event' })
+        const second = await SELECT.one
+            .from('consumer.ReplicatedCustomers')
+            .columns('lastReplicatedAt')
+            .where({ ID: 'C001' })
+
+        expect(first.lastReplicatedAt).to.exist
+        expect(second.lastReplicatedAt).to.exist
+        expect(new Date(second.lastReplicatedAt).getTime())
+            .to.be.greaterThan(new Date(first.lastReplicatedAt).getTime())
+    })
+
     it('[4.4.1] binding: replicated products entity exposes consumption-view renames', () => {
         const entity = cds.model.definitions['consumer.ReplicatedProducts']
         expect(entity.elements.productId).to.exist

@@ -175,7 +175,7 @@ There is deliberately **no scheduled entity-cache refresh** — the always-warm-
 
 Replication copies remote data into a real local table on a schedule; reads then run entirely as local SQL.
 
-**Enables:** SQL joins to local tables, `GROUP BY` / `$apply` / analytics, offline and remote-outage resilience, cross-service `$expand` as a native join, streaming, and pessimistic locking — everything delegation's OData limits forbid. Delta sync supports **timestamp**, **key**, and **datetime-field** modes; writes are idempotent `UPSERT`; a `replicated` aspect stamps `lastReplicatedAt` / `lastReplicatedBy`.
+**Enables:** SQL joins to local tables, `GROUP BY` / `$apply` / analytics, offline and remote-outage resilience, cross-service `$expand` as a native join, streaming, and pessimistic locking — everything delegation's OData limits forbid. Delta sync supports **timestamp**, **key**, and **datetime-field** modes; writes are idempotent `UPSERT`. Opt in to the `replicated` aspect when consumers need per-row `lastReplicatedAt` / `lastReplicatedBy` freshness metadata.
 
 **Limits:**
 
