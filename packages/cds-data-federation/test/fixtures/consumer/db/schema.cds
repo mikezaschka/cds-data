@@ -401,8 +401,8 @@ entity NwCustomersV2 as projection on nwV2.Customers {
 @federation.replicate
 entity ReplicatedCustomers as projection on remote.Customers {
     *,
-    null as lastReplicatedAt : Timestamp @cds.on.insert: $now  @cds.on.update: $now,
-    null as lastReplicatedBy : User      @cds.on.insert: $user @cds.on.update: $user
+    null as lastReplicatedAt : Timestamp,
+    null as lastReplicatedBy : User
 } excluding { orders };
 
 // Column restriction + renames — tests that MAP phase applies viewMapping renames.

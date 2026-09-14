@@ -68,12 +68,12 @@ using { User } from '@sap/cds/common';
 @federation.replicate: { schedule: '*/5 * * * *' }
 entity ReplicatedCustomers as projection on remote.Customers {
   *,
-  null as lastReplicatedAt : Timestamp @cds.on.insert: $now  @cds.on.update: $now,
-  null as lastReplicatedBy : User      @cds.on.insert: $user @cds.on.update: $user
-};
+  null as lastReplicatedAt : Timestamp,
+  null as lastReplicatedBy : User
+} excluding { orders };
 ```
 
-The pipeline stamps both fields on every full or delta sync. Include `lastReplicatedAt` in agent queries so answers can state their data timestamp. For entity-level monitoring and failed-run diagnosis, use the [pipeline management service](/pipeline/reference/management-service), which exposes `Pipelines.lastSync` and run history.
+The federation pipeline stamps both fields immediately before every full, delta, or event write; unrelated local updates do not change them. Include `lastReplicatedAt` in agent queries so answers can state their data timestamp. For entity-level monitoring and failed-run diagnosis, use the [pipeline management service](/pipeline/reference/management-service), which exposes `Pipelines.lastSync` and run history.
 
 ## Query format
 

@@ -32,8 +32,9 @@ async function bindReplicateConfigs(configs) {
     }
 
     for (const config of configs) {
+        const pipelineName = config.options.name || config.entityName
         await pipelineService.addPipeline({
-            name: config.options.name || config.entityName,
+            name: pipelineName,
             description:
                 config.options.description ||
                 `Federation replication of '${config.sourceService}.${config.sourceEntity}' into '${config.entityFullName}'`,
@@ -52,9 +53,27 @@ async function bindReplicateConfigs(configs) {
             preload: config.options.preload,
             viewMapping: config.viewMapping,
         })
+        registerFreshnessHook(pipelineService, pipelineName, config.entityFullName)
     }
 
     LOG._info && LOG.info(`Bound ${configs.length} @federation.replicate config(s) to cds-data-pipeline`)
+}
+
+function registerFreshnessHook(pipelineService, pipelineName, entityFullName) {
+    const elements = cds.model?.definitions?.[entityFullName]?.elements || {}
+    const hasTimestamp = !!elements.lastReplicatedAt
+    const hasUser = !!elements.lastReplicatedBy
+    if (!hasTimestamp && !hasUser) return
+
+    pipelineService.before('PIPELINE.WRITE', pipelineName, req => {
+        const records = req.data?.targetRecords || []
+        const timestamp = new Date().toISOString()
+        const user = req.user?.id || cds.context?.user?.id || 'anonymous'
+        for (const record of records) {
+            if (hasTimestamp) record.lastReplicatedAt = timestamp
+            if (hasUser) record.lastReplicatedBy = user
+        }
+    })
 }
 
 module.exports = { bindReplicateConfigs }

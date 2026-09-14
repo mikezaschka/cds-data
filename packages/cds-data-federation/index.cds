@@ -14,6 +14,6 @@ using { User } from '@sap/cds/common';
  * §Consequences "Some aspects keep replicated flavor".
  */
 aspect replicated {
-    lastReplicatedAt : Timestamp @cds.on.insert: $now  @cds.on.update: $now;
-    lastReplicatedBy : User      @cds.on.insert: $user @cds.on.update: $user;
+    lastReplicatedAt : Timestamp;
+    lastReplicatedBy : User;
 }

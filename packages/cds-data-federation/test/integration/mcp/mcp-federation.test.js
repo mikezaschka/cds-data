@@ -136,11 +136,12 @@ describe('MCP + federation', () => {
     it('MCP query reads replicated local Customers', async () => {
         const result = await mcpCallTool(t.url, 'query', {
             entity: 'ReplicatedCustomers',
-            select: cqnSelect('ID', 'name'),
+            select: cqnSelect('ID', 'name', 'lastReplicatedAt'),
             limit: 5,
         })
         const payload = parseToolPayload(result)
         expect(payload.count).to.be.greaterThan(0)
         expect(payload.data.some(c => c.ID === 'C001')).to.be.true
+        expect(payload.data.every(c => c.lastReplicatedAt)).to.be.true
     })
 })

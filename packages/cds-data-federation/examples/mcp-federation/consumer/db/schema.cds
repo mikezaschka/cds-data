@@ -34,6 +34,6 @@ entity Products as projection on remote.Products {
 @federation.replicate: { preload: true }
 entity ReplicatedCustomers as projection on remote.Customers {
     *,
-    null as lastReplicatedAt : Timestamp @cds.on.insert: $now  @cds.on.update: $now,
-    null as lastReplicatedBy : User @cds.on.insert: $user @cds.on.update: $user
+    null as lastReplicatedAt : Timestamp,
+    null as lastReplicatedBy : User
 } excluding { orders };
