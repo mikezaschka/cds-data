@@ -73,7 +73,7 @@ Three ways to drive a pipeline. Pick the one that matches your operational model
 
 | Capability | What it does |
 |---|---|
-| **Retry with exponential backoff** | All remote I/O is wrapped in a configurable retry policy. |
+| **Retry with exponential backoff** | Remote I/O and registration-time tracker writes are wrapped in a configurable retry policy. Transient HANA resource errors (e.g. connection-cap `1034`) are retried with backoff; if the budget is exhausted, registration still fails boot. |
 | **Concurrency guard** | A pipeline cannot run twice in parallel — a DB-status-based lock rejects the second trigger. |
 | **Transactional batches** | Choose per-batch or full-run transaction scope for replication. |
 

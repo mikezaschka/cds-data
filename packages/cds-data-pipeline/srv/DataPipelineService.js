@@ -11,6 +11,7 @@ const {
 } = require('./lib/overrides')
 const { getHousekeepingConfig } = require('../lib/config-normalizer')
 const { resolvePolicy, purgeRunsForPipeline } = require('./lib/housekeeping')
+const { withTransientDbRetry } = require('./lib/transientDbError')
 
 /** Reserved internal name for the global run-retention schedule registry entry. */
 const HOUSEKEEPING_SCHEDULE_NAME = '__housekeeping'
@@ -191,6 +192,11 @@ class DataPipelineService extends cds.Service {
                 await this._runPreload(name, effective)
             }
         } catch (err) {
+            // Registration may have partially progressed (in-memory map + schedule)
+            // before a later tracker write failed. Clear so a caller retry of
+            // addPipeline does not hit "already exists".
+            this._stopInternalSchedule(name)
+            this.pipelines.delete(name)
             LOG._error && LOG.error(`Failed to add pipeline ${name}:`, err)
             throw err
         }
@@ -672,7 +678,9 @@ class DataPipelineService extends cds.Service {
 
     async _syncScheduleTracker(name, schedule) {
         const label = formatScheduleLabel(schedule)
-        await UPDATE(PIPELINES).set({ schedule: label }).where({ name })
+        await withTransientDbRetry(() =>
+            UPDATE(PIPELINES).set({ schedule: label }).where({ name })
+        )
     }
 
     async clear(name) {
