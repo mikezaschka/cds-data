@@ -158,9 +158,10 @@ class DataPipelineService extends cds.Service {
         }
 
         const internalConfig = this._normalizeConfig(config)
+        let pipeline
 
         try {
-            const pipeline = new Pipeline(name, internalConfig, this)
+            pipeline = new Pipeline(name, internalConfig, this)
             // init → _ensureTracker loads persisted overrides and applies them
             // onto pipeline.config before we start the schedule.
             await pipeline.init()
@@ -194,9 +195,14 @@ class DataPipelineService extends cds.Service {
         } catch (err) {
             // Registration may have partially progressed (in-memory map + schedule)
             // before a later tracker write failed. Clear so a caller retry of
-            // addPipeline does not hit "already exists".
-            this._stopInternalSchedule(name)
-            this.pipelines.delete(name)
+            // addPipeline does not hit "already exists". Only remove our own
+            // entry so an overlapping successful registration is preserved.
+            try {
+                await this._stopInternalSchedule(name)
+            } catch (_) { /* preserve original registration error */ }
+            if (pipeline && this.pipelines.get(name) === pipeline) {
+                this.pipelines.delete(name)
+            }
             LOG._error && LOG.error(`Failed to add pipeline ${name}:`, err)
             throw err
         }

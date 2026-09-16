@@ -63,12 +63,16 @@ function _matchesTransient(err) {
 function withTransientDbRetry(fn, options = {}) {
     const maxRetries = options.maxRetries === undefined ? 3 : options.maxRetries
     return withRetry(fn, {
-        maxRetries,
         baseDelay: 1000,
         maxDelay: 30000,
         onRetry: (err, attempt) => {
-            LOG.warn(`Transient DB error during pipeline registration (retry ${attempt}/${maxRetries}): ${err.message}`)
+            LOG.warn(
+                `Transient DB error during pipeline registration (retry ${attempt}/${maxRetries}): ${err.message}`,
+            )
         },
+        ...options,
+        maxRetries,
+        retryOn: options.retryOn || isTransientDbError,
     })
 }
 
