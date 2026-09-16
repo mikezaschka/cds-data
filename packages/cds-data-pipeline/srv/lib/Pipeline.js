@@ -9,6 +9,7 @@ const {
     parseOverridesJson,
     applyOverrides,
 } = require('./overrides')
+const { withTransientDbRetry } = require('./transientDbError')
 
 const LOG = cds.log('cds-data-pipeline')
 const PIPELINES = 'plugin_data_pipeline_Pipelines'
@@ -655,57 +656,61 @@ class Pipeline {
     // ─── Tracker management ─────────────────────────────────────────────────────
 
     async _ensureTracker() {
-        const existing = await SELECT.one.from(PIPELINES).where({ name: this.name })
-        const baseJson = JSON.stringify(serializeBaseConfig(this.baseConfig))
+        // Whole body is idempotent (SELECT then INSERT/UPDATE). Retry transient
+        // HANA/SQLite connection errors so a brief pool-cap blip does not kill boot.
+        return withTransientDbRetry(async () => {
+            const existing = await SELECT.one.from(PIPELINES).where({ name: this.name })
+            const baseJson = JSON.stringify(serializeBaseConfig(this.baseConfig))
 
-        // Load persisted overrides before computing the effective config /
-        // schedule. Survives process restart because addPipeline always
-        // re-registers from code; we re-apply the stored JSON delta here.
-        const loadedOverrides = existing ? parseOverridesJson(existing.overrides) : {}
-        this.applyLoadedOverrides(loadedOverrides)
+            // Load persisted overrides before computing the effective config /
+            // schedule. Survives process restart because addPipeline always
+            // re-registers from code; we re-apply the stored JSON delta here.
+            const loadedOverrides = existing ? parseOverridesJson(existing.overrides) : {}
+            this.applyLoadedOverrides(loadedOverrides)
 
-        const eff = this.config
-        const desc = eff.description != null && eff.description !== '' ? eff.description : null
-        // node:sqlite rejects JS booleans as bind params; store 0/1.
-        const enabled = eff.enabled !== false ? 1 : 0
+            const eff = this.config
+            const desc = eff.description != null && eff.description !== '' ? eff.description : null
+            // node:sqlite rejects JS booleans as bind params; store 0/1.
+            const enabled = eff.enabled !== false ? 1 : 0
 
-        if (!existing) {
-            await INSERT.into(PIPELINES).entries({
-                name: this.name,
-                description: desc,
-                source: JSON.stringify(this.baseConfig.source, this._safeReplacer),
-                target: JSON.stringify(this.baseConfig.target, this._safeReplacer),
-                mode: eff.mode || this.baseConfig.mode,
-                origin: this.origin || null,
-                schedule: formatScheduleLabel(eff.schedule),
-                enabled,
-                baseConfig: baseJson,
-                overrides: Object.keys(loadedOverrides).length
-                    ? JSON.stringify(loadedOverrides)
-                    : null,
-                status: 'idle',
-                errorCount: 0,
-                statistics_created: 0,
-                statistics_updated: 0,
-                statistics_deleted: 0,
-            })
-        } else {
-            // Re-registrations: refresh baseConfig + display fields from the
-            // new coded baseline / effective merge, but preserve `overrides`.
-            const patch = {
-                baseConfig: baseJson,
-                source: JSON.stringify(this.baseConfig.source, this._safeReplacer),
-                target: JSON.stringify(this.baseConfig.target, this._safeReplacer),
-                mode: eff.mode || this.baseConfig.mode,
-                schedule: formatScheduleLabel(eff.schedule),
-                enabled,
-                description: desc,
+            if (!existing) {
+                await INSERT.into(PIPELINES).entries({
+                    name: this.name,
+                    description: desc,
+                    source: JSON.stringify(this.baseConfig.source, this._safeReplacer),
+                    target: JSON.stringify(this.baseConfig.target, this._safeReplacer),
+                    mode: eff.mode || this.baseConfig.mode,
+                    origin: this.origin || null,
+                    schedule: formatScheduleLabel(eff.schedule),
+                    enabled,
+                    baseConfig: baseJson,
+                    overrides: Object.keys(loadedOverrides).length
+                        ? JSON.stringify(loadedOverrides)
+                        : null,
+                    status: 'idle',
+                    errorCount: 0,
+                    statistics_created: 0,
+                    statistics_updated: 0,
+                    statistics_deleted: 0,
+                })
+            } else {
+                // Re-registrations: refresh baseConfig + display fields from the
+                // new coded baseline / effective merge, but preserve `overrides`.
+                const patch = {
+                    baseConfig: baseJson,
+                    source: JSON.stringify(this.baseConfig.source, this._safeReplacer),
+                    target: JSON.stringify(this.baseConfig.target, this._safeReplacer),
+                    mode: eff.mode || this.baseConfig.mode,
+                    schedule: formatScheduleLabel(eff.schedule),
+                    enabled,
+                    description: desc,
+                }
+                if (this.origin && existing.origin !== this.origin) {
+                    patch.origin = this.origin
+                }
+                await UPDATE(PIPELINES).set(patch).where({ name: this.name })
             }
-            if (this.origin && existing.origin !== this.origin) {
-                patch.origin = this.origin
-            }
-            await UPDATE(PIPELINES).set(patch).where({ name: this.name })
-        }
+        })
     }
 
     /**
