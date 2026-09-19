@@ -42,6 +42,7 @@ service ConsumerService {
     // Consumption view pattern tests
     entity CustomersLight       as projection on consumer.CustomersLight;
     entity ActiveCustomers      as projection on consumer.ActiveCustomers;
+    entity ActiveCustomersCxl   as projection on consumer.ActiveCustomersCxl;
     entity ElectronicsProducts  as projection on consumer.ElectronicsProducts;
     entity OrderFlat            as projection on consumer.OrderFlat;
     entity ReviewsEnriched      as projection on consumer.ReviewsEnriched;

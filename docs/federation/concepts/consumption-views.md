@@ -81,6 +81,15 @@ entity ActiveCustomers as projection on remote.Customers where blocked = false;
 
 CAP's [Consuming Services docs](https://cap.cloud.sap/docs/guides/services/consuming-services#supported-projection-features) explicitly list `where` conditions as **not supported** on projections over remote services. This plugin extracts `projection.where` from the CSN at model load time and injects it into every remote query — a plugin-specific value-add.
 
+CDL's null-safe equality `==` works too:
+
+```cds
+@federation.delegate
+entity Persons as projection on remote.BusinessPartners where category == '1';
+```
+
+CAP's CQN→OData translator maps `=`, `!=` and `<>`, but not `==` — left as is, it reaches the remote as a literal `=` and the service rejects the `$filter` with a 400. For OData and OData V2 remotes the plugin therefore rewrites `==` to `=` on the way out (both for delegation and for `@federation.replicate` reads). CQN-native remotes (`hcql`, `db`) keep `==` and its null-safe semantics.
+
 ## Annotations apply only to consumption views
 
 `@federation.delegate` and `@federation.replicate` are valid **only on a CDS projection of the form `entity X as projection on remote.Y`**. The projection is the federation contract: source service, source entity, projected columns, and bidirectional rename mapping are all inferred from it.

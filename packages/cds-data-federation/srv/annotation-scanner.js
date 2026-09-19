@@ -251,7 +251,7 @@ function buildConfigFromAnnotation(entityName, entityDef, csn) {
     // REST services typically have no CDS model, so the source service must be
     // specified explicitly via options.source. OData services infer from projection.
     const explicitSource = options.source
-    const inferredSource = inferSource(entityDef)
+    const inferredSource = inferSource(entityDef, csn)
 
     if (!explicitSource && !inferredSource) {
         LOG.warn(`Cannot resolve source for @federation.${strategy} entity '${entityName}'. Skipping.`)
@@ -373,8 +373,12 @@ function addAssociationForeignKeyMappings(
 
 /**
  * Infers the source service and entity from a projection definition.
+ *
+ * Service names may be namespaced (`sap.capire.flights.FlightsService.Flights`),
+ * so the service is the longest dotted prefix that is a `service` definition in
+ * the CSN. Without a match, falls back to the first segment.
  */
-function inferSource(entityDef) {
+function inferSource(entityDef, csn) {
     const ref = entityDef.projection?.from?.ref
              || entityDef.query?.SELECT?.from?.ref
     if (!ref || ref.length === 0) return null
@@ -382,6 +386,13 @@ function inferSource(entityDef) {
     const from = ref.join('.')
     const parts = from.split('.')
     if (parts.length < 2) return null
+
+    for (let i = parts.length - 1; i > 0; i--) {
+        const serviceName = parts.slice(0, i).join('.')
+        if (csn?.definitions?.[serviceName]?.kind === 'service') {
+            return { serviceName, entityName: parts.slice(i).join('.') }
+        }
+    }
 
     return {
         serviceName: parts[0],

@@ -279,6 +279,13 @@ entity CustomersLight as projection on remote.Customers excluding { email, modif
 @federation.delegate
 entity ActiveCustomers as projection on remote.Customers where blocked = false;
 
+// PATTERN: where with CXL null-safe equality `==`
+// CAP's cqn2odata maps `=`, `!=`, `<>` but not `==`, so an unrewritten `==`
+// reaches the remote as a literal `=` and OData rejects the $filter.
+// (Seen in SAP's xtravels: `where BusinessPartnerCategory == '1'`.)
+@federation.delegate
+entity ActiveCustomersCxl as projection on remote.Customers where blocked == false;
+
 // PATTERN: where + column restriction + renames
 // Static filter on remote field name + renames. Only Electronics products returned.
 @federation.delegate

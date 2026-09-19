@@ -41,6 +41,22 @@ describe('Unit Tests', () => {
             expect(configs[0].sourceEntity).to.equal('Entity')
         })
 
+        it('should resolve a namespaced source service (e.g. sap.capire.flights.FlightsService)', () => {
+            const { scanAnnotations } = require('../../srv/annotation-scanner')
+            const { configs } = scanAnnotations({
+                definitions: {
+                    'sap.capire.flights.FlightsService': { kind: 'service' },
+                    'sap.capire.xflights.Flights': {
+                        '@federation.replicate': true,
+                        projection: { from: { ref: ['sap.capire.flights.FlightsService.Flights'] } }
+                    }
+                }
+            })
+            expect(configs).to.have.length(1)
+            expect(configs[0].sourceService).to.equal('sap.capire.flights.FlightsService')
+            expect(configs[0].sourceEntity).to.equal('Flights')
+        })
+
         it('should set persistence flags for @federation.replicate', () => {
             const { scanAnnotations } = require('../../srv/annotation-scanner')
             const def = {
@@ -483,6 +499,88 @@ describe('Unit Tests', () => {
     })
 
     // ─── Write flags resolution ──────────────────────────────────────────────
+
+    describe('cloneQuery', () => {
+
+        it('materialises inherited clauses so JSON transports keep them', () => {
+            const { cloneQuery } = require('../../srv/delegation/clone-query')
+            const query = SELECT.from('Remote.Ent').columns('a').where([{ ref: ['a'] }, '=', { val: 1 }])
+
+            // cds.ql.clone alone leaves SELECT without own keys: anything that
+            // serialises the query (HCQL ships CQN as JSON) loses from/where.
+            const naive = cds.ql.clone(query)
+            naive.SELECT.limit = { rows: { val: 5 } }
+            expect(Object.keys(naive.SELECT)).to.eql(['limit'])
+            expect(JSON.parse(JSON.stringify(naive.SELECT))).to.not.have.property('from')
+
+            const cloned = cloneQuery(query, { limit: { rows: { val: 5 } } })
+            const serialized = JSON.parse(JSON.stringify(cloned.SELECT))
+            expect(serialized).to.have.keys('from', 'columns', 'where', 'limit')
+            expect(serialized.where).to.eql([{ ref: ['a'] }, '=', { val: 1 }])
+            expect(serialized.limit).to.eql({ rows: { val: 5 } })
+        })
+
+        it('leaves the source query untouched', () => {
+            const { cloneQuery } = require('../../srv/delegation/clone-query')
+            const query = SELECT.from('Remote.Ent').limit(2, 0)
+            const cloned = cloneQuery(query, { limit: { rows: { val: 9 }, offset: { val: 3 } } })
+            cloned.SELECT.where = [{ ref: ['x' ] }, '=', { val: 1 }]
+            expect(query.SELECT.limit).to.eql({ rows: { val: 2 }, offset: { val: 0 } })
+            expect(query.SELECT.where).to.be.undefined
+        })
+    })
+
+    describe('OData equality rewrite (delegate)', () => {
+
+        const staticWhere = () => [{ ref: ['BusinessPartnerCategory'] }, '==', { val: '1' }]
+
+        it("rewrites '==' to '=' for OData remotes without touching the original query", () => {
+            const { withODataEquality } = require('../../srv/delegation/odata-equality')
+            const query = SELECT.from('API_BUSINESS_PARTNER.A_BusinessPartner').where(staticWhere())
+            const out = withODataEquality({ kind: 'odata' }, query)
+            expect(out.SELECT.where).to.eql([{ ref: ['BusinessPartnerCategory'] }, '=', { val: '1' }])
+            expect(query.SELECT.where).to.eql(staticWhere())
+            expect(out).to.not.equal(query)
+        })
+
+        it("rewrites '==' nested in xpr and function args", () => {
+            const { withODataEquality } = require('../../srv/delegation/odata-equality')
+            const query = SELECT.from('Remote.Ent').where([
+                { xpr: [{ ref: ['A'] }, '==', { val: 1 }] }, 'and', { ref: ['B'] }, '!=', { val: 2 },
+            ])
+            const out = withODataEquality({ kind: 'odata-v2' }, query)
+            expect(out.SELECT.where).to.eql([
+                { xpr: [{ ref: ['A'] }, '=', { val: 1 }] }, 'and', { ref: ['B'] }, '!=', { val: 2 },
+            ])
+        })
+
+        it("keeps '==' for CQN-native remotes (hcql)", () => {
+            const { withODataEquality } = require('../../srv/delegation/odata-equality')
+            const query = SELECT.from('Remote.Ent').where(staticWhere())
+            const out = withODataEquality({ kind: 'hcql' }, query)
+            expect(out).to.equal(query)
+            expect(out.SELECT.where).to.eql(staticWhere())
+        })
+
+        it('resolves the remote kind from cds.env.requires when the proxy carries none', () => {
+            const { isODataRemote } = require('../../srv/delegation/odata-equality')
+            const previous = cds.env.requires.__equalityProbe
+            cds.env.requires.__equalityProbe = { kind: 'odata-v2' }
+            try {
+                expect(isODataRemote({}, '__equalityProbe')).to.equal(true)
+                expect(isODataRemote({}, 'not-configured')).to.equal(false)
+            } finally {
+                if (previous === undefined) delete cds.env.requires.__equalityProbe
+                else cds.env.requires.__equalityProbe = previous
+            }
+        })
+
+        it('returns the query untouched when there is nothing to rewrite', () => {
+            const { withODataEquality } = require('../../srv/delegation/odata-equality')
+            const query = SELECT.from('Remote.Ent').where([{ ref: ['A'] }, '=', { val: 1 }])
+            expect(withODataEquality({ kind: 'odata' }, query)).to.equal(query)
+        })
+    })
 
     describe('Write flags resolution', () => {
 

@@ -49,7 +49,10 @@ async function* entityShapeReadStream({ service, config, tracker, buildDeltaFilt
         baseQuery = baseQuery.where(deltaFilter)
     }
 
-    mergeStaticWhereIntoSelect(baseQuery, viewMapping.staticWhere)
+    const kind = service?.options?.kind || service?.kind
+    mergeStaticWhereIntoSelect(baseQuery, viewMapping.staticWhere, {
+        odata: kind === 'odata' || kind === 'odata-v2',
+    })
 
     const batchSize = sourceConfig.batchSize || 1000
     let skip = 0
