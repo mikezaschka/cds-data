@@ -47,7 +47,7 @@ echo "[xtravels] Starting xflights on :$XFLIGHTS_PORT ..."
 pids+=($!)
 
 echo "[xtravels] Starting HotelsService on :$HOTELS_PORT ..."
-(cd "$SCRIPT_DIR/providers/hotels" && npx cds mock sap.capire.hotels.HotelsService --port $HOTELS_PORT 2>&1 | prefix hotels) &
+(cd "$SCRIPT_DIR/xtravels/test/providers/hotels" && npx cds mock sap.capire.hotels.HotelsService --port $HOTELS_PORT 2>&1 | prefix hotels) &
 pids+=($!)
 
 echo "[xtravels] Starting mocked S/4 Business Partner API on :$S4_PORT ..."

@@ -23,7 +23,7 @@ const cds = global.cds
 const EXAMPLES_DIR = path.join(__dirname, '../../../../examples/xtravels')
 const XTRAVELS_DIR = path.join(EXAMPLES_DIR, 'xtravels')
 const XFLIGHTS_DIR = path.join(EXAMPLES_DIR, 'xflights')
-const HOTELS_DIR = path.join(EXAMPLES_DIR, 'providers/hotels')
+const HOTELS_DIR = path.join(XTRAVELS_DIR, 'test/providers/hotels')
 const S4_DIR = path.join(EXAMPLES_DIR, 's4')
 const S4_V2_DIR = path.join(XTRAVELS_DIR, 'test/providers/s4-v2')
 
