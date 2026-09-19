@@ -59,7 +59,7 @@ npm run examples:start:xtravels
 | http://localhost:4005/travels/webapp/index.html | xtravels Fiori app (`alice` / `admin`) |
 | http://localhost:4005/pipeline-console/ | Pipeline Console: the three replicate pipelines, runs, schedules |
 | http://localhost:4005/pipeline/Pipelines | Management OData API |
-| http://localhost:4005/showcase/ | Federation showcase: `Airlines` (plain delegate), `Airports` (delegate + response cache), `LiveFlights` (live seats next to the replica) |
+| http://localhost:4005/showcase/ | Federation showcase: `Airlines` (plain delegate), `Airports` (delegate + response cache), and `LiveFlights` / `SnapshotFlights` / `CachedFlights` — one remote entity under four strategies |
 | http://localhost:4006 | xflights (flight master data provider) |
 | http://localhost:4008 | `HotelsService`, xtravels' bundled microservice, served over OData |
 | http://localhost:4009 | S/4 Business Partner API, mocked from `s4/srv/external/data/*.csv` |
@@ -76,6 +76,39 @@ that way too:
 ```bash
 cd examples/xtravels/xtravels && npx cds test
 ```
+
+## One remote entity, four strategies
+
+`FlightsService.Flights` is mapped four times — replicated by the app itself,
+delegated three ways in the showcase service. Same remote entity, same shape, so
+every difference below is the strategy and nothing else. Each cell is asserted
+in [`test/federation-strategies.test.js`](./xtravels/test/federation-strategies.test.js),
+with the ones that need a genuinely remote provider in
+[`test/federation-remote.test.js`](./xtravels/test/federation-remote.test.js).
+
+| | replicate<br>`Flights` | delegate<br>`LiveFlights` | + entity cache<br>`SnapshotFlights` | + response cache<br>`CachedFlights` |
+|---|---|---|---|---|
+| Sees a remote change | after the next run | immediately | after TTL / refresh | after TTL / invalidation |
+| Arbitrary `$filter` / `$orderby` | yes, SQL | yes, pushed to the remote | yes, SQL over the snapshot | yes, but each distinct query is a miss |
+| Reads reaching the remote | none | one per request | none within the TTL | one per *distinct* query |
+| Joinable with local tables | **yes** | no | no | no |
+| `$apply` across a local join | **yes** | no | no | no |
+| Survives the remote being down | yes | no | within its TTL | only the exact warmed query |
+| Kept locally | a table you own | nothing | a cache store | serialized responses |
+| Writable | n/a (read model) | opt-in per verb | opt-in per verb | opt-in per verb |
+
+Everything follows from one fact: **a delegated query is executed by the remote,
+a replicated one by SQLite.** Joins and aggregation across local data need the
+rows to be *here*, which is what replication buys and what no cache provides —
+a cache store is not part of the app's schema, so it cannot be joined either.
+
+Two sharp edges worth knowing:
+
+- An entity cache does **not** serve stale data when its TTL has lapsed and the
+  remote is unreachable — the read fails instead. Within the TTL it is fully
+  self-sufficient.
+- A response cache only helps repeated *identical* queries. Clients that vary
+  `$filter` see no benefit; that is what the entity cache is for.
 
 ## Tests
 

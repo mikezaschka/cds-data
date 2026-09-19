@@ -42,9 +42,12 @@ describe.skipIf(!isXtravelsAvailable())('xtravels — foundation', () => {
 
         it('registers one pipeline per annotated consumption view', async () => {
             const { data } = await GET`/pipeline/Pipelines?$select=name,mode&$orderby=name`
-            expect(data.value.map(p => p.name)).to.deep.equal(['Customers', 'Flights', 'Supplements'])
-            expect(data.value.find(p => p.name === 'Flights').mode).to.equal('delta')
-            expect(data.value.find(p => p.name === 'Customers').mode).to.equal('full')
+            // Entity caches use the same engine and register as
+            // `data-federation-cache:<entity>`; only replications are asserted here.
+            const replications = data.value.filter(p => !p.name.startsWith('data-federation-cache:'))
+            expect(replications.map(p => p.name)).to.deep.equal(['Customers', 'Flights', 'Supplements'])
+            expect(replications.find(p => p.name === 'Flights').mode).to.equal('delta')
+            expect(replications.find(p => p.name === 'Customers').mode).to.equal('full')
         })
 
         it('fills the local replica tables at startup', async () => {
