@@ -59,7 +59,7 @@ npm run examples:start:xtravels
 | http://localhost:4005/travels/webapp/index.html | xtravels Fiori app (`alice` / `admin`) |
 | http://localhost:4005/pipeline-console/ | Pipeline Console: the three replicate pipelines, runs, schedules |
 | http://localhost:4005/pipeline/Pipelines | Management OData API |
-| http://localhost:4005/showcase/ | Federation showcase: live-delegation variations — `Airlines` so far |
+| http://localhost:4005/showcase/ | Federation showcase: `Airlines` (plain delegate), `Airports` (delegate + response cache), `LiveFlights` (live seats next to the replica) |
 | http://localhost:4006 | xflights (flight master data provider) |
 | http://localhost:4008 | `HotelsService`, xtravels' bundled microservice, served over OData |
 | http://localhost:4009 | S/4 Business Partner API, mocked from `s4/srv/external/data/*.csv` |
@@ -91,6 +91,11 @@ cd examples/xtravels/xtravels && npx cds test
   is really filled, the projection is applied (flattened paths, renames, static
   `where`), the app reads from it, a delta run syncs only what changed, and the
   delegate stays read-only with no local table.
+- **Mashups** — the reason to federate at all: local `Travels` expanded into
+  both replicas at once, filtered and ordered by replicated columns, the
+  association followed back from a replica into local bookings, booking revenue
+  aggregated by a replicated airline, and a delegated expand whose both sides
+  live on the remote.
 - **`federation-remote.test.js` / `federation-remote-v2.test.js`** — the same
   app against **xflights and the S/4 API as separate server processes**, so
   every read is an HTTP round trip: CQN over HCQL, and queries translated to
