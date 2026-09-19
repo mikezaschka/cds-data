@@ -1,0 +1,340 @@
+{
+  "namespace": "sap.capire.flights",
+  "definitions": {
+    "sap.capire.flights.FlightsService": {
+      "@source": "srv/data-service.cds",
+      "kind": "service",
+      "doc": "Master data service providing flight-related data, e.g. Flights, Airlines,\nAirports, and Supplements (e.g. extra luggage, meals, etc.).",
+      "@hcql": true,
+      "@rest": true,
+      "@odata": true,
+      "@graphql": true,
+      "@mcp": true,
+      "@cds.external": 2
+    },
+    "sap.capire.flights.FlightsService.Flights": {
+      "kind": "entity",
+      "@readonly": true,
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.String",
+          "length": 11
+        },
+        "date": {
+          "key": true,
+          "type": "cds.Date"
+        },
+        "modifiedAt": {
+          "@title": "{i18n>ChangedAt}",
+          "@readonly": true,
+          "type": "cds.Timestamp"
+        },
+        "aircraft": {
+          "type": "cds.String"
+        },
+        "price": {
+          "type": "cds.Decimal",
+          "precision": 9,
+          "scale": 4
+        },
+        "currency": {
+          "@title": "{i18n>Currency}",
+          "@description": "{i18n>CurrencyCode.Description}",
+          "type": "Currency",
+          "target": "sap.common.Currencies"
+        },
+        "maximum_seats": {
+          "type": "cds.Integer"
+        },
+        "occupied_seats": {
+          "type": "cds.Integer"
+        },
+        "free_seats": {
+          "@Core.Computed": true,
+          "type": "cds.Integer",
+          "$calc": {
+            "xpr": [
+              {
+                "ref": [
+                  "maximum_seats"
+                ]
+              },
+              "-",
+              {
+                "ref": [
+                  "occupied_seats"
+                ]
+              }
+            ]
+          }
+        },
+        "airline": {
+          "type": "cds.Association",
+          "target": "sap.capire.flights.FlightsService.Airlines"
+        },
+        "origin": {
+          "type": "cds.Association",
+          "target": "sap.capire.flights.FlightsService.Airports"
+        },
+        "destination": {
+          "type": "cds.Association",
+          "target": "sap.capire.flights.FlightsService.Airports"
+        },
+        "departure": {
+          "type": "cds.Time"
+        },
+        "arrival": {
+          "type": "cds.Time"
+        },
+        "distance": {
+          "type": "cds.Integer"
+        }
+      }
+    },
+    "sap.capire.flights.FlightsService.Airlines": {
+      "kind": "entity",
+      "@readonly": true,
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.UUID"
+        },
+        "modifiedAt": {
+          "@title": "{i18n>ChangedAt}",
+          "@readonly": true,
+          "type": "cds.Timestamp"
+        },
+        "name": {
+          "type": "cds.String"
+        },
+        "icon": {
+          "type": "cds.String"
+        },
+        "currency": {
+          "@title": "{i18n>Currency}",
+          "@description": "{i18n>CurrencyCode.Description}",
+          "type": "Currency",
+          "target": "sap.common.Currencies"
+        },
+        "flights": {
+          "type": "cds.Association",
+          "cardinality": {
+            "max": "*"
+          },
+          "target": "sap.capire.flights.FlightsService.Flights",
+          "on": [
+            {
+              "ref": [
+                "flights",
+                "airline"
+              ]
+            },
+            "=",
+            {
+              "ref": [
+                "$self"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "sap.capire.flights.FlightsService.Airports": {
+      "kind": "entity",
+      "@readonly": true,
+      "elements": {
+        "modifiedAt": {
+          "@title": "{i18n>ChangedAt}",
+          "@readonly": true,
+          "type": "cds.Timestamp"
+        },
+        "ID": {
+          "key": true,
+          "type": "sap.capire.flights.IATA",
+          "length": 3
+        },
+        "name": {
+          "type": "cds.String"
+        },
+        "city": {
+          "type": "cds.String"
+        },
+        "country": {
+          "@title": "{i18n>Country}",
+          "@description": "{i18n>CountryCode.Description}",
+          "type": "Country",
+          "target": "sap.common.Countries"
+        },
+        "arrivals": {
+          "type": "cds.Association",
+          "cardinality": {
+            "max": "*"
+          },
+          "target": "sap.capire.flights.FlightsService.Flights",
+          "on": [
+            {
+              "ref": [
+                "arrivals",
+                "destination"
+              ]
+            },
+            "=",
+            {
+              "ref": [
+                "$self"
+              ]
+            }
+          ]
+        },
+        "departures": {
+          "type": "cds.Association",
+          "cardinality": {
+            "max": "*"
+          },
+          "target": "sap.capire.flights.FlightsService.Flights",
+          "on": [
+            {
+              "ref": [
+                "departures",
+                "origin"
+              ]
+            },
+            "=",
+            {
+              "ref": [
+                "$self"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "sap.capire.flights.IATA": {
+      "kind": "type",
+      "type": "cds.String",
+      "length": 3
+    },
+    "sap.capire.flights.FlightsService.Supplements": {
+      "kind": "entity",
+      "@readonly": true,
+      "elements": {
+        "ID": {
+          "key": true,
+          "type": "cds.UUID"
+        },
+        "modifiedAt": {
+          "@title": "{i18n>ChangedAt}",
+          "@readonly": true,
+          "type": "cds.Timestamp"
+        },
+        "type": {
+          "@title": "{i18n>Name}",
+          "type": "cds.String",
+          "length": 255
+        },
+        "descr": {
+          "type": "cds.String",
+          "length": 1111
+        },
+        "price": {
+          "type": "cds.Decimal",
+          "precision": 9,
+          "scale": 4
+        },
+        "currency": {
+          "@title": "{i18n>Currency}",
+          "@description": "{i18n>CurrencyCode.Description}",
+          "type": "Currency",
+          "target": "sap.common.Currencies"
+        }
+      }
+    },
+    "sap.capire.flights.FlightsService.ReserveSeats": {
+      "kind": "action",
+      "params": {
+        "flight": {
+          "type": {
+            "ref": [
+              "sap.capire.flights.FlightsService.Flights",
+              "ID"
+            ]
+          },
+          "length": 11
+        },
+        "date": {
+          "type": {
+            "ref": [
+              "sap.capire.flights.FlightsService.Flights",
+              "date"
+            ]
+          }
+        },
+        "seats": {
+          "items": {
+            "type": "cds.Integer"
+          }
+        }
+      }
+    },
+    "sap.capire.flights.FlightsService.ReleaseSeats": {
+      "kind": "action",
+      "params": {
+        "flight": {
+          "type": {
+            "ref": [
+              "sap.capire.flights.FlightsService.Flights",
+              "ID"
+            ]
+          },
+          "length": 11
+        },
+        "date": {
+          "type": {
+            "ref": [
+              "sap.capire.flights.FlightsService.Flights",
+              "date"
+            ]
+          }
+        },
+        "seats": {
+          "items": {
+            "type": "cds.Integer"
+          }
+        }
+      }
+    },
+    "sap.capire.flights.FlightsService.FlightsUpdated": {
+      "kind": "event",
+      "elements": {
+        "flight": {
+          "type": {
+            "ref": [
+              "sap.capire.flights.FlightsService.Flights",
+              "ID"
+            ]
+          },
+          "length": 11
+        },
+        "date": {
+          "type": {
+            "ref": [
+              "sap.capire.flights.FlightsService.Flights",
+              "date"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "meta": {
+    "creator": "CDS Compiler v7.1.1",
+    "compilerCsnFlavor": "inferred",
+    "flavor": "inferred",
+    "minified": true
+  },
+  "$version": "2.0",
+  "requires": [
+    "@sap/cds/common"
+  ]
+}

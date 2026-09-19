@@ -1,0 +1,15 @@
+{
+  "name": "xtravels-hotels-provider",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Serves xtravels' bundled HotelsService over OData so the federation showcase can delegate to it as a real remote.",
+  "scripts": {
+    "start": "cds mock sap.capire.hotels.HotelsService"
+  },
+  "dependencies": {
+    "@sap/cds": ">=9"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": ">=2"
+  }
+}

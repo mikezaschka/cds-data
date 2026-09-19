@@ -1,0 +1,8 @@
+{
+  "name": "@capire/xflights-data",
+  "description": "A proxy package to shortcut @capire/xflights-data.",
+  "version": "1.0.0", 
+  "dependencies": {
+    "@capire/xflights": "*"
+  }
+}
