@@ -121,10 +121,45 @@ Not verified visually: the demo's dashboard renders blank for me, but that is ba
 
 </details>
 
+### 6. Align metric-flag precedence with `cds-data-pipeline`: the database wins
+
+Today config and the database combine as a one-way OR (`lib/CachingService.js:129-140`): the DB value is read, then config forces `true` if it says `true`, and lines 151-170 persist that `true` back. So `metrics.enabled: true` in `package.json` makes metrics impossible to switch off — a runtime `setMetricsEnabled(false)` holds only until the next restart, which then overwrites it.
+
+`cds-data-pipeline` resolves the same tension the other way, in three layers:
+
+| Layer | Written by | Lifetime |
+|---|---|---|
+| `baseConfig` | code, rewritten on every registration | per boot |
+| `overrides` | **only** explicit `setOverrides` / `setEnabled` / `setSchedule` | persisted |
+| effective | `applyOverrides(base, overrides)`, per key | computed |
+
+A key the operator never touched follows the code; a key they did touch sticks until cleared. `setEnabled(name, false)` is literally `setOverrides(name, { enabled: false })`, so a paused pipeline stays paused across restarts, and `getConfigView` shows all three layers side by side — which is what the Pipeline Console renders.
+
+**Target for caching:** same precedence. Config seeds; an explicit runtime call wins and survives restarts.
+
+| package.json | operator set | effective |
+|---|---|---|
+| `true` | — | `true` |
+| `true` | `false` | **`false`** (today: `true`, and the operator's value is overwritten) |
+| absent | `true` | `true` |
+| `false` | `true` | `true` |
+
+The blocker is that one boolean column cannot distinguish "seeded from config" from "the operator chose this". Two shapes:
+
+- **Nullable flags** — `null` means no operator decision, so the effective value follows config; `true` / `false` means the operator decided. Smallest change for three booleans, and `Caches` keeps reporting the effective value if the read resolves it.
+- **An `overrides` JSON column**, as pipeline does. Heavier, and pipeline needs it only because it overrides arbitrary config keys; caching has three.
+
+Nullable flags look right here.
+
+Open question worth deciding explicitly: **existing rows.** They are non-null today, so a migration cannot tell a seeded `true` from an operator's `true`. Treating them as operator decisions preserves current behaviour but freezes config out for every existing installation; resetting them to `null` makes config authoritative again for everyone, which loses any deliberate runtime setting. Neither is obviously right, and the choice should be stated in the migration guide rather than inferred.
+
+Worth mirroring `getConfigView` on the `Caches` projection too, so the dashboard can show config vs operator vs effective instead of a single flag whose provenance is invisible. That is what makes the precedence legible rather than surprising.
+
 ## Status
 
 - [x] 1. Tag dimension on metrics — **delivered in 3.1.0**, verified end-to-end
 - [ ] 2. Tag-shape confirmation for 3.0 — documentation only; empirically stable across 3.0.1, 3.1.0 and 3.1.1
 - [ ] 3. Shared leaf UI library — open question
 - [x] 4. Dashboard service path — **fixed in 3.1.1**, verified
-- [ ] 5. Config-driven metric flags read back as `false` from `Caches` (3.1.1)
+- [ ] 5. Config-driven metric flags read back as `false` from `Caches` (3.1.1) — fixed on `fix/caches-metrics-flags-from-config`, verified against the xtravels demo; awaiting release
+- [ ] 6. Align flag precedence with cds-data-pipeline: the database wins, config seeds

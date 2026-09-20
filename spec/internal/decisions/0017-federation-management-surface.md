@@ -1,6 +1,6 @@
 # ADR 0017 — A federation management surface, built on the other plugins' APIs
 
-Status: Proposed
+Status: Partially implemented — §1 the API is built (`srv/FederationManagementService.{cds,js}`, `srv/federation-registry.js`, `lib/plugin-roots.js`, `management.cds`); §2 the console remains gated on the delegate-instrumentation decision, which is still open
 Date: 2026-09-20
 Supersedes: —
 Relates to: [ADR 0006 — Per-plugin published surface](0006-per-plugin-published-surface.md), [ADR 0013 — Event-driven pipeline runs](0013-event-driven-pipeline-runs.md), [ADR 0016 — Align service names](0016-align-service-names.md)
@@ -116,10 +116,16 @@ See the handover note in [`../plans/cds-caching-handover.md`](../plans/cds-cachi
 - The Pipeline Console's Overview graph (remote services against consumption views) is a federation concept living in the engine. If the federation console is built, that graph belongs there and the pipeline version should degrade to pipelines only. Left open deliberately; it is a boundary cleanup, not a blocker.
 - Deciding to instrument the delegate path adds per-request work and a persistence decision on the hot path. That cost is the substance of the conditional in §2 and should be measured, not assumed.
 
-## Acceptance criteria (when implemented)
+## Acceptance criteria
 
-1. `/federation` lists every `@federation.*` entity with its strategy and resolved configuration, addressed by consumption-view FQN.
-2. `refreshReplica`, `refreshEntityCache` and `invalidate` are reachable over HTTP and are the only mutations exposed.
-3. With `management.reuse.api` off, the API still serves configuration and degrades the pipeline-derived fields with an explicit reason.
-4. No federation entity persists run statistics or cache metrics.
-5. If a console ships: no filterable run table, no key browser, and every detail affordance is a link into the owning plugin's console.
+1. **`/federation` lists every `@federation.*` entity with strategy and resolved configuration, addressed by FQN.** Met. In the xtravels demo it returns all eleven — the three replicas and the eight delegates that have no pipeline and therefore appear nowhere else.
+2. **`refreshReplica`, `refreshEntityCache` and `invalidate` are reachable over HTTP and are the only mutations.** Met, all three verified live. An action that does not match the entity's strategy returns 400, an unknown entity 404, and a `POST` to the entity set is rejected as read-only.
+3. **With `management.reuse.api` off, the API still serves configuration and degrades pipeline-derived fields with an explicit reason.** Met, with a correction to the assumption behind it: the *engine* (`cds.connect.to('data-pipeline')`) is reachable regardless of that flag, which only governs whether the OData management service is served. So the pipeline **name** still resolves, and what degrades is the **link** — `pipelineDetail` is null and `pipelineDetailUnavailable` names the flag to set. Same for `cacheDetail` when the `cds-caching` API is off.
+4. **No federation entity persists run statistics or cache metrics.** Met. `FederatedEntities` is `@cds.persistence.skip` and built per request from the compiled model; a unit test asserts the forbidden fields are absent.
+5. Console criteria — not applicable yet; §2 is still gated.
+
+Tests: `test/integration/management-api/management-api.test.js` (17 cases) and `test/unit/management-rows.test.js` (13). The unit tests run without a served app deliberately: in a fixture the pipeline's model is always present, which would hide the degradation branches that matter most.
+
+### Note on the pipeline's own gate
+
+While testing degradation I found that `DataPipelineManagementService` is present in the compiled model of a fixture that does **not** set `management.reuse.api`. Federation's gate does work — `FederationManagementService` is absent without its flag — but the pipeline's may be leakier than intended. Worth a look; it is out of scope here.

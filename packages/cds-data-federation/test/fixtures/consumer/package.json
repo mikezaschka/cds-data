@@ -70,6 +70,13 @@
       },
       "longTermCache": {
         "impl": "cds-caching"
+      },
+      "data-federation": {
+        "management": {
+          "reuse": {
+            "api": true
+          }
+        }
       }
     }
   }

@@ -8,16 +8,33 @@ const {
     registerReplicatePipelineNames,
 } = require('./srv/multitenancy/mtx-hooks')
 const { getEntityCacheCoordinator } = require('./srv/entity-cache/entity-cache-coordinator')
+const { setFederationConfigs } = require('./srv/federation-registry')
+const { resolvePluginRoots } = require('./lib/plugin-roots')
 
 const LOG = cds.log('cds-data-federation')
 
 let _federationConfigs = []
 let _viewMappingRegistry = {}
 
+// ADR 0017 — inject the management model before the model is compiled, so the
+// API is served only when the app asked for it.
+{
+    const { roots, warnings } = resolvePluginRoots({
+        pluginDir: __dirname,
+        projectRoot: cds.root,
+    })
+    for (const warning of warnings) LOG.warn(warning)
+    for (const root of roots) {
+        cds.env.roots ??= []
+        if (!cds.env.roots.includes(root)) cds.env.roots.push(root)
+    }
+}
+
 cds.on('loaded', (csn) => {
     const { configs, viewMappingRegistry } = scanAnnotations(csn)
     _federationConfigs = configs
     _viewMappingRegistry = viewMappingRegistry
+    setFederationConfigs(configs)
     if (_federationConfigs.length > 0) {
         LOG._info && LOG.info(`Discovered ${_federationConfigs.length} @federation.* entities`)
     }

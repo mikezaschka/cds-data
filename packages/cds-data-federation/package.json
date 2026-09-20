@@ -24,7 +24,9 @@
   "main": "cds-plugin.js",
   "files": [
     "srv/**",
+    "lib/**",
     "index.cds",
+    "management.cds",
     "cds-plugin.js",
     "README.md",
     "AGENTS.md",
