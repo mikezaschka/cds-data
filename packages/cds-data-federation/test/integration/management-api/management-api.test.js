@@ -106,6 +106,51 @@ describe('Federation management API (ADR 0017)', () => {
         })
     })
 
+    describe('querying', () => {
+        // The rows are computed, so CAP applies none of the query: the handler
+        // has to honour it. Before it did, a $filter silently returned the
+        // whole set — which looks like a working filter that matches everything.
+
+        it('filters by strategy', async () => {
+            const { data } = await GET("/federation/FederatedEntities?$filter=strategy eq 'replicate'")
+            expect(data.value.length).to.be.greaterThan(0)
+            expect(data.value.every(r => r.strategy === 'replicate')).to.be.true
+
+            const all = await GET('/federation/FederatedEntities')
+            expect(data.value.length).to.be.lessThan(all.data.value.length)
+        })
+
+        it('filters by source service', async () => {
+            const all = await GET('/federation/FederatedEntities')
+            const service = all.data.value[0].sourceService
+            const { data } = await GET(
+                `/federation/FederatedEntities?$filter=sourceService eq '${service}'`,
+            )
+            expect(data.value.every(r => r.sourceService === service)).to.be.true
+        })
+
+        it('supports contains, which is what the console search sends', async () => {
+            const { status, data } = await GET(
+                "/federation/FederatedEntities?$filter=contains(entity,'Replicated')",
+            )
+            expect(status).to.equal(200)
+            expect(data.value.length).to.be.greaterThan(0)
+            expect(data.value.every(r => r.entity.includes('Replicated'))).to.be.true
+        })
+
+        it('orders and pages', async () => {
+            const { data } = await GET('/federation/FederatedEntities?$orderby=entity desc&$top=3')
+            expect(data.value).to.have.length(3)
+            const names = data.value.map(r => r.entity)
+            expect(names).to.eql([...names].sort().reverse())
+        })
+
+        it('returns nothing for a filter that matches nothing', async () => {
+            const { data } = await GET("/federation/FederatedEntities?$filter=strategy eq 'nonsense'")
+            expect(data.value).to.have.length(0)
+        })
+    })
+
     describe('what the projection declares', () => {
 
         it('reports renames declared with `as`', async () => {

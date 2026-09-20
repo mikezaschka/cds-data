@@ -52,27 +52,47 @@ sap.ui.define([
 
         /**
          * Metrics are optional: the DelegateMetrics entity only exists when
-         * metrics.enabled is set (ADR 0019), so a 404 here is a configuration
-         * state to report, not a failure.
+         * metrics.enabled is set (ADR 0019).
+         *
+         * Three states, and they must not be conflated — "no rows" says nothing
+         * on its own about whether collection is on:
+         *   off      metrics.enabled is not set; the entity is not in the model
+         *   idle     collecting, but this entity has had no traffic since the
+         *            last flush
+         *   counted  rows to roll up
+         * The API reports `metricsEnabled` so this is read from configuration
+         * rather than guessed from an empty result.
          */
         _loadMetrics: function (entity) {
             var m = this.model();
             var that = this;
+            var enabled = m.getProperty("/metricsEnabled") === true;
+
+            var settle = function (rows) {
+                m.setProperty("/metrics", that._rollup(rows));
+                m.setProperty("/hasMetrics", rows.length > 0);
+                m.setProperty("/metricsOff", !enabled);
+                m.setProperty("/metricsIdle", enabled && rows.length === 0);
+                m.setProperty("/busy", false);
+            };
+
+            if (!enabled) {
+                settle([]);
+                return Promise.resolve();
+            }
+
             var filter = "entity eq '" + String(entity).replace(/'/g, "''") + "'";
             return this.odata()
                 .bindList("/DelegateMetrics", null, null, null, { $filter: filter })
                 .requestContexts(0, 500)
                 .then(function (contexts) {
-                    var rows = contexts.map(function (c) { return c.getObject(); });
-                    m.setProperty("/metrics", that._rollup(rows));
-                    m.setProperty("/hasMetrics", rows.length > 0);
-                    m.setProperty("/metricsUnavailable", rows.length === 0);
-                    m.setProperty("/busy", false);
+                    settle(contexts.map(function (c) { return c.getObject(); }));
                 })
                 .catch(function () {
-                    m.setProperty("/hasMetrics", false);
-                    m.setProperty("/metricsUnavailable", true);
-                    m.setProperty("/busy", false);
+                    // Configuration says on but the entity is unreadable: report
+                    // it as off rather than claiming counters that do not exist.
+                    enabled = false;
+                    settle([]);
                 });
         },
 

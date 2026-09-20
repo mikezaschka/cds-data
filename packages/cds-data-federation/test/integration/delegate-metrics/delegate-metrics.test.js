@@ -140,6 +140,74 @@ describe('Delegate metrics persistence (ADR 0019)', () => {
         expect(await SELECT.from(METRICS)).to.have.length(1)
     })
 
+    describe('the runtime pause switch (ADR 0019)', () => {
+
+        afterEach(async () => {
+            // Clear the override so later tests see configuration again.
+            await POST('/federation/setMetricsCollection', { enabled: null })
+        })
+
+        const POST = (url, body) => axios.post(url, body)
+
+        it('reports enabled and collecting while configuration says on', async () => {
+            const { data } = await GET(
+                "/federation/FederatedEntities('consumer.Customers')?$select=metricsEnabled,metricsCollecting",
+            )
+            expect(data.metricsEnabled).to.equal(true)
+            expect(data.metricsCollecting).to.equal(true)
+        })
+
+        it('pauses collection, and the counters stop moving', async () => {
+            const paused = await POST('/federation/setMetricsCollection', { enabled: false })
+            expect(paused.status).to.equal(200)
+            expect(paused.data.collecting).to.equal(false)
+            // Still 'enabled': the handlers are instrumented, just not recording.
+            expect(paused.data.enabled).to.equal(true)
+
+            metrics.record('consumer.Customers', 'read', 9, true)
+            await metrics.flush()
+            expect(await rowFor('consumer.Customers'), 'recorded while paused').to.not.exist
+        })
+
+        it('resumes, and recording continues', async () => {
+            await POST('/federation/setMetricsCollection', { enabled: false })
+            await POST('/federation/setMetricsCollection', { enabled: true })
+
+            metrics.record('consumer.Customers', 'read', 4, true)
+            await metrics.flush()
+            expect((await rowFor('consumer.Customers')).requests).to.equal(1)
+        })
+
+        it('persists the override, so a restart keeps the operator choice', async () => {
+            await POST('/federation/setMetricsCollection', { enabled: false })
+            const row = await SELECT.one.from('plugin_data_federation_FederationSettings')
+            expect(row, 'nothing persisted').to.exist
+            // SQLite stores booleans as 0/1; what matters is false, not null,
+            // because null means "follow configuration".
+            expect(row.metricsEnabled).to.satisfy(v => v === false || v === 0)
+            expect(row.metricsEnabled).to.not.be.null
+
+            // What startup does: re-read the override from the database.
+            await metrics.loadOverride()
+            expect(metrics.isCollecting()).to.equal(false)
+        })
+
+        it('clears the override and follows configuration again', async () => {
+            await POST('/federation/setMetricsCollection', { enabled: false })
+            const cleared = await POST('/federation/setMetricsCollection', { enabled: null })
+            expect(cleared.data.collecting).to.equal(true)
+
+            const row = await SELECT.one.from('plugin_data_federation_FederationSettings')
+            expect(row.metricsEnabled).to.be.null
+        })
+
+        it('flushes pending counters before pausing, so nothing is lost', async () => {
+            metrics.record('consumer.Customers', 'read', 3, true)
+            await POST('/federation/setMetricsCollection', { enabled: false })
+            expect((await rowFor('consumer.Customers')).requests).to.equal(1)
+        })
+    })
+
     describe('through the management API', () => {
 
         it('exposes the counters with a derived average', async () => {

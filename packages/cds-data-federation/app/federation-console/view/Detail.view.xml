@@ -36,7 +36,9 @@
                 <MessageStrip text="{detail>/cacheDetailUnavailable}" type="Information" showIcon="true"
                               visible="{= !!${path: 'detail>/cacheDetailUnavailable', targetType: 'any'} }" class="sapUiSmallMarginBottom" />
                 <MessageStrip text="{i18n>metricsOff}" type="Information" showIcon="true"
-                              visible="{detail>/metricsUnavailable}" class="sapUiSmallMarginBottom" />
+                              visible="{detail>/metricsOff}" class="sapUiSmallMarginBottom" />
+                <MessageStrip text="{i18n>metricsIdle}" type="Information" showIcon="true"
+                              visible="{detail>/metricsIdle}" class="sapUiSmallMarginBottom" />
 
                 <HBox wrap="Wrap" visible="{detail>/hasMetrics}">
                     <GenericTile class="sapUiTinyMargin" header="{i18n>tileRequests}" frameType="OneByHalf" press="">

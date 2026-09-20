@@ -74,6 +74,7 @@ cds.once('served', async () => {
         await registerFederationHandlers(delegateConfigs, _viewMappingRegistry)
         // ADR 0019 — starts only when metrics are switched on; a last flush on
         // shutdown keeps the final interval's counts.
+        await delegateMetrics.loadOverride()
         delegateMetrics.start()
         cds.on('shutdown', async () => {
             delegateMetrics.stop()

@@ -7,6 +7,8 @@ const { rowsAffected } = require('cds-data-pipeline/srv/lib/rowsAffected')
 const LOG = cds.log('cds-data-federation')
 
 const METRICS = 'plugin.data_federation.DelegateMetrics'
+const SETTINGS = 'plugin.data_federation.FederationSettings'
+const SETTINGS_ID = 'default'
 
 const DEFAULT_INTERVAL_MS = 60_000
 const DEFAULT_RETENTION_DAYS = 30
@@ -31,12 +33,66 @@ let _pending = new Map()
 
 let _timer = null
 
+/**
+ * Whether counters are being written right now. Distinct from `isEnabled()`:
+ * that decides whether handlers are instrumented at all, and is fixed at
+ * startup. This one is the operator's pause switch, and it persists.
+ */
+let _collecting = null
+
 function config() {
     return cds.env?.requires?.['data-federation']?.metrics || {}
 }
 
+/** Whether metrics are configured at all — decides instrumentation. */
 function isEnabled() {
     return config().enabled === true
+}
+
+/**
+ * Whether counters are actually being recorded. Configuration seeds it; a
+ * persisted override wins, per ADR 0019 and the precedence cds-caching uses.
+ */
+function isCollecting() {
+    if (!isEnabled()) return false
+    return _collecting !== null ? _collecting : true
+}
+
+/** Read the persisted override once at startup. */
+async function loadOverride() {
+    if (!isEnabled()) return
+    try {
+        const row = await SELECT.one.from(SETTINGS).where({ id: SETTINGS_ID })
+        _collecting = row && row.metricsEnabled !== null && row.metricsEnabled !== undefined
+            ? !!row.metricsEnabled
+            : null
+    } catch (err) {
+        LOG.warn('delegate metrics: could not read the settings override:', err.message)
+    }
+}
+
+/**
+ * Pause or resume collection, or pass null to fall back to configuration.
+ * Flushes what is pending first, so pausing does not discard counts already
+ * gathered.
+ *
+ * @param {boolean|null} enabled
+ */
+async function setCollecting(enabled) {
+    if (!isEnabled()) {
+        throw new Error(
+            'Delegate metrics are not configured — set requires.data-federation.metrics.enabled. '
+            + 'A runtime switch can pause collection, not instrument the handlers.',
+        )
+    }
+    const value = enabled === null || enabled === undefined ? null : !!enabled
+    await flush().catch(() => {})
+    const affected = await UPDATE(SETTINGS).set({ metricsEnabled: value }).where({ id: SETTINGS_ID })
+    if (rowsAffected(affected) === 0) {
+        await INSERT.into(SETTINGS).entries({ id: SETTINGS_ID, metricsEnabled: value })
+    }
+    _collecting = value
+    return isCollecting()
 }
 
 /** Called at handler registration so the hot path never resolves names. */
@@ -67,6 +123,7 @@ function blank() {
  * @param {boolean} ok
  */
 function record(entity, kind, ms, ok) {
+    if (!isCollecting()) return
     let acc = _pending.get(entity)
     if (!acc) {
         acc = blank()
@@ -258,11 +315,16 @@ function stop() {
 function _reset() {
     _pending = new Map()
     _entityByServedKey.clear()
+    _collecting = null
     stop()
 }
 
 module.exports = {
     isEnabled,
+    isCollecting,
+    loadOverride,
+    setCollecting,
+    SETTINGS,
     mapEntity,
     resolveEntity,
     instrument,

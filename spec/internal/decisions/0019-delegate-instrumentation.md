@@ -108,7 +108,9 @@ Bucketed rows grow without bound. `PipelineRuns` already solved this in ADR 0014
 
 **Measured overhead.** §Consequences requires measuring the per-request cost with the flag on before release. Until that number exists, "negligible" is an assumption.
 
-**Runtime toggle.** v1 is config-only: no `setMetricsEnabled` equivalent, because a runtime toggle needs somewhere to persist the operator's choice, which is a settings table for one boolean. If one is added later it **must** follow the precedence the suite just agreed for `cds-caching`: the database wins, config seeds, and clearing the override falls back to config. Introducing a second precedence model would undo that alignment.
+**~~Runtime toggle~~ — implemented.** `setMetricsCollection(enabled)` on the federation API, surfaced as a switch in the console header, with `FederationSettings.metricsEnabled` as a **nullable operator override**: null follows configuration, true/false is a deliberate choice that survives restarts. Exactly the precedence `cds-caching` settled on — config seeds, the database wins, clearing falls back.
+
+It **pauses and resumes collection; it cannot enable metrics from nothing.** Whether the delegate handlers are instrumented is decided by `metrics.enabled` at startup and stays fixed, so §1's promise holds: with the flag off there is no wrapper on the request path at all, and no switch to throw. The console hides the control in that case rather than offering something that would not work. Pending counters are flushed before pausing, so nothing gathered is discarded.
 
 ## Implementation notes
 

@@ -187,6 +187,25 @@ counter increment rather than a database write:
 Counts from the current interval are lost if the process is killed outright; a clean
 shutdown flushes first.
 
+### Pausing collection
+
+The console header carries a **Collect metrics** switch, backed by an action:
+
+```http
+POST /federation/setMetricsCollection
+{ "enabled": false }
+```
+
+`null` clears the override and follows configuration again. The choice is persisted and
+survives a restart: configuration seeds it, the database wins — the same precedence
+`cds-caching` uses for its own metric flags. Pending counters are flushed before pausing,
+so nothing already gathered is lost.
+
+It pauses and resumes collection; it cannot switch metrics on from nothing. Whether the
+delegate handlers are instrumented at all is decided by `metrics.enabled` at startup, so
+that the flag-off path carries no wrapper. With metrics unconfigured the switch is hidden
+and the action returns 400.
+
 ## Example
 
 The xtravels demo, with eleven federated entities across both strategies:

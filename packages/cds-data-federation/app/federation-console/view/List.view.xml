@@ -5,6 +5,11 @@
     xmlns:graph="sap.suite.ui.commons.networkgraph">
     <Page id="listPage" title="{i18n>appTitle}" class="sapUiResponsiveContentPadding">
         <headerContent>
+            <!-- Only offered when metrics are configured: a runtime switch can
+                 pause collection, not instrument the handlers. -->
+            <Label text="{i18n>metricsLabel}" visible="{ui>/metricsEnabled}" class="sapUiTinyMarginEnd" />
+            <Switch state="{ui>/metricsCollecting}" change=".onToggleMetrics"
+                    visible="{ui>/metricsEnabled}" tooltip="{i18n>metricsTooltip}" />
             <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
         </headerContent>
         <content>

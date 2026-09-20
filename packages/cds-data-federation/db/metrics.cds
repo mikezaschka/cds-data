@@ -26,3 +26,20 @@ entity DelegateMetrics {
         minLatency   : Double;
         maxLatency   : Double;
 }
+
+/**
+ * Runtime overrides for the metrics subsystem — ADR 0019.
+ *
+ * `metricsEnabled` is a **nullable operator override**, the shape cds-caching
+ * settled on: null means "follow configuration", true/false is a deliberate
+ * choice that survives restarts. Config seeds; the database wins.
+ *
+ * It can only pause and resume collection, never enable it from nothing:
+ * `metrics.enabled` decides whether the delegate handlers are instrumented at
+ * all, and that is fixed at startup so the flag-off path stays free.
+ */
+@cds.persistence.table
+entity FederationSettings {
+    key id             : String(32) default 'default';
+        metricsEnabled : Boolean;
+}

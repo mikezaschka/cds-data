@@ -2,11 +2,12 @@ sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/Filter",
     "sap/ui/model/FilterOperator",
+    "sap/m/MessageToast",
     "sap/suite/ui/commons/networkgraph/Node",
     "sap/suite/ui/commons/networkgraph/Line",
     "sap/suite/ui/commons/networkgraph/Group",
     "sap/suite/ui/commons/networkgraph/ElementAttribute",
-], function (Controller, Filter, FilterOperator, Node, Line, Group, ElementAttribute) {
+], function (Controller, Filter, FilterOperator, MessageToast, Node, Line, Group, ElementAttribute) {
     "use strict";
 
     /** Node keys need a stable prefix per kind so services and views cannot collide. */
@@ -19,6 +20,7 @@ sap.ui.define([
         onInit: function () {
             this.ui().setProperty("/strategyFilter", "all");
             this.ui().setProperty("/landscapeReady", false);
+            this._syncMetricsState();
             this.getOwnerComponent().getRouter()
                 .getRoute("detail").attachPatternMatched(this._syncSelection, this);
         },
@@ -83,6 +85,46 @@ sap.ui.define([
             binding.filter(filters);
         },
 
+        /**
+         * Pause or resume metric collection. Only reachable when metrics are
+         * configured; the switch is hidden otherwise, because a runtime toggle
+         * cannot instrument handlers that were never wrapped (ADR 0019).
+         */
+        onToggleMetrics: function (event) {
+            var that = this;
+            var wanted = event.getParameter("state");
+            var model = this.getOwnerComponent().getModel();
+            var op = model.bindContext("/setMetricsCollection(...)");
+            op.setParameter("enabled", wanted);
+            op.invoke()
+                .then(function () {
+                    var result = op.getBoundContext().getObject();
+                    that.ui().setProperty("/metricsCollecting", result.collecting);
+                    MessageToast.show(result.message);
+                    model.refresh();
+                })
+                .catch(function (err) {
+                    // Put the switch back where it was: the server did not move.
+                    that.ui().setProperty("/metricsCollecting", !wanted);
+                    MessageToast.show(err && err.message ? err.message : "Could not change metric collection");
+                });
+        },
+
+        /** Mirror the metrics state onto the ui model so the header can bind it. */
+        _syncMetricsState: function () {
+            var that = this;
+            this.getOwnerComponent().getModel()
+                .bindList("/FederatedEntities").requestContexts(0, 1)
+                .then(function (contexts) {
+                    var row = contexts.length ? contexts[0].getObject() : null;
+                    that.ui().setProperty("/metricsEnabled", !!(row && row.metricsEnabled));
+                    that.ui().setProperty("/metricsCollecting", !!(row && row.metricsCollecting));
+                })
+                .catch(function () {
+                    that.ui().setProperty("/metricsEnabled", false);
+                });
+        },
+
         onRefresh: function () {
             this.getOwnerComponent().getModel().refresh();
             this._landscapeLoaded = false;
@@ -137,6 +179,7 @@ sap.ui.define([
 
             if (!rows.length) {
                 this.ui().setProperty("/landscapeReady", false);
+            this._syncMetricsState();
                 return;
             }
 

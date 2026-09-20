@@ -2,6 +2,8 @@ const cds = require('@sap/cds')
 const { getFederationConfigs, getFederationConfig } = require('./federation-registry')
 const { resolveWriteFlags } = require('./annotation-scanner')
 const { refreshEntityCache } = require('./entity-cache/public-api')
+const delegateMetrics = require('./metrics/delegate-metrics')
+const { applyExpandedSemantics } = require('./delegation/cqn-evaluator')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -23,25 +25,38 @@ class FederationManagementService extends cds.ApplicationService {
         this.on('refreshReplica', 'FederatedEntities', req => this._refreshReplica(req))
         this.on('refreshEntityCache', 'FederatedEntities', req => this._refreshEntityCache(req))
         this.on('invalidate', 'FederatedEntities', req => this._invalidate(req))
+        this.on('setMetricsCollection', req => this._setMetricsCollection(req))
         return super.init()
     }
 
     // ─── reads ────────────────────────────────────────────────────────────────
 
+    /**
+     * The rows are computed, not stored, so CAP applies none of the query for
+     * us: `$filter`, `$orderby` and `$top` all arrive as CQN that this handler
+     * has to honour itself. Returning every row and ignoring them looks fine
+     * until a client filters and gets the unfiltered set back.
+     *
+     * `applyExpandedSemantics` is federation's own CQN-over-JS-rows evaluator,
+     * already used for locally-resolved expands.
+     */
     async _read(req) {
-        const rows = getFederationConfigs().map(cfg => this._toRow(cfg))
-        const key = req.data?.entity ?? this._keyFromQuery(req)
-        if (key) return rows.filter(r => r.entity === key)
-        return rows
-    }
+        let rows = getFederationConfigs().map(cfg => this._toRow(cfg))
 
-    /** By-key reads arrive as a where clause rather than in `req.data`. */
-    _keyFromQuery(req) {
-        const where = req.query?.SELECT?.where
-        if (!Array.isArray(where)) return undefined
-        const i = where.findIndex(t => t?.ref?.[0] === 'entity')
-        if (i < 0) return undefined
-        return where[i + 2]?.val
+        // A by-key read arrives as `req.data.entity` with no `where` at all,
+        // so the CQN path below would never narrow it.
+        const key = req.data?.entity
+        if (key) rows = rows.filter(row => row.entity === key)
+
+        const select = req.query?.SELECT || {}
+        const entityDef = req.target
+        try {
+            return applyExpandedSemantics(rows, select.where, select.orderBy, select.limit, entityDef)
+        } catch (err) {
+            // An unsupported predicate must not silently return everything.
+            LOG.warn('federation management: unsupported query —', err.message)
+            return req.reject(400, `Unsupported query on FederatedEntities: ${err.message}`)
+        }
     }
 
     _toRow(cfg) {
@@ -72,6 +87,8 @@ class FederationManagementService extends cds.ApplicationService {
                 .map(([local, remote]) => ({ local, remote })),
             pipeline,
             cacheTag: cacheStrategy === 'response' ? `federation:${cfg.entityName}` : null,
+            metricsEnabled: delegateMetrics.isEnabled(),
+            metricsCollecting: delegateMetrics.isCollecting(),
             ...pipelineDetail,
             ...cacheDetail,
         }
@@ -183,6 +200,22 @@ class FederationManagementService extends cds.ApplicationService {
         const tag = `federation:${cfg.entityName}`
         await cache.deleteByTag(tag)
         return this._result(cfg, 'deleteByTag', `Dropped entries tagged '${tag}'`)
+    }
+
+    async _setMetricsCollection(req) {
+        const enabled = req.data?.enabled ?? null
+        try {
+            const collecting = await delegateMetrics.setCollecting(enabled)
+            return {
+                enabled: delegateMetrics.isEnabled(),
+                collecting,
+                message: enabled === null
+                    ? `Cleared the override; collection follows configuration and is ${collecting ? 'on' : 'off'}`
+                    : `Collection ${collecting ? 'resumed' : 'paused'}`,
+            }
+        } catch (err) {
+            return req.reject(400, err.message)
+        }
     }
 
     async _pipelineEngine(req) {

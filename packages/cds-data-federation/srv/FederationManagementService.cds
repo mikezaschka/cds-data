@@ -75,6 +75,21 @@ service FederationManagementService @(path: '/federation') {
             cacheTag                  : String(160);
 
             /**
+             * Whether delegate metrics are being collected (ADR 0019). Lets a
+             * caller tell "metrics are switched off" from "switched on, but
+             * this entity has had no traffic yet" — which look identical if you
+             * only count rows.
+             */
+            metricsEnabled            : Boolean;
+
+            /**
+             * Whether counters are being recorded right now. `metricsEnabled`
+             * says metrics are configured; this says an operator has not paused
+             * them (see `setMetricsCollection`).
+             */
+            metricsCollecting         : Boolean;
+
+            /**
              * Where to look for this entity's runtime detail, or null when that
              * surface is not enabled. `pipelineDetailUnavailable` says why.
              */
@@ -102,6 +117,26 @@ service FederationManagementService @(path: '/federation') {
          * Requires `cache.strategy: 'response'`.
          */
         action invalidate()                  returns FederationActionResult;
+    }
+
+    /**
+     * Pause or resume delegate metric collection. Pass null to clear the
+     * override and follow configuration again.
+     *
+     * This cannot switch metrics on from nothing: whether the delegate
+     * handlers are instrumented is decided by
+     * `requires.data-federation.metrics.enabled` at startup, so that the
+     * flag-off path stays free of any wrapper (ADR 0019 §1).
+     */
+    action setMetricsCollection(enabled : Boolean) returns FederationMetricsState;
+
+    type FederationMetricsState {
+        /** Metrics are configured, so handlers are instrumented. */
+        enabled    : Boolean;
+        /** Counters are being written right now. */
+        collecting : Boolean;
+        /** For an operator, not a machine. */
+        message    : String(512);
     }
 
     type FederationActionResult {
