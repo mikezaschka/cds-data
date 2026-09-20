@@ -1,6 +1,6 @@
 # ADR 0019 — Instrumenting the delegate path
 
-Status: Proposed
+Status: Implemented (`srv/metrics/delegate-metrics.js`, `db/metrics.cds`, gated roots in `lib/plugin-roots.js`, handlers wrapped in `srv/delegation/handler-registration.js`)
 Date: 2026-09-20
 Supersedes: —
 Unblocks: [ADR 0017 §2](0017-federation-management-surface.md) — the federation console
@@ -109,6 +109,37 @@ Bucketed rows grow without bound. `PipelineRuns` already solved this in ADR 0014
 **Measured overhead.** §Consequences requires measuring the per-request cost with the flag on before release. Until that number exists, "negligible" is an assumption.
 
 **Runtime toggle.** v1 is config-only: no `setMetricsEnabled` equivalent, because a runtime toggle needs somewhere to persist the operator's choice, which is a settings table for one boolean. If one is added later it **must** follow the precedence the suite just agreed for `cds-caching`: the database wins, config seeds, and clearing the override falls back to config. Introducing a second precedence model would undo that alignment.
+
+## Implementation notes
+
+**A CQN object predicate cannot express the compare-and-set.** The obvious spelling for
+§5's guard is wrong, and wrong *silently*:
+
+```js
+.where({ ...key, or: [{ minLatency: null }, { minLatency: { '>': min } }] })
+```
+
+compiles to `bucket = ? and entity = ? or 0 minLatency = ? and 1 minLatency > ?` — no
+parentheses, and stray array indices as tokens. It does not throw; it updates rows the
+statement was never meant to touch. The implementation uses the tagged-template form
+instead, which groups correctly:
+
+```js
+.where`bucket = ${bucket} and entity = ${entity} and (minLatency is null or minLatency > ${min})`
+```
+
+Worth remembering anywhere a parenthesised `OR` is needed alongside a key.
+
+**Handlers are wrapped, remote calls are not.** Instrumentation sits on the four
+`service.on` registrations in `handler-registration.js` rather than on each `remote.run`
+call site, of which there are many across expand, navigation and paging. One consequence:
+latency includes local post-processing such as expand resolution, not purely the wire
+time. That is the more useful number for an operator — it is what the caller waited — but
+it is not a pure remote-latency measurement.
+
+**Failed flushes fold back.** A batch that cannot be written is merged into the live
+accumulator rather than dropped, so a transient database error costs a delay rather than
+a hole in the counts.
 
 ## Consequences
 

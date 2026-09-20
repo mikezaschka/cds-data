@@ -103,6 +103,54 @@ Each returns `{ entity, action, message }`. An action that does not match the en
 strategy is rejected with 400 rather than quietly doing nothing, and an unknown entity
 with 404.
 
+## Delegate metrics
+
+A plain delegate has no pipeline and no cache, so nothing reports on it. Switching on
+metrics gives every delegated entity request, error and latency counters.
+
+```json
+"cds": {
+  "requires": {
+    "data-federation": {
+      "metrics": { "enabled": true }
+    }
+  }
+}
+```
+
+Off by default, and off means off: with the flag unset no counter is touched, no timer
+starts, and the table is not even part of the model, so nothing is deployed.
+
+```http
+GET /federation/DelegateMetrics
+```
+
+| Field | Meaning |
+|---|---|
+| `bucket` | Hour the counters belong to, as `hourly:2026-09-20T14`. |
+| `entity` | Consumption-view FQN — the same key the inventory uses. |
+| `requests` / `errors` | Reads forwarded to the remote, and how many failed. |
+| `writes` / `writeErrors` | CUD forwarding on writable delegates, counted separately. |
+| `latencySumMs` | Summed remote round-trip time. |
+| `avgLatency` | Derived as `latencySumMs / requests` — see below. |
+| `minLatency` / `maxLatency` | Fastest and slowest call in the bucket. |
+
+**There is no stored average.** Averages cannot be merged without their counts, so a
+stored one would drift as soon as a second flush — or a second app instance — wrote to
+the same bucket. The table keeps a sum, and the average is computed on read.
+
+Counters accumulate in memory and flush on an interval, so a delegated read costs a
+counter increment rather than a database write:
+
+| Option | Default | |
+|---|---|---|
+| `metrics.enabled` | `false` | Switches everything above on. |
+| `metrics.persistenceInterval` | `60000` | Milliseconds between flushes. |
+| `metrics.retention.days` | `30` | Buckets older than this are swept on each flush. |
+
+Counts from the current interval are lost if the process is killed outright; a clean
+shutdown flushes first.
+
 ## Example
 
 The xtravels demo, with eleven federated entities across both strategies:

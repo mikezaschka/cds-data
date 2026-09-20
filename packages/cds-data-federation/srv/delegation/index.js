@@ -3,6 +3,7 @@ const { findServingService, findEntityNameInService } = require('./service-resol
 const { buildAssocTargetMappings } = require('./navigation-translation')
 const { buildLocalAssocInfo } = require('./expand-remote-to-local')
 const { registerDelegateHandler, registerCachedDelegateHandler, registerEntityCachedDelegateHandler } = require('./handler-registration')
+const { mapEntity } = require('../metrics/delegate-metrics')
 const { registerLocalExpandResolvers } = require('./expand-local-to-remote')
 
 const LOG = cds.log('cds-data-federation')
@@ -82,6 +83,10 @@ async function registerFederationHandlers(federationConfigs, viewMappingRegistry
         const {
             service, serviceEntityName, sourceService, options, viewMapping, entityFullName, servedFullName, writeFlags, entityCacheMeta,
         } = ph
+        // ADR 0019 — resolve the metrics key once, at registration, so the
+        // request path never translates names.
+        mapEntity(service.name, serviceEntityName, entityFullName)
+
         const assocTargets = buildAssocTargetMappings(entityFullName, viewMappingRegistry)
         const federatedMap = federatedByService.get(service.name)
         const localAssocs = buildLocalAssocInfo(servedFullName, service.name, federatedMap)

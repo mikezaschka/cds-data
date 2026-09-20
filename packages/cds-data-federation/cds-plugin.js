@@ -10,6 +10,7 @@ const {
 const { getEntityCacheCoordinator } = require('./srv/entity-cache/entity-cache-coordinator')
 const { setFederationConfigs } = require('./srv/federation-registry')
 const { resolvePluginRoots } = require('./lib/plugin-roots')
+const delegateMetrics = require('./srv/metrics/delegate-metrics')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -53,6 +54,17 @@ cds.once('served', async () => {
         coordinator.startIntervals()
         await coordinator.preloadOnBoot()
         await registerFederationHandlers(delegateConfigs, _viewMappingRegistry)
+        // ADR 0019 — starts only when metrics are switched on; a last flush on
+        // shutdown keeps the final interval's counts.
+        delegateMetrics.start()
+        cds.on('shutdown', async () => {
+            delegateMetrics.stop()
+            try {
+                await delegateMetrics.flush()
+            } catch {
+                // A failed final flush loses at most one interval of counters.
+            }
+        })
     }
 
     const replicateConfigs = _federationConfigs.filter(c => c.strategy === 'replicate')

@@ -25,8 +25,11 @@
   "files": [
     "srv/**",
     "lib/**",
+    "db/**",
     "index.cds",
     "management.cds",
+    "metrics.cds",
+    "management-metrics.cds",
     "cds-plugin.js",
     "README.md",
     "AGENTS.md",

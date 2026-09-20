@@ -2,6 +2,8 @@ const cds = require('@sap/cds')
 const { fs, path } = cds.utils
 
 const managementRoot = (pluginDir) => path.join(pluginDir, 'management')
+const metricsRoot = (pluginDir) => path.join(pluginDir, 'metrics')
+const managementMetricsRoot = (pluginDir) => path.join(pluginDir, 'management-metrics')
 
 /**
  * Decide whether to inject the management model into `cds.env.roots`.
@@ -36,6 +38,17 @@ function resolvePluginRoots({ pluginDir, projectRoot, srvFolder = 'srv' }) {
         }
     }
 
+    // ADR 0019 — the metrics table exists only when metrics are switched on, so
+    // an app that never enables them deploys no table.
+    const metricsEnabled = cds.env?.requires?.['data-federation']?.metrics?.enabled === true
+    if (metricsEnabled) {
+        roots.push(metricsRoot(pluginDir))
+        // The projection needs both models, so it loads only when both are on.
+        if (roots.includes(managementRoot(pluginDir))) {
+            roots.push(managementMetricsRoot(pluginDir))
+        }
+    }
+
     return { roots, reuseConsole, warnings }
 }
 
@@ -57,4 +70,4 @@ function projectImportsManagement(projectRoot, srvFolder = 'srv') {
     return walk(srvDir)
 }
 
-module.exports = { resolvePluginRoots, projectImportsManagement, managementRoot }
+module.exports = { resolvePluginRoots, projectImportsManagement, managementRoot, metricsRoot, managementMetricsRoot }

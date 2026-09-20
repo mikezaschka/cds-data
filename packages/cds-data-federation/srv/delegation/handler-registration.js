@@ -6,6 +6,7 @@ const { splitLocalExpands, resolveRemoteToLocalExpands } = require('./expand-rem
 const { containsLambda, runDirectRemoteQuery, propagateRemoteError } = require('./remote-query')
 const { resolveLocalToRemoteNavigation } = require('./cross-service-navigation')
 const { runPagedRemoteQuery } = require('./paged-remote-query')
+const { instrument } = require('../metrics/delegate-metrics')
 
 const { rewriteQueryForEntityCacheStorage } = require('../entity-cache/query-rewrite')
 const { getEntityCacheRegistry } = require('../entity-cache/EntityCacheRegistry')
@@ -50,7 +51,7 @@ function registerDelegateHandler(
     const localAssocsByName = new Map(localAssocs.map(a => [a.name, a]))
 
     service.prepend(function () {
-        service.on('READ', entityName, async (req) => {
+        service.on('READ', entityName, instrument(service, entityName, 'read', async (req) => {
             const remote = await cds.connect.to(sourceServiceName)
 
             // Cross-service navigation (4.2.12): local → remote
@@ -106,7 +107,7 @@ function registerDelegateHandler(
             } catch (e) {
                 throw propagateRemoteError(e, sourceServiceName)
             }
-        })
+        }))
 
         registerWriteHandlers(service, entityName, sourceServiceName, writeFlags)
     })
@@ -195,7 +196,7 @@ async function registerCachedDelegateHandler(
     const localAssocsByName = new Map(localAssocs.map(a => [a.name, a]))
 
     service.prepend(function () {
-        service.on('READ', entityName, async (req) => {
+        service.on('READ', entityName, instrument(service, entityName, 'read', async (req) => {
             const cache = await cds.connect.to(cacheServiceName)
             const remote = await cds.connect.to(sourceServiceName)
 
@@ -258,7 +259,7 @@ async function registerCachedDelegateHandler(
                 await resolveRemoteToLocalExpands(result, localExpandItems, localAssocsByName, service)
             }
             return result
-        })
+        }))
 
         registerWriteHandlers(service, entityName, sourceServiceName, writeFlags)
     })
@@ -316,7 +317,7 @@ function registerEntityCachedDelegateHandler(
     const localAssocsByName = new Map(localAssocs.map(a => [a.name, a]))
 
     service.prepend(function () {
-        service.on('READ', entityName, async (req) => {
+        service.on('READ', entityName, instrument(service, entityName, 'read', async (req) => {
             const remote = await cds.connect.to(sourceServiceName)
             const tenantString = resolveRequestTenant(req)
             const tenantKey = cacheTenantKey(tenantString, isStatic)
@@ -469,7 +470,7 @@ function registerEntityCachedDelegateHandler(
                 registry.invalidate(entityFullName, tenantKey)
                 return fallbackRemote(effectiveQuery, [])
             }
-        })
+        }))
 
         registerWriteHandlers(service, entityName, sourceServiceName, writeFlags)
     })
@@ -486,14 +487,14 @@ function registerWriteHandlers(service, entityName, sourceServiceName, writeFlag
     for (const [event, allowed] of Object.entries(allOps)) {
         if (allowed) {
             enabled.push(event)
-            service.on(event, entityName, async (req) => {
+            service.on(event, entityName, instrument(service, entityName, 'write', async (req) => {
                 const remote = await cds.connect.to(sourceServiceName)
                 try {
                     return await remote.run(req.query)
                 } catch (e) {
                     throw propagateRemoteError(e, sourceServiceName)
                 }
-            })
+            }))
         } else if (Object.values(allOps).some(Boolean)) {
             // @readonly is stripped when any write is enabled, so explicitly reject
             // disabled operations to produce a clean 405 instead of a DB error.
