@@ -34,7 +34,7 @@ Same shape as `cds-caching`'s `metrics.enabled` and the `<feature>.reuse` family
 |---|---|
 | `requests` | Reads forwarded to the remote. |
 | `errors` | How many of those failed. |
-| `avgLatency`, `minLatency`, `maxLatency` | Time in the remote call. |
+| latency — average, min and max | Time in the remote call. Reported as three numbers, but **stored** as a sum plus min and max; see §4 for why an average cannot be a column. |
 | `writes`, `writeErrors` | CUD forwarding on writable delegates, counted apart from reads: a failed write is a different incident from a failed read. |
 
 **Deliberately excluded from v1:** latency percentiles (they need retained samples, as `cds-caching` does with `maxLatencies`), per-query metrics, and distributed tracing — the last belongs to OpenTelemetry, not to a table of our own.
@@ -47,33 +47,66 @@ Counters accumulate in the process and flush to a table on an interval, the shap
 
 Persisting rather than staying in-memory buys what the console needs: survival across restarts, and aggregation across instances and tenants.
 
-### 4. Schema
+### 4. Schema — store what merges
 
 ```cds
 entity DelegateMetrics {
-    key bucket     : String;   // 'hourly:2026-09-20T14' — same convention as cds-caching Metrics
-    key entity     : String;   // consumption-view FQN — the address, per ADR 0018
-        requests   : Integer;
-        errors     : Integer;
-        writes     : Integer;
-        writeErrors: Integer;
-        avgLatency : Double;
-        minLatency : Double;
-        maxLatency : Double;
+    key bucket       : String;   // 'hourly:2026-09-20T14' — cds-caching's convention
+    key entity       : String;   // consumption-view FQN — the address, per ADR 0018
+        requests     : Integer;
+        errors       : Integer;
+        writes       : Integer;
+        writeErrors  : Integer;
+        latencySumMs : Double;   // NOT an average — see below
+        minLatency   : Double;
+        maxLatency   : Double;
 }
 ```
 
-Keyed on the consumption-view FQN, so it joins the `/federation` inventory directly and needs no name translation.
+Keyed on the consumption-view FQN, so it joins the `/federation` inventory directly and needs no name translation. **No instance in the key** — see §5.
 
-### 5. Retention
+**There is deliberately no `avgLatency` column.** Averages do not merge: `avg(a)` and `avg(b)` cannot be combined without their counts, so a stored average is wrong both across instances *and* across successive flushes from the same process. The table stores `latencySumMs`, and the average is derived on read as `latencySumMs / requests`.
+
+That leaves three kinds of column, each with its own merge rule:
+
+| Columns | Merge |
+|---|---|
+| `requests`, `errors`, `writes`, `writeErrors`, `latencySumMs` | additive — `SET col = col + ?` |
+| `minLatency`, `maxLatency` | compare-and-set — see §5 |
+| average latency | not stored; derived on read |
+
+### 5. Concurrency: atomic increment on a shared row
+
+Two instances flushing the same `(bucket, entity)` row must not lose updates. Two shapes were considered.
+
+**Chosen: a single shared row per `(bucket, entity)`, updated with atomic increments.** Row-level `UPDATE … SET col = col + ?` is atomic on every database the suite targets, so concurrent flushes accumulate correctly without locking.
+
+Min and max cannot use a scalar `MIN(a, b)`, because the spelling differs by dialect — SQLite's two-argument `MIN` is HANA's `LEAST`. Rather than branch on dialect, they are compare-and-set, which needs no scalar function:
+
+```sql
+UPDATE … SET minLatency = ?
+WHERE bucket = ? AND entity = ? AND (minLatency IS NULL OR minLatency > ?)
+```
+
+The row may not exist yet, and two instances can both find it missing and both `INSERT`, one losing on the primary key. The sequence is therefore: `UPDATE` first; if `rowsAffected() === 0` then `INSERT`; if that `INSERT` conflicts, retry the `UPDATE` once. Bounded, lock-free.
+
+**This is reuse, not new machinery.** The engine already guards concurrent runs exactly this way at [`Pipeline.js:137`](../../../packages/cds-data-pipeline/srv/lib/Pipeline.js) — a conditional `UPDATE … WHERE status != 'running'` whose count is read through [`rowsAffected()`](../../../packages/cds-data-pipeline/srv/lib/rowsAffected.js), which normalizes CDS 9's `number` against CDS 10's `{ affected }` shape. [`withTransientDbRetry()`](../../../packages/cds-data-pipeline/srv/lib/transientDbError.js) supplies the retry.
+
+Contention is negligible because flushing is per **interval**, not per request: ten instances against fifty entities on a sixty-second flush is roughly 500 statements a minute, spread across distinct rows.
+
+**Rejected: putting the instance in the key** (`(bucket, entity, instance)`), with a `GROUP BY` on read. It removes contention entirely, but the cost is deciding what identifies an instance. A hostname or pod name is stable but not always available; a per-process UUID means a pod restarting ten times a day writes ten times the rows per bucket per entity — the table then grows with restart churn rather than with traffic, and every console read pays for an aggregation whose size depends on deployment behaviour.
+
+### 6. Retention
 
 Bucketed rows grow without bound. `PipelineRuns` already solved this in ADR 0014, and this must reuse that policy rather than invent a second one. A metrics table with no housekeeping is a slow leak that surfaces months later in someone else's database.
 
 ## Open questions — to resolve before implementation
 
-**Concurrent flush across instances.** Two app instances flushing the same `(bucket, entity)` row will collide. Options: an atomic `UPDATE … SET requests = requests + ?` accumulate, or adding the instance to the key and summing on read. The first keeps the table small and the read trivial but depends on the database's increment semantics; the second is portable but multiplies rows. **Not yet decided.** This is the single most likely source of wrong numbers, so it should be settled explicitly rather than discovered.
+**Tenant scoping.** ADR 0010 established how the entity cache and pipeline runs handle MTX. These metrics need the same treatment: either the tenant joins the key, or each tenant's context writes to its own database as the entity cache already does. That should be settled against `EntityCacheDbResolver`'s existing behaviour rather than decided fresh here, since diverging from it would give federation two tenant models.
 
-**Tenant scoping.** ADR 0010 established how the entity cache and pipeline runs handle MTX. These metrics need the same treatment, and per-tenant flush interacts with the concurrency question above.
+**Flush interval and retention policy values.** The mechanism is settled (§5, §6); the numbers are not. Both should be configurable with defaults chosen after the overhead measurement below.
+
+**Measured overhead.** §Consequences requires measuring the per-request cost with the flag on before release. Until that number exists, "negligible" is an assumption.
 
 **Runtime toggle.** v1 is config-only: no `setMetricsEnabled` equivalent, because a runtime toggle needs somewhere to persist the operator's choice, which is a settings table for one boolean. If one is added later it **must** follow the precedence the suite just agreed for `cds-caching`: the database wins, config seeds, and clearing the override falls back to config. Introducing a second precedence model would undo that alignment.
 
