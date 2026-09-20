@@ -26,6 +26,7 @@
     "srv/**",
     "lib/**",
     "db/**",
+    "app/federation-console/**",
     "index.cds",
     "management.cds",
     "metrics.cds",

@@ -24,6 +24,8 @@ describe('Delegate metrics persistence (ADR 0019)', () => {
 
     const { GET, expect, axios } = cds.test(consumerRoot)
     axios.defaults.validateStatus = () => true
+    // The management API requires an authenticated user by design.
+    axios.defaults.auth = { username: 'alice', password: '' }
 
     afterAll(async () => {
         await stopProvider()

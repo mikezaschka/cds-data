@@ -20,7 +20,7 @@ let _viewMappingRegistry = {}
 // ADR 0017 — inject the management model before the model is compiled, so the
 // API is served only when the app asked for it.
 {
-    const { roots, warnings } = resolvePluginRoots({
+    const { roots, reuseConsole, warnings } = resolvePluginRoots({
         pluginDir: __dirname,
         projectRoot: cds.root,
     })
@@ -28,6 +28,24 @@ let _viewMappingRegistry = {}
     for (const root of roots) {
         cds.env.roots ??= []
         if (!cds.env.roots.includes(root)) cds.env.roots.push(root)
+    }
+
+    if (reuseConsole) {
+        const { resolveUi5Url, mountFederationConsole } = require('./lib/console-bootstrap')
+        const management = cds.env?.requires?.['data-federation']?.management || {}
+        const { url: ui5Url, warnings: ui5Warnings } = resolveUi5Url(management)
+        for (const message of ui5Warnings) LOG.warn(message)
+
+        const consolePath = cds.utils.path.join(__dirname, 'app', 'federation-console')
+        cds.once('bootstrap', (app) => {
+            if (!mountFederationConsole(app, { consolePath, ui5Url })) {
+                LOG.warn(
+                    'cds-data-federation: app.serve is unavailable — export cds.server from server.js to mount the Federation Console',
+                )
+                return
+            }
+            LOG.info(`Serving Federation Console at /federation-console (UI5 from ${ui5Url})`)
+        })
     }
 }
 

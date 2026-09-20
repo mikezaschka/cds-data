@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Federation Console</title>
+    <style>
+        /* FCL needs a full height chain: body → component host → UIComponent
+           root → view. Without it the app renders into a zero-height box: the
+           DOM is all there and the page looks blank. */
+        html,
+        body,
+        .sapUiBody {
+            height: 100%;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+        [data-sap-ui-component],
+        .sapUiComponentContainer {
+            height: 100%;
+            min-height: 100%;
+            display: block;
+        }
+        /* UI5 inserts its own UIArea div between the container and the root
+           view. Both need the height or the chain breaks there and the FCL
+           collapses to zero. Measured: container 860, uiarea 0, view 0, FCL 0. */
+        .sapUiComponentContainer > div,
+        .sapUiComponentContainer > div > .sapUiView {
+            height: 100%;
+        }
+    </style>
+    <script
+        id="sap-ui-bootstrap"
+        src="https://ui5.sap.com/1.148.10/resources/sap-ui-core.js"
+        data-sap-ui-theme="sap_horizon"
+        data-sap-ui-compat-version="edge"
+        data-sap-ui-async="true"
+        data-sap-ui-resource-roots='{ "federation.console": "./" }'
+        data-sap-ui-on-init="module:sap/ui/core/ComponentSupport"
+        data-sap-ui-frame-options="trusted"
+        data-sap-ui-xx-component-preload="off">
+    </script>
+</head>
+<body class="sapUiBody">
+    <div data-sap-ui-component data-name="federation.console" data-id="container" data-settings='{"id":"federation-console"}' style="height:100%"></div>
+</body>
+</html>

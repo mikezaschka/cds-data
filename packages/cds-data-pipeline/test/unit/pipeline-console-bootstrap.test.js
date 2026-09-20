@@ -88,7 +88,9 @@ describe('mountPipelineConsole', () => {
      */
     const fakeApp = () => {
         const app = { mounts: [], _app_links: undefined }
-        app.use = (path, handler) => app.mounts.push({ path, handler })
+        // `use` takes a chain: the guard mount spreads CAP's own middlewares in
+        // ahead of it, so record all of them.
+        app.use = (path, ...handlers) => app.mounts.push({ path, handler: handlers[0], handlers })
         app.serve = endpoint => ({
             from: (pkg, folder) => {
                 app.mounts.push({ path: endpoint, static: `${pkg}/${folder}` })
@@ -112,8 +114,53 @@ describe('mountPipelineConsole', () => {
         const app = fakeApp()
         mountPipelineConsole(app, options)
         const paths = app.mounts.map(m => m.path)
-        expect(paths).toEqual(['/pipeline-console', '/pipeline-console'])
+        // Auth chain, directory redirect, index handler, static app.
+        expect(paths).toEqual(Array(4).fill('/pipeline-console'))
         expect(app.mounts.find(m => m.static)?.static).toBe('cds-data-pipeline/app/pipeline-console')
+    })
+
+    it('redirects the bare mount to the directory form', () => {
+        // Without the trailing slash the relative resource root resolves to
+        // the server root and Component.js 404s; the CDS index page links
+        // without one.
+        const { redirectToDirectory } = require('../../lib/pipeline-console-bootstrap')
+        let redirect
+        redirectToDirectory('/pipeline-console')(
+            { path: '/', originalUrl: '/pipeline-console' },
+            { redirect: (status, to) => { redirect = { status, to } } },
+            () => {},
+        )
+        expect(redirect).toEqual({ status: 302, to: '/pipeline-console/' })
+    })
+
+    it('guards the route before anything serves a file', () => {
+        // Order is the security property: the console is static files outside
+        // CAP's service adapters, so it inherits nothing from @requires on the
+        // model. A guard registered after the static handler would never run.
+        const { mountPipelineConsole, requireAuthenticatedUser } = require('../../lib/pipeline-console-bootstrap')
+        const app = fakeApp()
+        mountPipelineConsole(app, options)
+
+        const firstMount = app.mounts[0]
+        expect(firstMount.handlers).toContain(requireAuthenticatedUser)
+        expect(firstMount.static).toBeUndefined()
+    })
+
+    it('rejects an anonymous caller and asks for credentials', () => {
+        const { requireAuthenticatedUser } = require('../../lib/pipeline-console-bootstrap')
+        const headers = {}
+        let status
+        const res = {
+            status: (code) => { status = code; return res },
+            set: (name, value) => { headers[name] = value; return res },
+            end: () => {},
+        }
+        let nexted = false
+        requireAuthenticatedUser({}, res, () => { nexted = true })
+
+        expect(nexted).toBe(false)
+        expect(status).toBe(401)
+        expect(headers['WWW-Authenticate']).toContain('Basic')
     })
 
     it('reports when the app cannot serve static folders', () => {

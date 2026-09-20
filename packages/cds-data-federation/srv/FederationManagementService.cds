@@ -10,6 +10,14 @@
  * `cds-data-pipeline` and `cds-caching`, and this service points at them
  * instead of copying them.
  */
+/**
+ * Requires an authenticated user by default: this describes which remote
+ * systems the app talks to, which entities it projects and how it renames and
+ * scopes them, which is not public information. Override for a stricter role:
+ *
+ *     annotate FederationManagementService with @requires: 'FederationAdmin';
+ */
+@requires: 'authenticated-user'
 service FederationManagementService @(path: '/federation') {
 
     @readonly

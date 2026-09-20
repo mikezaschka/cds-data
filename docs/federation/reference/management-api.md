@@ -1,4 +1,4 @@
-# Management API
+# Management API and Console
 
 An inventory of everything the plugin federates, served at `/federation`. One row per
 `@federation.*` entity, addressed by the consumption view's fully qualified name, so a
@@ -15,17 +15,53 @@ replication, and the `cds-caching` dashboard shows cache metrics — but a plain
 "cds": {
   "requires": {
     "data-federation": {
-      "management": { "reuse": { "api": true } }
+      "management": { "reuse": { "api": true, "console": true } }
     }
   }
 }
 ```
+
+`api` serves the OData service at `/federation`; `console` adds the UI at
+`/federation-console`. Either can be used alone — the console needs the API, so switch
+both on to use it.
 
 Or import the model yourself, for a project-owned setup — but not both:
 
 ```cds
 using from 'cds-data-federation/management.cds';
 ```
+
+Both require an authenticated user. The service carries `@requires:
+'authenticated-user'`, and the console route carries an express guard, because static
+files sit outside CAP's service adapters and inherit nothing from the model. Tighten it
+with a role of your own:
+
+```cds
+annotate FederationManagementService with @requires: 'FederationAdmin';
+```
+
+## The Console
+
+`/federation-console` is a UI5 app, inventory-led: the landing view is one row per
+federated entity, and health appears where data exists.
+
+- **Federated entities** — every `@federation.*` entity with its strategy, cache, source,
+  traits and backing pipeline. Searchable by entity or source service, filterable by
+  strategy.
+- **Detail** — the resolved annotation (projected columns, renames, static scope, cache
+  tag), request/error/latency tiles when [metrics](#delegate-metrics) are on, the actions
+  this entity's strategy supports, and links out to `/pipeline` or the caching dashboard
+  for anything deeper.
+- **Landscape** — remote services on one side, consumption views on the other, one line
+  per entity, with strategy and cache on each node. Unlike the Pipeline Console's graph
+  this covers delegates and caches too, since those have no pipeline to draw.
+
+It deliberately stops short of a run table, a cache-key browser and a config-layer diff:
+those live in the consoles that own them, and the detail page links to them.
+
+The UI5 runtime is the active long-term maintenance release, loaded from the SAP CDN.
+Override it with `management.ui5Url` — an http(s) URL or an absolute path — to serve UI5
+from your own host.
 
 ## What it serves
 

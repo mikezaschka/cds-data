@@ -1,0 +1,104 @@
+<mvc:View
+    controllerName="federation.console.controller.Detail"
+    xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:form="sap.ui.layout.form">
+    <Page id="detailPage" title="{detail>/name}" showNavButton="true" navButtonPress=".onNavBack"
+          class="sapUiResponsiveContentPadding" busy="{detail>/busy}">
+        <content>
+            <ObjectHeader title="{detail>/name}" responsive="true" intro="{detail>/entity}">
+                <statuses>
+                    <ObjectStatus text="{detail>/strategy}" state="{= ${detail>/strategy} === 'replicate' ? 'Success' : 'Information' }" />
+                    <ObjectStatus text="{= ${path: 'detail>/cacheStrategy', targetType: 'any'} ? ${path: 'detail>/cacheStrategy', targetType: 'any'} + ' cache' : 'no cache' }"
+                                  state="{= ${path: 'detail>/cacheStrategy', targetType: 'any'} ? 'Warning' : 'None' }" />
+                    <ObjectStatus text="{= ${path: 'detail>/writable', targetType: 'any'} ? ${detail>/writeVerbs} : 'read-only' }"
+                                  state="{= ${detail>/writable} ? 'Warning' : 'None' }" />
+                </statuses>
+            </ObjectHeader>
+
+            <!-- Actions: only the ones this entity's strategy supports. -->
+            <Toolbar>
+                <Title text="{i18n>actions}" level="H3" />
+                <ToolbarSpacer />
+                <Button text="{i18n>actionRefreshReplica}" type="Emphasized" press=".onRefreshReplica"
+                        visible="{= ${path: 'detail>/strategy', targetType: 'any'} === 'replicate' }" />
+                <Button text="{i18n>actionRefreshSnapshot}" type="Emphasized" press=".onRefreshEntityCache"
+                        visible="{= ${path: 'detail>/cacheStrategy', targetType: 'any'} === 'entity' }" />
+                <Button text="{i18n>actionInvalidate}" type="Emphasized" press=".onInvalidate"
+                        visible="{= ${path: 'detail>/cacheStrategy', targetType: 'any'} === 'response' }" />
+                <Text text="{i18n>noActions}" visible="{detail>/noActions}" />
+            </Toolbar>
+
+            <Panel headerText="{i18n>sectionRuntime}" expandable="true" expanded="true" class="sapUiSmallMarginTop">
+                <!-- Degradation is a state, not an error: say which flag is off. -->
+                <MessageStrip text="{detail>/pipelineDetailUnavailable}" type="Information" showIcon="true"
+                              visible="{= !!${path: 'detail>/pipelineDetailUnavailable', targetType: 'any'} }" class="sapUiSmallMarginBottom" />
+                <MessageStrip text="{detail>/cacheDetailUnavailable}" type="Information" showIcon="true"
+                              visible="{= !!${path: 'detail>/cacheDetailUnavailable', targetType: 'any'} }" class="sapUiSmallMarginBottom" />
+                <MessageStrip text="{i18n>metricsOff}" type="Information" showIcon="true"
+                              visible="{detail>/metricsUnavailable}" class="sapUiSmallMarginBottom" />
+
+                <HBox wrap="Wrap" visible="{detail>/hasMetrics}">
+                    <GenericTile class="sapUiTinyMargin" header="{i18n>tileRequests}" frameType="OneByHalf" press="">
+                        <TileContent><NumericContent value="{detail>/metrics/requests}" withMargin="false" /></TileContent>
+                    </GenericTile>
+                    <GenericTile class="sapUiTinyMargin" header="{i18n>tileErrors}" frameType="OneByHalf">
+                        <TileContent><NumericContent value="{detail>/metrics/errors}" withMargin="false"
+                                     valueColor="{= ${path: 'detail>/metrics/errors', targetType: 'any'} > 0 ? 'Error' : 'Good' }" /></TileContent>
+                    </GenericTile>
+                    <GenericTile class="sapUiTinyMargin" header="{i18n>tileAvgLatency}" frameType="OneByHalf">
+                        <TileContent><NumericContent value="{detail>/metrics/avgLatency}" scale="ms" withMargin="false" /></TileContent>
+                    </GenericTile>
+                    <GenericTile class="sapUiTinyMargin" header="{i18n>tileWrites}" frameType="OneByHalf"
+                                 visible="{detail>/writable}">
+                        <TileContent><NumericContent value="{detail>/metrics/writes}" withMargin="false" /></TileContent>
+                    </GenericTile>
+                </HBox>
+
+                <VBox class="sapUiSmallMarginTop">
+                    <Link text="{i18n>linkPipeline}" href="{detail>/pipelineDetail}" target="_blank"
+                          visible="{= !!${path: 'detail>/pipelineDetail', targetType: 'any'} }" />
+                    <Link text="{i18n>linkCache}" href="{detail>/cacheDetail}" target="_blank"
+                          visible="{= !!${path: 'detail>/cacheDetail', targetType: 'any'} }" />
+                </VBox>
+            </Panel>
+
+            <Panel headerText="{i18n>sectionConfig}" expandable="true" expanded="true">
+                <form:SimpleForm layout="ResponsiveGridLayout" editable="false" columnsM="2" columnsL="2">
+                    <Label text="{i18n>fieldSourceService}" />
+                    <Text text="{detail>/sourceService}" />
+                    <Label text="{i18n>fieldSourceEntity}" />
+                    <Text text="{detail>/sourceEntity}" />
+                    <Label text="{i18n>fieldService}" />
+                    <Text text="{detail>/service}" />
+                    <Label text="{i18n>fieldPipeline}" />
+                    <Text text="{= ${detail>/pipeline} || '–' }" class="fedWrap" />
+                    <Label text="{i18n>fieldProjection}" />
+                    <Text text="{detail>/projectionLabel}" class="fedWrap" />
+                    <Label text="{i18n>fieldScope}" />
+                    <Text text="{= ${path: 'detail>/scoped', targetType: 'any'} ? ${i18n>scopeYes} : ${i18n>scopeNo} }" />
+                    <Label text="{i18n>fieldCacheTag}" />
+                    <Text text="{= ${detail>/cacheTag} || '–' }" class="fedCode" />
+                </form:SimpleForm>
+            </Panel>
+
+            <Panel headerText="{i18n>sectionRenames}" expandable="true" expanded="false"
+                   visible="{= ${path: 'detail>/renames', targetType: 'any'}.length > 0 }">
+                <Table items="{detail>/renames}">
+                    <columns>
+                        <Column><Text text="{i18n>colLocal}" /></Column>
+                        <Column><Text text="{i18n>colRemote}" /></Column>
+                    </columns>
+                    <items>
+                        <ColumnListItem>
+                            <cells>
+                                <Text text="{detail>local}" class="fedCode" />
+                                <Text text="{detail>remote}" class="fedCode" />
+                            </cells>
+                        </ColumnListItem>
+                    </items>
+                </Table>
+            </Panel>
+        </content>
+    </Page>
+</mvc:View>

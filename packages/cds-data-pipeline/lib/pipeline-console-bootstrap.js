@@ -81,11 +81,54 @@ function createIndexHandler(consolePath, ui5Url) {
 function mountPipelineConsole(app, { consolePath, ui5Url }) {
     if (!app || typeof app.serve !== 'function') return false
     const serveIndex = createIndexHandler(consolePath, ui5Url)
+    // CAP's request middlewares first: they populate `cds.context.user`, which
+    // the guard depends on. Without them the guard rejects every caller.
+    app.use('/pipeline-console', ...capRequestMiddlewares(), requireAuthenticatedUser)
+    app.use('/pipeline-console', redirectToDirectory('/pipeline-console'))
     app.use('/pipeline-console', (req, res, next) =>
         req.path === '/' || req.path === '/index.html' ? serveIndex(req, res, next) : next(),
     )
     app.serve('/pipeline-console').from('cds-data-pipeline', 'app/pipeline-console')
     return true
+}
+
+/**
+ * Redirect `/mount` to `/mount/`, the way a static file server does for a
+ * directory. The index page declares its resource root relatively (`"./"`), so
+ * without the trailing slash the browser resolves modules against the server
+ * root and asks for `/Component.js`, which 404s. The CDS index page links to
+ * the mount without a slash.
+ *
+ * @param {string} mount the path this console is mounted at
+ */
+function redirectToDirectory(mount) {
+    return (req, res, next) => {
+        if (req.path !== '/') return next()
+        const [pathname, query] = req.originalUrl.split('?')
+        if (pathname.endsWith('/')) return next()
+        res.redirect(302, `${mount}/${query ? `?${query}` : ''}`)
+    }
+}
+
+/**
+ * The console is static files served outside CAP's service adapters, so it
+ * inherits nothing from `@requires` on the model. Guarding the management
+ * service alone would leave this route open.
+ */
+function requireAuthenticatedUser(req, res, next) {
+    const cds = require('@sap/cds')
+    const user = cds.context?.user
+    if (user?.is?.('authenticated-user')) return next()
+    res.status(401).set('WWW-Authenticate', 'Basic realm="cds-data-pipeline"').end()
+}
+
+/**
+ * CAP's own request middlewares (context, trace, auth, model), flattened so
+ * they can be spread into `app.use()`.
+ */
+function capRequestMiddlewares() {
+    const cds = require('@sap/cds')
+    return (cds.middlewares?.before ?? []).flat().filter(Boolean)
 }
 
 module.exports = {
@@ -96,4 +139,7 @@ module.exports = {
     renderIndexHtml,
     createIndexHandler,
     mountPipelineConsole,
+    requireAuthenticatedUser,
+    capRequestMiddlewares,
+    redirectToDirectory,
 }

@@ -1,0 +1,9 @@
+<mvc:View
+    controllerName="federation.console.controller.App"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:mvc="sap.ui.core.mvc"
+    displayBlock="true"
+    height="100%">
+    <f:FlexibleColumnLayout id="fcl" layout="{ui>/layout}" backgroundDesign="Solid" />
+</mvc:View>

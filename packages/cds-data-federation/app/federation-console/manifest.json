@@ -1,0 +1,86 @@
+{
+  "_version": "1.59.0",
+  "sap.app": {
+    "id": "federation.console",
+    "type": "application",
+    "title": "Federation Console",
+    "description": "What this application federates, and how",
+    "applicationVersion": { "version": "1.0.0" },
+    "dataSources": {
+      "federation": {
+        "uri": "/federation/",
+        "type": "OData",
+        "settings": { "odataVersion": "4.0" }
+      }
+    }
+  },
+  "sap.ui": {
+    "technology": "UI5",
+    "deviceTypes": { "desktop": true, "tablet": true, "phone": true }
+  },
+  "sap.ui5": {
+    "rootView": {
+      "viewName": "federation.console.view.App",
+      "type": "XML",
+      "async": true,
+      "id": "app"
+    },
+    "dependencies": {
+      "minUI5Version": "1.148.0",
+      "libs": {
+        "sap.m": {},
+        "sap.f": {},
+        "sap.ui.core": {},
+        "sap.ui.layout": {},
+        "sap.suite.ui.commons": {}
+      }
+    },
+    "models": {
+      "i18n": {
+        "type": "sap.ui.model.resource.ResourceModel",
+        "settings": { "bundleName": "federation.console.i18n.i18n", "supportedLocales": [""], "fallbackLocale": "" }
+      },
+      "": {
+        "dataSource": "federation",
+        "preload": true,
+        "settings": { "synchronizationMode": "None", "operationMode": "Server", "autoExpandSelect": false, "groupId": "$direct" }
+      },
+      "ui": { "type": "sap.ui.model.json.JSONModel" }
+    },
+    "resources": { "css": [ { "uri": "css/style.css" } ] },
+    "routing": {
+      "config": {
+        "routerClass": "sap.f.routing.Router",
+        "viewType": "XML",
+        "viewPath": "federation.console.view",
+        "controlId": "fcl",
+        "transition": "slide",
+        "async": true
+      },
+      "routes": [
+        {
+          "pattern": "",
+          "name": "list",
+          "target": [ "list" ]
+        },
+        {
+          "pattern": "entity/{entity}",
+          "name": "detail",
+          "target": [ "list", "detail" ]
+        }
+      ],
+      "targets": {
+        "list": {
+          "viewId": "list",
+          "viewName": "List",
+          "controlAggregation": "beginColumnPages"
+        },
+        "detail": {
+          "viewId": "detail",
+          "viewName": "Detail",
+          "controlAggregation": "midColumnPages"
+        }
+      }
+    }
+  }
+}

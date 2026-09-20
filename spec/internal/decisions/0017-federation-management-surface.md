@@ -1,6 +1,6 @@
 # ADR 0017 — A federation management surface, built on the other plugins' APIs
 
-Status: Partially implemented — §1 the API is built (`srv/FederationManagementService.{cds,js}`, `srv/federation-registry.js`, `lib/plugin-roots.js`, `management.cds`); §2 the console is specified and unblocked by ADR 0019, not yet built
+Status: Implemented — §1 the API (`srv/FederationManagementService.{cds,js}`, `srv/federation-registry.js`, `management.cds`) and §2 the console (`app/federation-console/`, `lib/console-bootstrap.js`), both activated through `requires.data-federation.management.reuse.{api,console}`
 Date: 2026-09-20
 Supersedes: —
 Relates to: [ADR 0006 — Per-plugin published surface](0006-per-plugin-published-surface.md), [ADR 0013 — Event-driven pipeline runs](0013-event-driven-pipeline-runs.md), [ADR 0016 — Align service names](0016-align-service-names.md)
@@ -176,7 +176,20 @@ See the handover note in [`../plans/cds-caching-handover.md`](../plans/cds-cachi
 2. **`refreshReplica`, `refreshEntityCache` and `invalidate` are reachable over HTTP and are the only mutations.** Met, all three verified live. An action that does not match the entity's strategy returns 400, an unknown entity 404, and a `POST` to the entity set is rejected as read-only.
 3. **With `management.reuse.api` off, the API still serves configuration and degrades pipeline-derived fields with an explicit reason.** Met, with a correction to the assumption behind it: the *engine* (`cds.connect.to('data-pipeline')`) is reachable regardless of that flag, which only governs whether the OData management service is served. So the pipeline **name** still resolves, and what degrades is the **link** — `pipelineDetail` is null and `pipelineDetailUnavailable` names the flag to set. Same for `cacheDetail` when the `cds-caching` API is off.
 4. **No federation entity persists run statistics or cache metrics.** Met. `FederatedEntities` is `@cds.persistence.skip` and built per request from the compiled model; a unit test asserts the forbidden fields are absent.
-5. Console criteria — not applicable yet; §2 is still gated.
+5. **If a console ships: no filterable run table, no key browser, every detail affordance links into the owning plugin's console.** Met. The detail page carries the resolved annotation, metric tiles, the three actions and links to `/pipeline` and the caching API; nothing more.
+
+### Implementation notes for the console
+
+**Authorization was missing from §1 and is now on both surfaces of both plugins.** `/federation` was anonymous as first built, and so was `/pipeline` — `cds-caching` was the only plugin in the suite guarding its API *and* its dashboard. Both cds-data services now carry `@requires: 'authenticated-user'`, and both console routes carry an express guard, because static files sit outside CAP's service adapters and inherit nothing from the model. The guard must be preceded by `cds.middlewares.before` or `cds.context.user` is unset and it rejects everyone — which is exactly what happened on the first attempt.
+
+**Four UI5 mistakes worth recording, all found by running it rather than reading it:**
+
+- **Expression bindings coerce each reference to the target property's type first.** `visible="{= !!${cacheStrategy} }"` throws `FormatException: response is not a valid boolean` because the string is converted before the expression runs. The fix is `${path: 'cacheStrategy', targetType: 'any'}`. Worse than the exception: a *boolean* referenced inside a string-targeted expression becomes `"false"`, which is truthy, so `{= ${writable} ? a : b }` silently always took the first branch.
+- **The height chain needs UI5's own UIArea div.** Copying the Pipeline Console's CSS was not enough: measured `container 860 → #container-uiarea 0 → view 0 → FCL 0`. The DOM was complete and the page looked blank.
+- **`networkgraph` refuses to render a node naming a group that does not exist** — `Inconsistent model: Node belonging to a nonexistent group with key remote` — and paints only its toolbar. The graph needs a parent with an explicit pixel height as well; a CSS class on the control yields a 10px canvas.
+- **The V4 model needs a bound action's *qualified* name** (`FederationManagementService.invalidate(...)`). CAP accepts the short form over HTTP, so the integration tests passed while the button failed.
+
+**`createIndexHandler` caches the rendered index page for the process lifetime**, so editing `index.html` needs a restart. Same in the Pipeline Console.
 
 Tests: `test/integration/management-api/management-api.test.js` (17 cases) and `test/unit/management-rows.test.js` (13). The unit tests run without a served app deliberately: in a fixture the pipeline's model is always present, which would hide the degradation branches that matter most.
 

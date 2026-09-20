@@ -1,5 +1,13 @@
 using { plugin.data_pipeline as pipeline } from '../db/index.cds';
 
+/**
+ * Requires an authenticated user by default: this exposes every pipeline's
+ * configuration and run history, and lets a caller trigger runs, pause
+ * schedules and inspect source data. Override for a stricter role:
+ *
+ *     annotate DataPipelineManagementService with @requires: 'PipelineAdmin';
+ */
+@requires: 'authenticated-user'
 service DataPipelineManagementService @(path: '/pipeline') {
 
     @readonly

@@ -1,0 +1,75 @@
+<mvc:View
+    controllerName="federation.console.controller.List"
+    xmlns="sap.m"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns:graph="sap.suite.ui.commons.networkgraph">
+    <Page id="listPage" title="{i18n>appTitle}" class="sapUiResponsiveContentPadding">
+        <headerContent>
+            <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
+        </headerContent>
+        <content>
+            <IconTabBar id="tabs" expanded="true" selectedKey="{ui>/selectedTab}" select=".onTabSelect" class="sapUiResponsiveContentPadding">
+                <items>
+                    <IconTabFilter key="entities" text="{i18n>tabEntities}" icon="sap-icon://tree">
+                        <Toolbar>
+                            <SearchField width="18rem" search=".onSearch" placeholder="{i18n>searchPlaceholder}" />
+                            <ToolbarSpacer />
+                            <SegmentedButton selectedKey="{ui>/strategyFilter}" selectionChange=".onFilterStrategy">
+                                <items>
+                                    <SegmentedButtonItem key="all" text="{i18n>filterAll}" />
+                                    <SegmentedButtonItem key="delegate" text="{i18n>filterDelegate}" />
+                                    <SegmentedButtonItem key="replicate" text="{i18n>filterReplicate}" />
+                                </items>
+                            </SegmentedButton>
+                        </Toolbar>
+                        <Table id="entityTable" items="{/FederatedEntities}" mode="SingleSelectMaster"
+                               selectionChange=".onSelectionChange" growing="true" growingThreshold="50">
+                            <columns>
+                                <Column><Text text="{i18n>colEntity}" /></Column>
+                                <Column><Text text="{i18n>colStrategy}" /></Column>
+                                <Column minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>colSource}" /></Column>
+                                <Column minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>colTraits}" /></Column>
+                                <Column minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>colBackedBy}" /></Column>
+                            </columns>
+                            <items>
+                                <ColumnListItem type="Navigation">
+                                    <cells>
+                                        <VBox>
+                                            <Text text="{name}" class="sapMTextBold" />
+                                            <Text text="{entity}" class="sapUiTinyText fedWrap" />
+                                        </VBox>
+                                        <VBox>
+                                            <ObjectStatus text="{strategy}" state="{= ${strategy} === 'replicate' ? 'Success' : 'Information' }" />
+                                            <ObjectStatus text="{= ${path: 'cacheStrategy', targetType: 'any'} ? ${path: 'cacheStrategy', targetType: 'any'} + ' cache' : '' }"
+                                                          visible="{= !!${path: 'cacheStrategy', targetType: 'any'} }" state="Warning" />
+                                        </VBox>
+                                        <VBox>
+                                            <Text text="{sourceEntity}" />
+                                            <Text text="{sourceService}" class="sapUiTinyText fedWrap" />
+                                        </VBox>
+                                        <HBox>
+                                            <ObjectStatus text="{i18n>traitWritable}" state="Warning" visible="{writable}" class="sapUiTinyMarginEnd" />
+                                            <ObjectStatus text="{i18n>traitScoped}" state="Information" visible="{scoped}" class="sapUiTinyMarginEnd" />
+                                            <ObjectStatus text="{i18n>traitReadOnly}" state="None" visible="{= !${writable} }" />
+                                        </HBox>
+                                        <Text text="{= ${pipeline} || '–' }" class="fedWrap" />
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
+                    </IconTabFilter>
+                    <IconTabFilter key="overview" text="{i18n>tabOverview}" icon="sap-icon://org-chart">
+                        <MessageStrip text="{i18n>graphEmpty}" type="Information" showIcon="true"
+                                      visible="{= !${ui>/landscapeReady} }" class="sapUiSmallMarginBottom" />
+                        <!-- The graph needs a parent with an explicit pixel height: given
+                             only a CSS class it renders its toolbar over a 10px canvas. -->
+                        <VBox width="100%" height="800px">
+                            <graph:Graph id="landscapeGraph" orientation="LeftRight" enableWheelZoom="true"
+                                         visible="{ui>/landscapeReady}" />
+                        </VBox>
+                    </IconTabFilter>
+                </items>
+            </IconTabBar>
+        </content>
+    </Page>
+</mvc:View>

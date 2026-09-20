@@ -22,6 +22,8 @@ describe('Federation management API (ADR 0017)', () => {
     // Several cases here assert a rejection, so status codes must come back as
     // values rather than thrown errors.
     axios.defaults.validateStatus = () => true
+    // The management API requires an authenticated user by design.
+    axios.defaults.auth = { username: 'alice', password: '' }
 
     afterAll(async () => {
         await stopProvider()
@@ -38,6 +40,15 @@ describe('Federation management API (ADR 0017)', () => {
             // requires.data-federation.management.reuse.api in the fixture.
             const { status } = await GET('/federation/FederatedEntities')
             expect(status).to.equal(200)
+        })
+
+        it('refuses an anonymous caller', async () => {
+            // This describes which remote systems the app talks to and how it
+            // renames and scopes them, so it is not public. @requires:
+            // 'authenticated-user' on the service; the console route carries an
+            // express guard for the same reason.
+            const { status } = await axios.get('/federation/FederatedEntities', { auth: null })
+            expect(status).to.equal(401)
         })
 
         it('lists every annotated entity, addressed by consumption-view FQN', async () => {
