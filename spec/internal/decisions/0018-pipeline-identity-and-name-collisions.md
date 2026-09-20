@@ -1,6 +1,6 @@
 # ADR 0018 — Pipeline identity: keep short names, add a stable address
 
-Status: Proposed
+Status: Implemented (`Pipelines.entityFullName` in `db/index.cds`; `_composeCollisionMessage` and `pipelineForEntity` in `DataPipelineService`; registration metadata passed by all three producers)
 Date: 2026-09-20
 Supersedes: —
 Relates to: [ADR 0012 — Multi-source fan-in](0012-multi-source-into-one-entity.md), [ADR 0017 — Federation management surface](0017-federation-management-surface.md)
@@ -110,9 +110,30 @@ This requires the registering plugin to pass its own identity and the source FQN
 - Federation and materialization both pass the new metadata, so the cross-plugin case produces a message naming both plugins.
 - The entity-cache rename in §2 is optional and deferrable; it is a console readability fix, not a correctness one. It *is* a name change to an existing pipeline, so it carries the same migration caveat as §1 and should ship with a release note if taken.
 
-## Acceptance criteria (when implemented)
+## Acceptance criteria — all met
 
-1. Two annotated views with the same last segment, in different namespaces, still fail at startup — with a message naming both FQNs, both producers, and the `name` option.
-2. `Pipelines.entityFullName` is populated for every pipeline derived from a `@federation.*` or `@materialize.*` annotation, and empty for hand-written `addPipeline` calls that do not supply it.
-3. No existing pipeline name changes as a result of this ADR alone.
-4. A pipeline can be resolved by FQN without the caller knowing its name.
+1. **Two annotated views with the same last segment still fail at startup, with a message naming both FQNs, both producers, and the `name` option.** Reproduced by adding a second `@federation.replicate` view named `Flights` under `probe.other` to the xtravels demo:
+
+   ```
+   [cds-data-federation] - Failed to bind @federation.replicate configs: Error: Pipeline name 'Flights' is claimed twice:
+     - sap.capire.xflights.Flights   (@federation.replicate)
+     - probe.other.Flights   (@federation.replicate)
+   Pipeline names are the last segment of the entity name and are shared across all cds-data plugins. Set an explicit name on one of them, e.g. @federation.replicate: { name: '...' }
+   ```
+
+2. **`entityFullName` is populated for annotation-derived pipelines and empty otherwise.** Live in the xtravels demo:
+
+   | `name` | `entityFullName` |
+   |---|---|
+   | `Customers` | `sap.capire.s4.Customers` |
+   | `Flights` | `sap.capire.xflights.Flights` |
+   | `Supplements` | `sap.capire.xflights.Supplements` |
+   | `data-federation-cache:…SnapshotFlights` | `sap.capire.travels.showcase.FederationShowcaseService.SnapshotFlights` |
+
+3. **No pipeline name changed.** The entity-cache rename contemplated in §2 was not taken; it stays optional and deferred.
+
+4. **A pipeline resolves by FQN without its name** — `pipelineForEntity(entityFullName)`, covered for the case where name and entity deliberately diverge via the `name` option.
+
+Both fallback branches of the message are covered too: when either side was registered directly through `addPipeline` without metadata, the message stays the plain `Pipeline configuration 'X' already exists`, because there is nothing more specific to say and inventing detail would be worse.
+
+Tests: `packages/cds-data-pipeline/test/unit/pipeline-identity.test.js` (10 cases) and two cases in `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js`, the latter falsified by removing the registration metadata.

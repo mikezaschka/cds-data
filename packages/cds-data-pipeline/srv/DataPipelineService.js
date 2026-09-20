@@ -154,7 +154,7 @@ class DataPipelineService extends cds.Service {
         this._validateConfig(config)
         const { name } = config
         if (this.pipelines.has(name)) {
-            throw new Error(`Pipeline configuration '${name}' already exists`)
+            throw new Error(this._composeCollisionMessage(name, config))
         }
 
         const internalConfig = this._normalizeConfig(config)
@@ -1384,6 +1384,59 @@ class DataPipelineService extends cds.Service {
      * Delta config is built only when `mode === 'delta'`. Query-shape
      * pipelines also default `refresh: 'full'`.
      */
+    /**
+     * ADR 0018 — a duplicate name is almost always two annotated views whose
+     * last segment matches, registered from different namespaces or even
+     * different plugins. Name both sides and the way out, rather than the bare
+     * fact that something already exists.
+     *
+     * @param {string} name the contested pipeline name
+     * @param {object} incoming the config that lost the race
+     */
+    _composeCollisionMessage(name, incoming) {
+        const held = this.pipelines.get(name)
+        const describe = (entity, producer) => {
+            if (!entity && !producer) return null
+            return `  - ${entity || '(registered directly)'}${producer ? `   (${producer})` : ''}`
+        }
+        const lines = [
+            describe(held?.entityFullName, held?.producer),
+            describe(incoming.entityFullName, incoming.producer),
+        ].filter(Boolean)
+
+        if (lines.length < 2) {
+            // At least one side came through addPipeline without registration
+            // metadata, so there is nothing more specific to say.
+            return `Pipeline configuration '${name}' already exists`
+        }
+
+        const hint = incoming.producer && incoming.producer.startsWith('@')
+            ? `Set an explicit name on one of them, e.g. ${incoming.producer}: { name: '...' }`
+            : `Set an explicit 'name' on one of them.`
+
+        return (
+            `Pipeline name '${name}' is claimed twice:\n` +
+            `${lines.join('\n')}\n` +
+            `Pipeline names are the last segment of the entity name and are shared across ` +
+            `all cds-data plugins. ${hint}`
+        )
+    }
+
+    /**
+     * ADR 0018 — resolve a pipeline by the consumption view it was derived
+     * from, so callers never need to know its name.
+     *
+     * @param {string} entityFullName fully qualified consumption-view name
+     * @returns {import('./lib/Pipeline')|undefined}
+     */
+    pipelineForEntity(entityFullName) {
+        if (!entityFullName) return undefined
+        for (const pipeline of this.pipelines.values()) {
+            if (pipeline.entityFullName === entityFullName) return pipeline
+        }
+        return undefined
+    }
+
     _normalizeConfig(config) {
         const isQueryShape = !!(config.source && config.source.query)
 
@@ -1421,6 +1474,15 @@ class DataPipelineService extends cds.Service {
                 staticWhere: null,
                 ...(config.viewMapping || {}),
             },
+        }
+
+        // ADR 0018 — registration metadata from annotation plugins. Optional:
+        // a direct addPipeline call supplies neither.
+        if (config.entityFullName != null) {
+            normalized.entityFullName = String(config.entityFullName)
+        }
+        if (config.producer != null) {
+            normalized.producer = String(config.producer)
         }
 
         if (mode === 'delta') {

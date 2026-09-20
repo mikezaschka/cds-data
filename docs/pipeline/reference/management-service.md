@@ -98,6 +98,7 @@ GET /pipeline/Pipelines
 | `overrides` | JSON delta layered on `baseConfig` (persists across restarts). See [Configuration overrides](../guide/concepts/overrides.md). |
 | `schedule` | Human-readable schedule label (for example `every 2 min (spawn)`). |
 | `origin` | Multi-source fan-in origin label. See [Multi-source fan-in](../guide/recipes/multi-source.md). |
+| `entityFullName` | Fully qualified consumption view this pipeline was derived from, for pipelines registered by `@federation.replicate`, `@materialize.snapshot`, or a federation entity cache. Empty for pipelines registered directly through `addPipeline`. `name` stays the identity; this is a stable address that does not change when a pipeline is renamed. |
 | `lastSync` | ISO timestamp of the last successful run (delta watermark for timestamp mode). |
 | `lastKey` | High-watermark key value for `key` delta mode. |
 | `status` | `idle` \| `running` \| `failed`. The concurrency guard flips this to `running`; parallel trigger attempts are rejected. |

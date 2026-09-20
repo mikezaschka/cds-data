@@ -62,6 +62,11 @@ entity Pipelines {
         target         : LargeString; // JSON serialized target config
         mode           : ReplicationMode;
         origin         : String(100); // ADR 0012: label stamped into target.source for multi-source fan-in
+        // ADR 0018: the consumption view this pipeline was derived from, for
+        // pipelines registered by an annotation plugin. `name` stays the short,
+        // readable identity; this is the stable address a consumer resolves by.
+        // Empty for pipelines registered directly through addPipeline.
+        entityFullName : String(255);
         schedule       : String(200); // human-readable internal schedule for management UI
         // Runtime overrides (persisted across restarts; re-applied after addPipeline).
         // `enabled` gates scheduled ticks only — manual start/execute still runs.

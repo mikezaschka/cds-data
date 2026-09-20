@@ -81,6 +81,27 @@ describe('Replicate binding (@federation.replicate → pipeline)', () => {
         expect(entity.elements.name).to.be.undefined
     })
 
+    it('binding: records the consumption view each pipeline came from (ADR 0018)', async () => {
+        const rows = await SELECT.from('plugin_data_pipeline_Pipelines')
+        const byName = Object.fromEntries(rows.map(r => [r.name, r.entityFullName]))
+
+        // The short name is the identity; the FQN is the address.
+        expect(byName['ReplicatedCustomers']).to.equal('consumer.ReplicatedCustomers')
+        expect(byName['ReplicatedProducts']).to.equal('consumer.ReplicatedProducts')
+        // The entity cache qualifies its own name already, but still carries
+        // the address so every strategy resolves the same way.
+        expect(byName['data-federation-cache:consumer.EntityCachedCustomers'])
+            .to.equal('consumer.EntityCachedCustomers')
+    })
+
+    it('binding: a pipeline resolves by consumption view, not only by name (ADR 0018)', async () => {
+        const pipelines = await cds.connect.to('data-pipeline')
+        const found = pipelines.pipelineForEntity('consumer.ReplicatedCustomers')
+        expect(found, 'no pipeline resolved for consumer.ReplicatedCustomers').to.exist
+        expect(found.name).to.equal('ReplicatedCustomers')
+        expect(pipelines.pipelineForEntity('consumer.NotFederated')).to.be.undefined
+    })
+
     it('[4.4.1] binding: replicate defaults to full mode without delta config', async () => {
         const row = await SELECT.one.from('plugin_data_pipeline_Pipelines').where({ name: 'ReplicatedCustomers' })
         expect(row).to.exist

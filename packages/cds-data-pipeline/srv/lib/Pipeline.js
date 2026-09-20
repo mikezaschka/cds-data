@@ -79,6 +79,12 @@ class Pipeline {
         this.origin = (this.baseConfig.source && this.baseConfig.source.origin) || null
         this.hasSourceAspect = this._targetHasSourceAspect()
 
+        // ADR 0018 — the consumption view this pipeline came from, and which
+        // annotation registered it. `name` remains the identity; these are the
+        // stable address and the provenance. Null for direct addPipeline calls.
+        this.entityFullName = this.baseConfig.entityFullName || null
+        this.producer = this.baseConfig.producer || null
+
         await this._ensureTracker()
         LOG._info && LOG.info(`Initialized pipeline: ${this.name}`)
     }
@@ -681,6 +687,7 @@ class Pipeline {
                     target: JSON.stringify(this.baseConfig.target, this._safeReplacer),
                     mode: eff.mode || this.baseConfig.mode,
                     origin: this.origin || null,
+                    entityFullName: this.entityFullName || null,
                     schedule: formatScheduleLabel(eff.schedule),
                     enabled,
                     baseConfig: baseJson,
@@ -707,6 +714,9 @@ class Pipeline {
                 }
                 if (this.origin && existing.origin !== this.origin) {
                     patch.origin = this.origin
+                }
+                if (this.entityFullName && existing.entityFullName !== this.entityFullName) {
+                    patch.entityFullName = this.entityFullName
                 }
                 await UPDATE(PIPELINES).set(patch).where({ name: this.name })
             }

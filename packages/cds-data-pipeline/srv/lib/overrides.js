@@ -50,6 +50,10 @@ const SERIALIZABLE_BASE_KEYS = [
     'viewMapping',
     'refresh',
     'preload',
+    // ADR 0018 — registration provenance, so the stored baseConfig shows which
+    // consumption view and which annotation a pipeline came from.
+    'entityFullName',
+    'producer',
 ]
 
 /**

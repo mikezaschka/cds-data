@@ -35,6 +35,10 @@ async function bindReplicateConfigs(configs) {
         const pipelineName = config.options.name || config.entityName
         await pipelineService.addPipeline({
             name: pipelineName,
+            // ADR 0018: stable address + provenance. `name` stays the short,
+            // readable identity and is unchanged by this.
+            entityFullName: config.entityFullName,
+            producer: '@federation.replicate',
             description:
                 config.options.description ||
                 `Federation replication of '${config.sourceService}.${config.sourceEntity}' into '${config.entityFullName}'`,

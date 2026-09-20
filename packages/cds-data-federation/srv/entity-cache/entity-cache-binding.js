@@ -126,6 +126,11 @@ async function registerOneEntityCachePipeline(dataPipelineSrv, cfg, svcName, per
 
     await dataPipelineSrv.addPipeline({
         name: pip,
+        // ADR 0018: this producer already fully qualifies its *name*, so it
+        // cannot collide — but it still carries the address so a consumer
+        // resolves every strategy the same way.
+        entityFullName: cfg.entityFullName,
+        producer: '@federation.delegate (entity cache)',
         description: `Federation entity-cache for '${cfg.entityFullName}'`,
         source: {
             service: cfg.sourceService,

@@ -62,7 +62,7 @@ entity Orders as projection on remote.Orders { ... };
 
 | Option | Type | Description |
 |---|---|---|
-| `name` | string | Pipeline name shown in the management API / monitor. Defaults to the entity name. |
+| `name` | string | Pipeline name shown in the management API / monitor. Defaults to the entity name — the **last segment**, so `sap.capire.xflights.Flights` registers as `Flights`. Names are shared across every cds-data plugin, so two views whose last segment matches claim the same name and the app refuses to start; the error names both entities. Set this on one of them to resolve it. The pipeline is addressable by its full entity name regardless (`Pipelines.entityFullName`). |
 | `description` | string | Human-readable pipeline description shown in the management API / monitor. Defaults to `Federation replication of '<source>' into '<target>'`. |
 | `mode` | `'full'` \| `'delta'` | Default `'full'`. Set `'delta'` for incremental sync. |
 | `schedule` | number (ms) | Interval for `cds.spawn`. Omit for manual-only mode. |

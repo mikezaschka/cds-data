@@ -29,6 +29,9 @@ async function bindMaterializeConfigs(configs) {
 
         await pipelineService.addPipeline({
             name: config.options.name || config.entityName,
+            // ADR 0018: stable address + provenance.
+            entityFullName: config.entityFullName,
+            producer: '@materialize.snapshot',
             source: {
                 kind: 'cqn',
                 service: config.sourceService,
