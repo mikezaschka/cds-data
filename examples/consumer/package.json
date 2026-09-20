@@ -13,7 +13,7 @@
     "express": "^4",
     "cds-data-federation": "*",
     "cds-data-pipeline": "*",
-    "cds-caching": "^1",
+    "cds-caching": "^3",
     "@sap-cloud-sdk/http-client": "^4",
     "@sap-cloud-sdk/resilience": "^4"
   },

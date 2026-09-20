@@ -67,7 +67,7 @@
     "@sap-cloud-sdk/resilience": "^4.6.0",
     "@sap/cds": "^10",
     "axios": "^1.15.0",
-    "cds-caching": "^1.3.0",
+    "cds-caching": "^3",
     "eslint": "^10",
     "express": "^4",
     "husky": "^9.0.11",

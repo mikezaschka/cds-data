@@ -33,7 +33,7 @@
   "peerDependencies": {
     "@cap-js/sqlite": ">=2",
     "@sap/cds": ">=9",
-    "cds-caching": ">=1",
+    "cds-caching": ">=3",
     "cds-data-pipeline": ">=0.4.0"
   },
   "peerDependenciesMeta": {
@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1",
-    "cds-caching": "^1.3.0",
+    "cds-caching": "^3",
     "cds-data-pipeline": "*",
     "vitest": "^4"
   },

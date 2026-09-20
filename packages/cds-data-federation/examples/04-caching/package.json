@@ -10,7 +10,7 @@
     "@sap-cloud-sdk/http-client": "^4",
     "@sap-cloud-sdk/resilience": "^4",
     "@sap/cds": ">=9",
-    "cds-caching": "^1.3.0",
+    "cds-caching": "^3",
     "cds-data-federation": "*",
     "cds-data-pipeline": "*",
     "express": "^4"
