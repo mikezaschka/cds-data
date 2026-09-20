@@ -30,7 +30,9 @@ See [`spec/reference/requirements.md`](./requirements.md) for the requirement de
 | 4.6.2 | Implemented | 2 |
 | 4.6.3 | Implemented | 6 |
 | 4.7.1 | Implemented | 2 |
+| 4.7.4 | Implemented | 1 |
 | 4.8.2 | Implemented | 1 |
+| 4.10.1 | Implemented | 1 |
 | 4.13.7 | Implemented | 5 |
 | 4.13.8 | Implemented | 3 |
 | 4.13.9 | Implemented | 6 |
@@ -220,11 +222,23 @@ Status: **Implemented**
 - `packages/cds-data-pipeline/test/integration/lifecycle.test.js` — [4.7.1] R18: before MAP can filter sourceRecords
 - `packages/cds-data-pipeline/test/integration/lifecycle.test.js` — [4.7.1] R19: after MAP can enrich targetRecords
 
+### 4.7.4
+
+Status: **Implemented**
+
+- `packages/cds-data-federation/test/integration/replicate-binding/replicate-binding.test.js` — [4.7.4] binding: replication freshness advances on every sync
+
 ### 4.8.2
 
 Status: **Implemented**
 
 - `packages/cds-data-pipeline/test/integration/management-service.test.js` — [4.8.2] R16: POST /pipeline/execute executes synchronously
+
+### 4.10.1
+
+Status: **Implemented**
+
+- `packages/cds-data-pipeline/test/unit/transientDbError.test.js` — [4.10.1] retries HANA 1034 once then succeeds
 
 ### 4.13.7
 
@@ -296,11 +310,9 @@ These rows are marked `Implemented` but no test carries the `[<id>]` prefix. Eit
 - 4.6.5 — Implemented
 - 4.7.2 — Implemented
 - 4.7.3 — Implemented (via hooks)
-- 4.7.4 — Implemented
 - 4.8.1 — Implemented
 - 4.8.4 — Implemented
 - 4.9.1 — Implemented
-- 4.10.1 — Implemented
 - 4.10.3 — Implemented
 - 4.10.6 — Implemented
 - 4.11.1 — Implemented
