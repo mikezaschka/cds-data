@@ -96,6 +96,7 @@ service ConsumerService {
     entity Reviews            as projection on consumer.Reviews;
     entity Bookmarks          as projection on consumer.Bookmarks;
     entity LightBookmarks     as projection on consumer.LightBookmarks;
+    entity PagedBookmarks     as projection on consumer.PagedBookmarks;
     entity AddressNotes       as projection on consumer.AddressNotes;
     entity ProductCategories  as projection on consumer.ProductCategories;
     entity InventoryReports   as projection on consumer.InventoryReports;

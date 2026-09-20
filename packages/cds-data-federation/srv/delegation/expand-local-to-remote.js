@@ -1,6 +1,7 @@
 const cds = require('@sap/cds')
 const { resolveRemoteNavigationFilters } = require('./remote-navigation-filters')
 const { rewriteRemoteToLocalNavigation } = require('./cross-service-navigation')
+const { runPagedRemoteQuery } = require('./paged-remote-query')
 const {
     buildInnerColumns,
     localFieldName,
@@ -258,7 +259,7 @@ async function rewriteRemoteLambdas(where, fedAssocByName) {
             q.where(translated)
         }
 
-        const results = await remote.run(q)
+        const results = await runPagedRemoteQuery(remote, q)
         const matchedKeys = [...new Set(results.map(r => r[remoteFKColumn]).filter(v => v != null))]
 
         const localField = assoc.onJoin.localField
@@ -392,7 +393,7 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
             if (innerColumns.length > 0) q.columns(innerColumns)
             if (expandWhere) q.SELECT.where.push('and', ...expandWhere)
             if (expandOrderBy) q.SELECT.orderBy = expandOrderBy
-            const results = await remote.run(q)
+            const results = await runPagedRemoteQuery(remote, q)
             allResults.push(...results)
         }
     } else {
@@ -416,7 +417,7 @@ async function resolveFederatedExpand(records, expandItem, assoc, viewMappingReg
             if (innerColumns.length > 0) q.columns(innerColumns)
             if (expandWhere) q.SELECT.where.push('and', ...expandWhere)
             if (expandOrderBy) q.SELECT.orderBy = expandOrderBy
-            const results = await remote.run(q)
+            const results = await runPagedRemoteQuery(remote, q)
             allResults.push(...results)
         }
     }
@@ -522,7 +523,7 @@ async function resolveFederatedToManyExpand(records, expandItem, assoc, viewMapp
         if (innerColumns.length > 0) q.columns(innerColumns)
         if (expandWhere) q.SELECT.where.push('and', ...expandWhere)
         if (expandOrderBy) q.SELECT.orderBy = expandOrderBy
-        const results = await remote.run(q)
+        const results = await runPagedRemoteQuery(remote, q)
         allResults.push(...results)
     }
 

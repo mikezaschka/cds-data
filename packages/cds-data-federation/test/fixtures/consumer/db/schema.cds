@@ -33,6 +33,16 @@ entity InventoryReports {
         createdAt : Timestamp;
 }
 
+// Local entity whose association points at a *capped* remote (PagedCustomers
+// answers at most 2 rows per request). Cross-service expand batch-fetches the
+// remote side, so without paging four bookmarks silently come back with two of
+// their customers missing.
+entity PagedBookmarks {
+    key ID       : UUID;
+        customer : Association to PagedCustomers;
+        label    : String(100);
+}
+
 entity LightBookmarks {
     key ID       : UUID;
         customer : Association to CustomersLight;
