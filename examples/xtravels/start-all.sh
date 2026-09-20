@@ -51,7 +51,7 @@ echo "[xtravels] Starting HotelsService on :$HOTELS_PORT ..."
 pids+=($!)
 
 echo "[xtravels] Starting mocked S/4 Business Partner API on :$S4_PORT ..."
-(cd "$SCRIPT_DIR/s4" && npx cds mock API_BUSINESS_PARTNER --port $S4_PORT 2>&1 | prefix s4) &
+(cd "$SCRIPT_DIR/xtravels/test/providers/s4" && npx cds mock API_BUSINESS_PARTNER --port $S4_PORT 2>&1 | prefix s4) &
 pids+=($!)
 
 # The consumer preloads all replicas on boot, so give the providers a head start.
@@ -74,7 +74,7 @@ echo "  Pipeline API:         http://localhost:$XTRAVELS_PORT/pipeline/Pipelines
 echo "  Showcase (delegate):  http://localhost:$XTRAVELS_PORT/showcase/"
 echo "  xflights:             http://localhost:$XFLIGHTS_PORT/odata/v4/flights/Flights"
 echo "  HotelsService:        http://localhost:$HOTELS_PORT/odata/v4/hotels/Hotels"
-echo "  S/4 mock:             http://localhost:$S4_PORT/odata/v4/business-partner/A_BusinessPartner"
+echo "  S/4 mock:             http://localhost:$S4_PORT/odata/v4/api-business-partner/A_BusinessPartner (V2 at /odata/v2/...)"
 echo ""
 echo "[xtravels] .http walkthrough: examples/xtravels/requests.http"
 echo "[xtravels] Ctrl+C to stop everything."

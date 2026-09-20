@@ -59,7 +59,7 @@ npm run examples:start:xtravels
 | http://localhost:4005/travels/webapp/index.html | xtravels Fiori app (`alice` / `admin`) |
 | http://localhost:4005/pipeline-console/ | Pipeline Console: the three replicate pipelines, runs, schedules |
 | http://localhost:4005/pipeline/Pipelines | Management OData API |
-| http://localhost:4005/showcase/ | Federation showcase: `Airlines` (plain delegate), `Airports` (delegate + response cache), `Hotels` / `HotelBookings` (read-only vs write-through), and `LiveFlights` / `SnapshotFlights` / `CachedFlights` — one remote entity under four strategies |
+| http://localhost:4005/showcase/ | Federation showcase: `Airlines` (plain delegate), `Airports` (delegate + response cache), `Hotels` / `HotelBookings` (read-only vs write-through), `Organizations` (S/4, renames + scope), and `LiveFlights` / `SnapshotFlights` / `CachedFlights` — one remote entity under four strategies |
 | http://localhost:4006 | xflights (flight master data provider) |
 | http://localhost:4008 | `HotelsService`, xtravels' bundled microservice, served over OData |
 | http://localhost:4009 | S/4 Business Partner API, mocked from `s4/srv/external/data/*.csv` |
@@ -111,6 +111,25 @@ also be opted into individually) and forwards each write to the hotels
 microservice synchronously — the row lives only there, and the caller gets the
 remote's answer, including its errors. Writes are deliberately not outboxed: a
 queue would break the request/response contract the client is waiting on.
+
+### Scoped views over S/4
+
+`Organizations` delegates the S/4 Business Partner API and scopes it to
+companies with `where BusinessPartnerCategory == '2'`, the mirror image of the
+replicated `Customers`, which scopes the same remote entity to persons. Renames
+(`BusinessPartner as ID`) and the scope are applied on every request, over both
+OData V4 and V2.
+
+That scope is a plugin feature, not a CAP one: CAP's docs list `where`
+conditions as unsupported on projections over remote services. The app's own
+value help shows what that means — `srv/travel-service/service.js` forwards the
+query by hand with `s4.run(req.query)`, and the view's `where` is silently lost,
+so companies come back there while both annotated views exclude them. The demo
+asserts that contrast rather than describing it.
+
+The shipped S/4 sample data contains no companies at all, so the app's own
+provider (`xtravels/test/providers/s4`) seeds four — otherwise a scoped view
+would be indistinguishable from a broken filter.
 
 Worth knowing: a write-through is exactly as strict as the remote. Booking a
 hotel ID that does not exist succeeds, because the remote enforces no foreign

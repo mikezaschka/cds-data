@@ -5,9 +5,9 @@
  *
  *   xflights           HCQL + OData  — flights, supplements, airlines, airports
  *   HotelsService      OData         — xtravels' bundled late-cut microservice
- *   S/4 BusinessPartner OData V4/V2  — mocked from the @capire/s4 package's CSVs.
- *                                      V2 is what xtravels' [production] profile
- *                                      binds for a real S/4 system.
+ *   S/4 BusinessPartner OData V4/V2  — the app's own provider, mocked from the
+ *                                      @capire/s4 package's CSVs. V2 is what
+ *                                      xtravels' [production] profile binds.
  *
  * xtravels itself lives in a git submodule (examples/xtravels/xtravels). When it
  * is not initialised, `isXtravelsAvailable()` is false and suites skip themselves
@@ -24,8 +24,7 @@ const EXAMPLES_DIR = path.join(__dirname, '../../../../examples/xtravels')
 const XTRAVELS_DIR = path.join(EXAMPLES_DIR, 'xtravels')
 const XFLIGHTS_DIR = path.join(EXAMPLES_DIR, 'xflights')
 const HOTELS_DIR = path.join(XTRAVELS_DIR, 'test/providers/hotels')
-const S4_DIR = path.join(EXAMPLES_DIR, 's4')
-const S4_V2_DIR = path.join(XTRAVELS_DIR, 'test/providers/s4-v2')
+const S4_PROVIDER_DIR = path.join(XTRAVELS_DIR, 'test/providers/s4')
 
 /** The submodule is present only after `git submodule update --init`. */
 function isXtravelsAvailable() {
@@ -126,10 +125,9 @@ async function startXtravelsProviders({ s4Protocol = 'v4' } = {}) {
     const [flights, hotels, s4] = await Promise.all([getFreePort(), getFreePort(), getFreePort()])
     ports = { flights, hotels, s4 }
 
-    // The V2 launcher lives in the app repo so its own suites can use it too.
-    const s4Server = s4Protocol === 'v2'
-        ? startServer('s4-v2', S4_V2_DIR, ['cds', 'mock', 'API_BUSINESS_PARTNER'], s4)
-        : startServer('s4', S4_DIR, ['cds', 'mock', 'API_BUSINESS_PARTNER'], s4)
+    // The app repo's own provider serves both protocols and seeds the
+    // organizations the shipped sample data lacks; only the URL differs.
+    const s4Server = startServer('s4', S4_PROVIDER_DIR, ['cds', 'mock', 'API_BUSINESS_PARTNER'], s4)
 
     processes.push(
         ...(await Promise.all([
@@ -144,7 +142,7 @@ async function startXtravelsProviders({ s4Protocol = 'v4' } = {}) {
     requires['sap.capire.hotels.HotelsService'] = remote('odata', `http://localhost:${hotels}/odata/v4/hotels`)
     const s4Binding = s4Protocol === 'v2'
         ? remote('odata-v2', `http://localhost:${s4}/odata/v2/api-business-partner`)
-        : remote('odata', `http://localhost:${s4}/odata/v4/business-partner`)
+        : remote('odata', `http://localhost:${s4}/odata/v4/api-business-partner`)
     requires['sap.capire.s4.business-partner'] = s4Binding
     // The @capire/s4 package maps the logical name onto the imported service.
     requires.API_BUSINESS_PARTNER = s4Binding

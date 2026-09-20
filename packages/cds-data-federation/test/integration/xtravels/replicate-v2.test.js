@@ -24,7 +24,7 @@ describe.skipIf(!isXtravelsAvailable())('xtravels — replicate over OData V2', 
         await stopXtravelsProviders()
     })
 
-    const { POST, expect, axios } = cds.test(XTRAVELS_DIR)
+    const { GET, POST, expect, axios } = cds.test(XTRAVELS_DIR)
     axios.defaults.auth = { username: 'alice', password: 'admin' }
 
     const S4 = 'API_BUSINESS_PARTNER.A_BusinessPartner'
@@ -71,5 +71,21 @@ describe.skipIf(!isXtravelsAvailable())('xtravels — replicate over OData V2', 
             await s4.run(DELETE.from(S4, { BusinessPartner: 'PER321' }))
             await DELETE.from('sap.capire.s4.Customers').where({ ID: { in: ['ORG321', 'PER321'] } })
         }
+    })
+
+    it("delegates Organizations over V2 with renames and a `==` scope", async () => {
+        // The delegate path translates the view's `== '2'` into a V2 $filter,
+        // the mirror image of the replicated Customers' `== '1'`.
+        const s4 = await cds.connect.to('sap.capire.s4.business-partner')
+        const companies = await s4.run(
+            SELECT.from(S4).columns('BusinessPartner').where({ BusinessPartnerCategory: '2' }),
+        )
+        expect(companies.length, 'seeded organizations').to.be.greaterThan(0)
+
+        const { status, data } = await GET`/showcase/Organizations?$orderby=ID`
+        expect(status).to.equal(200)
+        expect(data.value.map(o => o.ID)).to.eql(companies.map(c => c.BusinessPartner).sort())
+        expect(data.value[0]).to.include.keys('ID', 'name')
+        expect(data.value[0]).to.not.have.property('PersonFullName')
     })
 })

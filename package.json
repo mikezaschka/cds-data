@@ -30,7 +30,7 @@
     "examples/sales-intel/workbench",
     "examples/xtravels/xtravels",
     "examples/xtravels/xtravels/test/providers/hotels",
-    "examples/xtravels/xtravels/test/providers/s4-v2",
+    "examples/xtravels/xtravels/test/providers/s4",
     "examples/xtravels/xflights",
     "examples/xtravels/xflights/apis/data-service",
     "examples/xtravels/common",
