@@ -20,6 +20,28 @@ describe('Delegate Strategy', () => {
         await Promise.all([stopProvider(), stopInventoryProvider()])
     })
 
+    describe('Scenario B: server-paged remote', () => {
+
+        it('expands every row even when the remote caps its responses', async () => {
+            // PagedCustomers answers at most 2 rows per request. The batch fetch
+            // asks for four customers in one IN-filter, so without paging two of
+            // the four bookmarks come back with `customer: null`.
+            const { data } = await GET`/odata/v4/consumer/PagedBookmarks?$expand=customer&$orderby=label`
+            expect(data.value).to.have.length(4)
+            const withCustomer = data.value.filter(b => b.customer)
+            expect(withCustomer, 'bookmarks whose customer was resolved').to.have.length(4)
+            expect(data.value.map(b => b.customer.ID).sort()).to.eql(['C001', 'C002', 'C003', 'C004'])
+        })
+
+        it('resolves a navigation filter against a capped remote', async () => {
+            // The filter resolves the matching remote keys first, and that query
+            // is capped as well: C001, C002 and C004 are unblocked, three keys
+            // out of a two-row page.
+            const { data } = await GET`/odata/v4/consumer/PagedBookmarks?$filter=customer/blocked eq false`
+            expect(data.value.map(b => b.customer_ID).sort()).to.eql(['C001', 'C002', 'C004'])
+        })
+    })
+
     describe('Scenario B: Navigation path $filter (cross-service, V4)', () => {
 
         it('should filter local entity by remote navigation path', async () => {

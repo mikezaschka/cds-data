@@ -1,4 +1,5 @@
 const cds = require('@sap/cds')
+const { runPagedRemoteQuery } = require('./paged-remote-query')
 
 const LOG = cds.log('cds-data-federation')
 
@@ -151,7 +152,7 @@ async function resolveNavCondition(assoc, remoteWhereNodes) {
     LOG.debug(`Resolving remote nav filter on '${assoc.name}' via ${sourceService}.${sourceEntity}`)
     let matchedKeys
     try {
-        const results = await remote.run(q)
+        const results = await runPagedRemoteQuery(remote, q)
         matchedKeys = [...new Set(results.map(r => r[keyDef.remote]).filter(v => v != null))]
     } catch (e) {
         LOG.warn(`Remote navigation filter query failed for '${assoc.name}': ${e.message}`)

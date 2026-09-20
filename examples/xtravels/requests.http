@@ -1,0 +1,42 @@
+### xtravels × cds-data-federation walkthrough
+### Start everything first: npm run examples:start:xtravels
+
+@xtravels = http://localhost:4005
+@xflights = http://localhost:4006
+@hotels = http://localhost:4008
+@auth = Basic alice:admin
+
+### 1. Replicated Flights — served from the local table, including the flattened
+###    airline / origin / destination names from the consumption view
+GET {{xtravels}}/odata/v4/travel/Flights?$top=3
+Authorization: {{auth}}
+
+### 2. Local Travels joined to replicated Customers + Flights (plain SQL joins, no remote calls)
+GET {{xtravels}}/odata/v4/travel/Travels?$top=1&$filter=IsActiveEntity eq true&$expand=Customer,Bookings($expand=Flight($select=airline,origin,destination,free_seats))
+Authorization: {{auth}}
+
+### 3. Pipelines registered from the @federation.replicate annotations
+GET {{xtravels}}/pipeline/Pipelines?$select=name,mode,schedule,enabled
+Authorization: {{auth}}
+
+### 4. Change a flight upstream in xflights (occupied seats + modifiedAt).
+###    Flight dates in the sample data move over time — take an ID/date from step 1.
+POST {{xflights}}/odata/v4/flights/ReserveSeats
+Content-Type: application/json
+
+{ "flight": "SW1537", "date": "2026-08-04", "seats": [1, 2, 3] }
+
+### 5. Run the Flights delta now instead of waiting for the 10-minute schedule
+POST {{xtravels}}/pipeline/execute
+Authorization: {{auth}}
+Content-Type: application/json
+
+{ "name": "Flights" }
+
+### 6. Only the changed row came over — and the local replica reflects it
+GET {{xtravels}}/pipeline/PipelineRuns?$filter=pipeline_name eq 'Flights'&$orderby=startTime desc&$top=3
+Authorization: {{auth}}
+
+###
+GET {{xtravels}}/odata/v4/travel/Flights(ID='SW1537',date=2026-08-04)?$select=free_seats,modifiedAt
+Authorization: {{auth}}

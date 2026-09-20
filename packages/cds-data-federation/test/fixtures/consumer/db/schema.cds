@@ -33,6 +33,16 @@ entity InventoryReports {
         createdAt : Timestamp;
 }
 
+// Local entity whose association points at a *capped* remote (PagedCustomers
+// answers at most 2 rows per request). Cross-service expand batch-fetches the
+// remote side, so without paging four bookmarks silently come back with two of
+// their customers missing.
+entity PagedBookmarks {
+    key ID       : UUID;
+        customer : Association to PagedCustomers;
+        label    : String(100);
+}
+
 entity LightBookmarks {
     key ID       : UUID;
         customer : Association to CustomersLight;
@@ -278,6 +288,13 @@ entity CustomersLight as projection on remote.Customers excluding { email, modif
 // Every READ on ActiveCustomers should automatically add $filter=blocked eq false
 @federation.delegate
 entity ActiveCustomers as projection on remote.Customers where blocked = false;
+
+// PATTERN: where with CXL null-safe equality `==`
+// CAP's cqn2odata maps `=`, `!=`, `<>` but not `==`, so an unrewritten `==`
+// reaches the remote as a literal `=` and OData rejects the $filter.
+// (Seen in SAP's xtravels: `where BusinessPartnerCategory == '1'`.)
+@federation.delegate
+entity ActiveCustomersCxl as projection on remote.Customers where blocked == false;
 
 // PATTERN: where + column restriction + renames
 // Static filter on remote field name + renames. Only Electronics products returned.

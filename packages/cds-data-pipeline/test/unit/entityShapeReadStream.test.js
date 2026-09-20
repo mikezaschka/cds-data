@@ -71,3 +71,37 @@ describe('entityShapeReadStream pagination', () => {
         expect(collected.flat()).toHaveLength(5)
     })
 })
+
+describe('entityShapeReadStream static where', () => {
+    async function firstSelect(kind, staticWhere) {
+        const { entityShapeReadStream } = require('../../srv/adapters/lib/entityShapeReadStream')
+        const queries = []
+        const service = { name: 'Remote', options: { kind }, run: async q => { queries.push(q); return [] } }
+        const config = {
+            source: { entity: 'E', batchSize: 10 },
+            viewMapping: { isWildcard: true, projectedColumns: [], staticWhere },
+            delta: {},
+        }
+        const stream = entityShapeReadStream({ service, config, tracker: {}, buildDeltaFilter: () => ({}) })
+        while (!(await stream.next()).done) { /* drain */ }
+        return queries[0].SELECT // not the query itself: a returned thenable would be executed
+    }
+
+    it("rewrites CXL '==' to '=' for OData remotes (cqn2odata has no '==' mapping)", async () => {
+        const where = [{ ref: ['Category'] }, '==', { val: '1' }]
+        const select = await firstSelect('odata', where)
+        expect(select.where).toEqual([{ ref: ['Category'] }, '=', { val: '1' }])
+        expect(where[1]).toBe('==') // CSN projection stays untouched
+    })
+
+    it("rewrites '==' inside nested xpr for odata-v2 remotes", async () => {
+        const where = [{ xpr: [{ ref: ['A'] }, '==', { val: 1 }] }, 'and', { ref: ['B'] }, '!=', { val: 2 }]
+        const select = await firstSelect('odata-v2', where)
+        expect(select.where).toEqual([{ xpr: [{ ref: ['A'] }, '=', { val: 1 }] }, 'and', { ref: ['B'] }, '!=', { val: 2 }])
+    })
+
+    it("keeps '==' for CQN-native remotes (hcql)", async () => {
+        const select = await firstSelect('hcql', [{ ref: ['Category'] }, '==', { val: '1' }])
+        expect(select.where).toEqual([{ ref: ['Category'] }, '==', { val: '1' }])
+    })
+})

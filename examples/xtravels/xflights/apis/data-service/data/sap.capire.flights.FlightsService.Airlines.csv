@@ -1,0 +1,6 @@
+ID,modifiedAt,name,icon,currency_code
+GA,2026-09-16T03:23:32.104Z,Green Albatros,https://raw.githubusercontent.com/SAP-samples/fiori-elements-opensap/main/week1/images/airlines/Green-Albatross-logo.png,CAD
+FA,2026-09-16T03:23:32.104Z,Fly Africa,https://raw.githubusercontent.com/SAP-samples/fiori-elements-opensap/main/week1/images/airlines/Fly-Africa-logo.png,ZAR
+EA,2026-09-16T03:23:32.104Z,European Airlines,https://raw.githubusercontent.com/SAP-samples/fiori-elements-opensap/main/week1/images/airlines/European-Airlines-logo.png,EUR
+OC,2026-09-16T03:23:32.104Z,Oceania,https://raw.githubusercontent.com/SAP-samples/fiori-elements-opensap/main/week1/images/airlines/Oceania-logo.png,USD
+SW,2026-09-16T03:23:32.104Z,Sunset Wings,https://raw.githubusercontent.com/SAP-samples/fiori-elements-opensap/main/week1/images/airlines/Sunset-Wings-logo.png,USD

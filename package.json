@@ -27,7 +27,14 @@
     "examples/consumer",
     "examples/sales-intel/providers/logistics-service",
     "examples/sales-intel/providers/fx-service",
-    "examples/sales-intel/workbench"
+    "examples/sales-intel/workbench",
+    "examples/xtravels/xtravels",
+    "examples/xtravels/xtravels/test/providers/hotels",
+    "examples/xtravels/xtravels/test/providers/s4",
+    "examples/xtravels/xflights",
+    "examples/xtravels/xflights/apis/data-service",
+    "examples/xtravels/common",
+    "examples/xtravels/s4"
   ],
   "scripts": {
     "test": "npm run test -w cds-data-pipeline && npm run test -w cds-data-federation && npm run test -w cds-data-materialization",
@@ -50,7 +57,8 @@
     "check:requirements": "node scripts/sync-requirements-progress.js --check",
     "check:scenario-naming": "node scripts/check-scenario-naming.js",
     "release:pipeline": "npm run release -w cds-data-pipeline",
-    "release:federation": "npm run release -w cds-data-federation"
+    "release:federation": "npm run release -w cds-data-federation",
+    "examples:start:xtravels": "bash examples/xtravels/start-all.sh"
   },
   "devDependencies": {
     "@cap-js/cds-test": "^1",

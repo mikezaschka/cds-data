@@ -25,7 +25,10 @@ async function fetchEventKeyBatch(service, config, keys) {
         q = q.columns(viewMapping.projectedColumns)
     }
     q = q.where(keys)
-    mergeStaticWhereIntoSelect(q, viewMapping.staticWhere)
+    const kind = service?.options?.kind || service?.kind
+    mergeStaticWhereIntoSelect(q, viewMapping.staticWhere, {
+        odata: kind === 'odata' || kind === 'odata-v2',
+    })
     const res = await service.run(q)
     if (!res) return []
     return Array.isArray(res) ? res : [res]

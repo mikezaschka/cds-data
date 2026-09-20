@@ -91,6 +91,20 @@ describe('Delegate Strategy', () => {
             })
         })
 
+        describe("Where with CXL '==' (ActiveCustomersCxl)", () => {
+            it('should apply the static where written with == to the remote', async () => {
+                const { data } = await GET`/odata/v4/consumer/ActiveCustomersCxl`
+                expect(data.value.length).to.equal(4)
+                expect(data.value.every(c => c.blocked === false)).to.be.true
+            })
+
+            it('should combine a client $filter with a == static where', async () => {
+                const { data } = await GET`/odata/v4/consumer/ActiveCustomersCxl?$filter=country eq 'DE'`
+                expect(data.value.length).to.equal(2)
+                expect(data.value.every(c => c.blocked === false && c.country === 'DE')).to.be.true
+            })
+        })
+
         describe('Where + renames (ElectronicsProducts)', () => {
             it('should only return Electronics products', async () => {
                 const { data } = await GET`/odata/v4/consumer/ElectronicsProducts`

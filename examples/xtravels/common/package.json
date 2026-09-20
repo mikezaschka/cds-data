@@ -1,0 +1,16 @@
+{
+  "name": "@capire/common",
+  "description": "A plugin extending @sap/cds/common, and providing reuse content.",
+  "repository": "https://github.com/capire/common",
+  "version": "2.0.2",
+  "dependencies": {
+    "@sap/cds": "*"
+  },
+  "cds": {
+    "requires": {
+      "@capire/common/data": {
+        "model": "@capire/common"
+      }
+    }
+  }
+}

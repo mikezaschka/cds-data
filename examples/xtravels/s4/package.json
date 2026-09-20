@@ -1,0 +1,21 @@
+{
+  "name": "@capire/s4",
+  "version": "1.1.2",
+  "description": "Pre-built integration package for S/4HANA",
+  "repository": "https://github.com/capire/common",
+  "dependencies": {
+    "@sap/cds": "*"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "*"
+  },
+  "cds": {
+    "requires": {
+      "sap.capire.s4.business-partner": {
+        "service": "API_BUSINESS_PARTNER",
+        "kind": "odata-v2"
+      }
+    }
+  },
+  "license": "Apache-2.0"
+}

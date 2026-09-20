@@ -1,0 +1,83 @@
+
+@odata = http://localhost:4005/odata/v4/flights
+@rest = http://localhost:4005/rest/flights
+@hcql = http://localhost:4005/hcql/flights
+
+@cql = \n Content-Type: text/plain \n\n
+
+
+GET {{odata}}
+###
+
+GET {{odata}}/$metadata
+###
+
+GET {{odata}}/Connections
+###
+
+POST {{odata}}/Flights
+Authorization: Basic alice:
+Content-Type: application/json
+
+{
+  "aircraft": "A380-800",
+  "currency_code": "USD",
+  "date": "2024-06-06",
+  "flight_ID": "TEST001",
+  "maximum_seats": 475,
+  "occupied_seats": 446,
+  "price": "3781.0000"
+}
+###
+
+GET {{rest}}/Connections
+###
+
+GET {{hcql}}/Connections { ID, airline.name, departure.name, destination.name }
+###
+
+GET {{hcql}}/Connections
+Content-Type: text/plain
+
+{
+  ID,
+  airline.name,
+  departure.name,
+  destination.name
+}
+###
+
+GET {{hcql}}/Connections {{cql}} {
+  code,
+  departure.name as ![from],
+  destination.name as ![to],
+  airline.name as ![by],
+}
+###
+
+GET {{hcql}}/Flights
+###
+
+GET {{hcql}}/Flights {{cql}} {
+  connection {
+    code as flight,
+    departure.name as ![from],
+    destination.name as ![to],
+    airline.name as ![by],
+  },
+  price, currency.name as ![currency],
+  flightDate as ![date],
+  freeSeats as ![free seats],
+}
+###
+
+GET {{hcql}}/Flights {{cql}} {
+  connection.code as flight,
+  connection.departure.name as ![from],
+  connection.destination.name as ![to],
+  connection.airline.name as ![by],
+  flightDate as ![date],
+  connection.departureTime as ![departure],
+  connection.arrivalTime as ![arrival],
+}
+###

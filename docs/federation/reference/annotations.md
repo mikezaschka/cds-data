@@ -185,7 +185,13 @@ See [Integration → cds-caching](../integration/caching.md) for tag patterns, c
 
 Remote OData services that enforce a per-request cap below the client's requested `$top` (for example Northwind returns at most 20 rows per request regardless of `$top`) are handled transparently. The delegate handler auto-loops the remote via `$top` / `$skip` until either the client's requested rows are collected or the remote returns an empty batch. `@odata.count` from the first batch is preserved so OData clients still see the correct total.
 
-There is no annotation option to enable or tune this — it is always on for `@federation.delegate` reads. Internal defaults: `pageSize = 1000` (rows per remote request), `maxPages = 1000` (safety cap — about 1M rows maximum per client request).
+There is no annotation option to enable or tune this — it is on for every `@federation.delegate` read against an **OData** remote. Internal defaults: `pageSize = 1000` (rows per remote request), `maxPages = 1000` (safety cap — about 1M rows maximum per client request).
+
+Cross-service `$expand` and navigation filters batch-fetch the remote side with an `IN` filter, and page the same way — a to-many expand over a hundred parent keys can match far more rows than a capping remote returns in one response.
+
+CQN-native remotes (`hcql`, in-process CAP services) are read in a single request instead: they have no per-request cap, and the delegated query keeps naming the local consumption view so that HCQL path-expression flattening keeps working.
+
+On CAP 10.0.x, resolving such a query drops its `limit` and `count`, so the remote returns everything and reports no total. The plugin therefore applies `$top` / `$skip` after the read and derives `$count` itself (fetching it separately only when the remote did apply the window). CAP 10.1.1 forwards both clauses correctly, which makes that compensation inert — it stays for the `>=9` range the plugin supports.
 
 ## Full example
 

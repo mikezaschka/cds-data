@@ -1,0 +1,4 @@
+[submodule "examples/xtravels/xtravels"]
+	path = examples/xtravels/xtravels
+	url = https://github.com/mikezaschka/xtravels.git
+	branch = cds-data-federation-demo

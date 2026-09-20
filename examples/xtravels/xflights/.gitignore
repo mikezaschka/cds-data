@@ -1,0 +1,13 @@
+.DS_Store
+*.sqlite
+*.mtar
+_out
+gen
+node_modules
+# .env
+
+# added by cds
+.cdsrc-private.json
+
+# generated apis
+# apis

@@ -8,8 +8,11 @@ Runnable demos for manual exploration of the monorepo packages. Complementary to
 |---|---|---|
 | **Sales Intelligence Workbench** *(headline)* | [`examples/sales-intel/`](./sales-intel/) | `bash examples/sales-intel/start-all.sh` → http://localhost:4005/launchpage.html |
 | **Movies & Streaming** | [`examples/consumer/`](./consumer/) | `npm run examples:start` → http://localhost:4004/launchpage.html |
+| **SAP xtravels** | [`examples/xtravels/`](./xtravels/) | `npm run examples:start:xtravels` → http://localhost:4005/travels/webapp/index.html |
 
 The Sales Intelligence Workbench fuses Northwind V4 + V2, a local CAP provider, and a local REST provider into a Fiori Elements launchpad that shows delegation, replication, cross-service `$expand`, and cache visibility side-by-side.
+
+The xtravels demo runs SAP's [capire/xtravels](https://github.com/capire/xtravels) reference app (a git submodule of our fork — `git submodule update --init examples/xtravels/xtravels`) unchanged except for its replication. The hand-written `@federated` sync is replaced by `@federation.replicate` annotations on the same consumption views, pulling from xflights (HCQL) and a mocked S/4 Business Partner API (OData).
 
 The Movies demo models a small movies-and-streaming platform: a studio catalog is live-proxied, a hot "trending" list is cached, a legacy V2 licensing system is reshaped with renames, a second provider delivers streaming manifests, and REST-sourced box-office data is replicated into the local database for analytics.
 

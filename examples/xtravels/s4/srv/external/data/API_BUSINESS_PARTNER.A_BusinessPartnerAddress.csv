@@ -1,0 +1,729 @@
+BusinessPartner;AddressID;CityName;Country
+000001;1;Berlin;DE
+000002;1;Los Angeles;US
+000003;1;Birmingham;GB
+000004;1;Toulouse;FR
+000005;1;Ottawa;CA
+000006;1;Sydney;AU
+000007;1;Shanghai;CN
+000008;1;Bangalore;IN
+000009;1;Haifa;IL
+000010;1;Mandalay;MM
+000011;1;Berlin;DE
+000012;1;Los Angeles;US
+000013;1;Glasgow;GB
+000014;1;Strasbourg;FR
+000015;1;Vancouver;CA
+000016;1;Sydney;AU
+000017;1;Shanghai;CN
+000018;1;Bangalore;IN
+000019;1;Tel Aviv;IL
+000020;1;Mandalay;MM
+000021;1;Berlin;DE
+000022;1;Los Angeles;US
+000023;1;Bristol;GB
+000024;1;Lyon;FR
+000025;1;Toronto;CA
+000026;1;Sydney;AU
+000027;1;Shanghai;CN
+000028;1;Bangalore;IN
+000029;1;Jerusalem;IL
+000030;1;Mandalay;MM
+000031;1;Berlin;DE
+000032;1;Los Angeles;US
+000033;1;London;GB
+000034;1;Nantes;FR
+000035;1;Ottawa;CA
+000036;1;Sydney;AU
+000037;1;Shanghai;CN
+000038;1;Bangalore;IN
+000039;1;Haifa;IL
+000040;1;Mandalay;MM
+000041;1;Berlin;DE
+000042;1;Los Angeles;US
+000043;1;Birmingham;GB
+000044;1;Marseille;FR
+000045;1;Vancouver;CA
+000046;1;Sydney;AU
+000047;1;Shanghai;CN
+000048;1;Bangalore;IN
+000049;1;Tel Aviv;IL
+000050;1;Mandalay;MM
+000051;1;Berlin;DE
+000052;1;Los Angeles;US
+000053;1;Glasgow;GB
+000054;1;Nice;FR
+000055;1;Toronto;CA
+000056;1;Sydney;AU
+000057;1;Shanghai;CN
+000058;1;Bangalore;IN
+000059;1;Jerusalem;IL
+000060;1;Mandalay;MM
+000061;1;Berlin;DE
+000062;1;Los Angeles;US
+000063;1;Bristol;GB
+000064;1;Paris;FR
+000065;1;Ottawa;CA
+000066;1;Sydney;AU
+000067;1;Shanghai;CN
+000068;1;Bangalore;IN
+000069;1;Haifa;IL
+000070;1;Mandalay;MM
+000071;1;Berlin;DE
+000072;1;Los Angeles;US
+000073;1;London;GB
+000074;1;Toulouse;FR
+000075;1;Vancouver;CA
+000076;1;Sydney;AU
+000077;1;Shanghai;CN
+000078;1;Bangalore;IN
+000079;1;Tel Aviv;IL
+000080;1;Mandalay;MM
+000081;1;Berlin;DE
+000082;1;Los Angeles;US
+000083;1;Birmingham;GB
+000084;1;Strasbourg;FR
+000085;1;Toronto;CA
+000086;1;Sydney;AU
+000087;1;Shanghai;CN
+000088;1;Bangalore;IN
+000089;1;Jerusalem;IL
+000090;1;Mandalay;MM
+000091;1;Berlin;DE
+000092;1;Los Angeles;US
+000093;1;Glasgow;GB
+000094;1;Lyon;FR
+000095;1;Ottawa;CA
+000096;1;Sydney;AU
+000097;1;Shanghai;CN
+000098;1;Bangalore;IN
+000099;1;Haifa;IL
+000100;1;Mandalay;MM
+000101;1;Berlin;DE
+000102;1;Los Angeles;US
+000103;1;Bristol;GB
+000104;1;Nantes;FR
+000105;1;Vancouver;CA
+000106;1;Sydney;AU
+000107;1;Shanghai;CN
+000108;1;Bangalore;IN
+000109;1;Tel Aviv;IL
+000110;1;Mandalay;MM
+000111;1;Berlin;DE
+000112;1;Los Angeles;US
+000113;1;London;GB
+000114;1;Marseille;FR
+000115;1;Toronto;CA
+000116;1;Sydney;AU
+000117;1;Shanghai;CN
+000118;1;Bangalore;IN
+000119;1;Jerusalem;IL
+000120;1;Mandalay;MM
+000121;1;Berlin;DE
+000122;1;Los Angeles;US
+000123;1;Birmingham;GB
+000124;1;Nice;FR
+000125;1;Ottawa;CA
+000126;1;Sydney;AU
+000127;1;Shanghai;CN
+000128;1;Bangalore;IN
+000129;1;Haifa;IL
+000130;1;Mandalay;MM
+000131;1;Berlin;DE
+000132;1;Los Angeles;US
+000133;1;Glasgow;GB
+000134;1;Paris;FR
+000135;1;Vancouver;CA
+000136;1;Sydney;AU
+000137;1;Shanghai;CN
+000138;1;Bangalore;IN
+000139;1;Tel Aviv;IL
+000140;1;Mandalay;MM
+000141;1;Berlin;DE
+000142;1;Los Angeles;US
+000143;1;Bristol;GB
+000144;1;Toulouse;FR
+000145;1;Toronto;CA
+000146;1;Sydney;AU
+000147;1;Shanghai;CN
+000148;1;Bangalore;IN
+000149;1;Jerusalem;IL
+000150;1;Mandalay;MM
+000151;1;Berlin;DE
+000152;1;Los Angeles;US
+000153;1;London;GB
+000154;1;Strasbourg;FR
+000155;1;Ottawa;CA
+000156;1;Sydney;AU
+000157;1;Shanghai;CN
+000158;1;Bangalore;IN
+000159;1;Haifa;IL
+000160;1;Mandalay;MM
+000161;1;Berlin;DE
+000162;1;Los Angeles;US
+000163;1;Birmingham;GB
+000164;1;Lyon;FR
+000165;1;Vancouver;CA
+000166;1;Sydney;AU
+000167;1;Shanghai;CN
+000168;1;Bangalore;IN
+000169;1;Tel Aviv;IL
+000170;1;Mandalay;MM
+000171;1;Berlin;DE
+000172;1;Los Angeles;US
+000173;1;Glasgow;GB
+000174;1;Nantes;FR
+000175;1;Toronto;CA
+000176;1;Sydney;AU
+000177;1;Shanghai;CN
+000178;1;Bangalore;IN
+000179;1;Jerusalem;IL
+000180;1;Mandalay;MM
+000181;1;Berlin;DE
+000182;1;Los Angeles;US
+000183;1;Bristol;GB
+000184;1;Marseille;FR
+000185;1;Ottawa;CA
+000186;1;Sydney;AU
+000187;1;Shanghai;CN
+000188;1;Bangalore;IN
+000189;1;Haifa;IL
+000190;1;Mandalay;MM
+000191;1;Berlin;DE
+000192;1;Los Angeles;US
+000193;1;London;GB
+000194;1;Nice;FR
+000195;1;Vancouver;CA
+000196;1;Sydney;AU
+000197;1;Shanghai;CN
+000198;1;Bangalore;IN
+000199;1;Tel Aviv;IL
+000200;1;Mandalay;MM
+000201;1;Berlin;DE
+000202;1;Los Angeles;US
+000203;1;Birmingham;GB
+000204;1;Paris;FR
+000205;1;Toronto;CA
+000206;1;Sydney;AU
+000207;1;Shanghai;CN
+000208;1;Bangalore;IN
+000209;1;Jerusalem;IL
+000210;1;Mandalay;MM
+000211;1;Berlin;DE
+000212;1;Los Angeles;US
+000213;1;Glasgow;GB
+000214;1;Toulouse;FR
+000215;1;Ottawa;CA
+000216;1;Sydney;AU
+000217;1;Shanghai;CN
+000218;1;Bangalore;IN
+000219;1;Haifa;IL
+000220;1;Mandalay;MM
+000221;1;Berlin;DE
+000222;1;Los Angeles;US
+000223;1;Bristol;GB
+000224;1;Strasbourg;FR
+000225;1;Vancouver;CA
+000226;1;Sydney;AU
+000227;1;Shanghai;CN
+000228;1;Bangalore;IN
+000229;1;Tel Aviv;IL
+000230;1;Mandalay;MM
+000231;1;Berlin;DE
+000232;1;Los Angeles;US
+000233;1;London;GB
+000234;1;Lyon;FR
+000235;1;Toronto;CA
+000236;1;Sydney;AU
+000237;1;Shanghai;CN
+000238;1;Bangalore;IN
+000239;1;Jerusalem;IL
+000240;1;Mandalay;MM
+000241;1;Berlin;DE
+000242;1;Los Angeles;US
+000243;1;Birmingham;GB
+000244;1;Nantes;FR
+000245;1;Ottawa;CA
+000246;1;Sydney;AU
+000247;1;Shanghai;CN
+000248;1;Bangalore;IN
+000249;1;Haifa;IL
+000250;1;Mandalay;MM
+000251;1;Berlin;DE
+000252;1;Los Angeles;US
+000253;1;Glasgow;GB
+000254;1;Marseille;FR
+000255;1;Vancouver;CA
+000256;1;Sydney;AU
+000257;1;Shanghai;CN
+000258;1;Bangalore;IN
+000259;1;Tel Aviv;IL
+000260;1;Mandalay;MM
+000261;1;Berlin;DE
+000262;1;Los Angeles;US
+000263;1;Bristol;GB
+000264;1;Nice;FR
+000265;1;Toronto;CA
+000266;1;Sydney;AU
+000267;1;Shanghai;CN
+000268;1;Bangalore;IN
+000269;1;Jerusalem;IL
+000270;1;Mandalay;MM
+000271;1;Berlin;DE
+000272;1;Los Angeles;US
+000273;1;London;GB
+000274;1;Paris;FR
+000275;1;Ottawa;CA
+000276;1;Sydney;AU
+000277;1;Shanghai;CN
+000278;1;Bangalore;IN
+000279;1;Haifa;IL
+000280;1;Mandalay;MM
+000281;1;Berlin;DE
+000282;1;Los Angeles;US
+000283;1;Birmingham;GB
+000284;1;Toulouse;FR
+000285;1;Vancouver;CA
+000286;1;Sydney;AU
+000287;1;Shanghai;CN
+000288;1;Bangalore;IN
+000289;1;Tel Aviv;IL
+000290;1;Mandalay;MM
+000291;1;Berlin;DE
+000292;1;Los Angeles;US
+000293;1;Glasgow;GB
+000294;1;Strasbourg;FR
+000295;1;Toronto;CA
+000296;1;Sydney;AU
+000297;1;Shanghai;CN
+000298;1;Bangalore;IN
+000299;1;Jerusalem;IL
+000300;1;Mandalay;MM
+000301;1;Berlin;DE
+000302;1;Los Angeles;US
+000303;1;Bristol;GB
+000304;1;Lyon;FR
+000305;1;Ottawa;CA
+000306;1;Sydney;AU
+000307;1;Shanghai;CN
+000308;1;Bangalore;IN
+000309;1;Haifa;IL
+000310;1;Mandalay;MM
+000311;1;Berlin;DE
+000312;1;Los Angeles;US
+000313;1;London;GB
+000314;1;Nantes;FR
+000315;1;Vancouver;CA
+000316;1;Sydney;AU
+000317;1;Shanghai;CN
+000318;1;Bangalore;IN
+000319;1;Tel Aviv;IL
+000320;1;Mandalay;MM
+000321;1;Berlin;DE
+000322;1;Los Angeles;US
+000323;1;Birmingham;GB
+000324;1;Marseille;FR
+000325;1;Toronto;CA
+000326;1;Sydney;AU
+000327;1;Shanghai;CN
+000328;1;Bangalore;IN
+000329;1;Jerusalem;IL
+000330;1;Mandalay;MM
+000331;1;Berlin;DE
+000332;1;Los Angeles;US
+000333;1;Glasgow;GB
+000334;1;Nice;FR
+000335;1;Ottawa;CA
+000336;1;Sydney;AU
+000337;1;Shanghai;CN
+000338;1;Bangalore;IN
+000339;1;Haifa;IL
+000340;1;Mandalay;MM
+000341;1;Berlin;DE
+000342;1;Los Angeles;US
+000343;1;Bristol;GB
+000344;1;Paris;FR
+000345;1;Vancouver;CA
+000346;1;Sydney;AU
+000347;1;Shanghai;CN
+000348;1;Bangalore;IN
+000349;1;Tel Aviv;IL
+000350;1;Mandalay;MM
+000351;1;Berlin;DE
+000352;1;Los Angeles;US
+000353;1;London;GB
+000354;1;Toulouse;FR
+000355;1;Toronto;CA
+000356;1;Sydney;AU
+000357;1;Shanghai;CN
+000358;1;Bangalore;IN
+000359;1;Jerusalem;IL
+000360;1;Mandalay;MM
+000361;1;Berlin;DE
+000362;1;Los Angeles;US
+000363;1;Birmingham;GB
+000364;1;Strasbourg;FR
+000365;1;Ottawa;CA
+000366;1;Sydney;AU
+000367;1;Shanghai;CN
+000368;1;Bangalore;IN
+000369;1;Haifa;IL
+000370;1;Mandalay;MM
+000371;1;Berlin;DE
+000372;1;Los Angeles;US
+000373;1;Glasgow;GB
+000374;1;Lyon;FR
+000375;1;Vancouver;CA
+000376;1;Sydney;AU
+000377;1;Shanghai;CN
+000378;1;Bangalore;IN
+000379;1;Tel Aviv;IL
+000380;1;Mandalay;MM
+000381;1;Berlin;DE
+000382;1;Los Angeles;US
+000383;1;Bristol;GB
+000384;1;Nantes;FR
+000385;1;Toronto;CA
+000386;1;Sydney;AU
+000387;1;Shanghai;CN
+000388;1;Bangalore;IN
+000389;1;Jerusalem;IL
+000390;1;Mandalay;MM
+000391;1;Berlin;DE
+000392;1;Los Angeles;US
+000393;1;London;GB
+000394;1;Marseille;FR
+000395;1;Ottawa;CA
+000396;1;Sydney;AU
+000397;1;Shanghai;CN
+000398;1;Bangalore;IN
+000399;1;Haifa;IL
+000400;1;Mandalay;MM
+000401;1;Berlin;DE
+000402;1;Los Angeles;US
+000403;1;Birmingham;GB
+000404;1;Nice;FR
+000405;1;Vancouver;CA
+000406;1;Sydney;AU
+000407;1;Shanghai;CN
+000408;1;Bangalore;IN
+000409;1;Tel Aviv;IL
+000410;1;Mandalay;MM
+000411;1;Berlin;DE
+000412;1;Los Angeles;US
+000413;1;Glasgow;GB
+000414;1;Paris;FR
+000415;1;Toronto;CA
+000416;1;Sydney;AU
+000417;1;Shanghai;CN
+000418;1;Bangalore;IN
+000419;1;Jerusalem;IL
+000420;1;Mandalay;MM
+000421;1;Berlin;DE
+000422;1;Los Angeles;US
+000423;1;Bristol;GB
+000424;1;Toulouse;FR
+000425;1;Ottawa;CA
+000426;1;Sydney;AU
+000427;1;Shanghai;CN
+000428;1;Bangalore;IN
+000429;1;Haifa;IL
+000430;1;Karlsruhe;DE
+000431;1;Berlin;DE
+000432;1;Los Angeles;US
+000433;1;London;GB
+000434;1;Strasbourg;FR
+000435;1;Vancouver;CA
+000436;1;Sydney;AU
+000437;1;Shanghai;CN
+000438;1;Bangalore;IN
+000439;1;Tel Aviv;IL
+000440;1;Mandalay;MM
+000441;1;Berlin;DE
+000442;1;Los Angeles;US
+000443;1;Birmingham;GB
+000444;1;Lyon;FR
+000445;1;Toronto;CA
+000446;1;Sydney;AU
+000447;1;Shanghai;CN
+000448;1;Bangalore;IN
+000449;1;Jerusalem;IL
+000450;1;Mandalay;MM
+000451;1;Berlin;DE
+000452;1;Los Angeles;US
+000453;1;Glasgow;GB
+000454;1;Nantes;FR
+000455;1;Ottawa;CA
+000456;1;Sydney;AU
+000457;1;Shanghai;CN
+000458;1;Bangalore;IN
+000459;1;Haifa;IL
+000460;1;Mandalay;MM
+000461;1;Berlin;DE
+000462;1;Los Angeles;US
+000463;1;Bristol;GB
+000464;1;Marseille;FR
+000465;1;Vancouver;CA
+000466;1;Sydney;AU
+000467;1;Shanghai;CN
+000468;1;Bangalore;IN
+000469;1;Tel Aviv;IL
+000470;1;Mandalay;MM
+000471;1;Berlin;DE
+000472;1;Los Angeles;US
+000473;1;London;GB
+000474;1;Nice;FR
+000475;1;Toronto;CA
+000476;1;Sydney;AU
+000477;1;Shanghai;CN
+000478;1;Bangalore;IN
+000479;1;Jerusalem;IL
+000480;1;Mandalay;MM
+000481;1;Berlin;DE
+000482;1;Los Angeles;US
+000483;1;Birmingham;GB
+000484;1;Paris;FR
+000485;1;Ottawa;CA
+000486;1;Sydney;AU
+000487;1;Shanghai;CN
+000488;1;Bangalore;IN
+000489;1;Haifa;IL
+000490;1;Mandalay;MM
+000491;1;Berlin;DE
+000492;1;Los Angeles;US
+000493;1;Glasgow;GB
+000494;1;Toulouse;FR
+000495;1;Vancouver;CA
+000496;1;Sydney;AU
+000497;1;Shanghai;CN
+000498;1;Bangalore;IN
+000499;1;Tel Aviv;IL
+000500;1;Mandalay;MM
+000501;1;Berlin;DE
+000502;1;Los Angeles;US
+000503;1;Bristol;GB
+000504;1;Strasbourg;FR
+000505;1;Toronto;CA
+000506;1;Sydney;AU
+000507;1;Shanghai;CN
+000508;1;Bangalore;IN
+000509;1;Jerusalem;IL
+000510;1;Mandalay;MM
+000511;1;Berlin;DE
+000512;1;Los Angeles;US
+000513;1;London;GB
+000514;1;Lyon;FR
+000515;1;Ottawa;CA
+000516;1;Sydney;AU
+000517;1;Shanghai;CN
+000518;1;Bangalore;IN
+000519;1;Haifa;IL
+000520;1;Mandalay;MM
+000521;1;Berlin;DE
+000522;1;Los Angeles;US
+000523;1;Birmingham;GB
+000524;1;Nantes;FR
+000525;1;Vancouver;CA
+000526;1;Sydney;AU
+000527;1;Shanghai;CN
+000528;1;Bangalore;IN
+000529;1;Tel Aviv;IL
+000530;1;Mandalay;MM
+000531;1;Berlin;DE
+000532;1;Los Angeles;US
+000533;1;Glasgow;GB
+000534;1;Marseille;FR
+000535;1;Toronto;CA
+000536;1;Sydney;AU
+000537;1;Shanghai;CN
+000538;1;Bangalore;IN
+000539;1;Jerusalem;IL
+000540;1;Mandalay;MM
+000541;1;Berlin;DE
+000542;1;Los Angeles;US
+000543;1;Bristol;GB
+000544;1;Nice;FR
+000545;1;Ottawa;CA
+000546;1;Sydney;AU
+000547;1;Shanghai;CN
+000548;1;Bangalore;IN
+000549;1;Haifa;IL
+000550;1;Mandalay;MM
+000551;1;Berlin;DE
+000552;1;Los Angeles;US
+000553;1;London;GB
+000554;1;Paris;FR
+000555;1;Vancouver;CA
+000556;1;Sydney;AU
+000557;1;Shanghai;CN
+000558;1;Bangalore;IN
+000559;1;Tel Aviv;IL
+000560;1;Mandalay;MM
+000561;1;Berlin;DE
+000562;1;Los Angeles;US
+000563;1;Birmingham;GB
+000564;1;Toulouse;FR
+000565;1;Toronto;CA
+000566;1;Sydney;AU
+000567;1;Shanghai;CN
+000568;1;Bangalore;IN
+000569;1;Jerusalem;IL
+000570;1;Mandalay;MM
+000571;1;Berlin;DE
+000572;1;Los Angeles;US
+000573;1;Glasgow;GB
+000574;1;Strasbourg;FR
+000575;1;Ottawa;CA
+000576;1;Sydney;AU
+000577;1;Shanghai;CN
+000578;1;Bangalore;IN
+000579;1;Haifa;IL
+000580;1;Mandalay;MM
+000581;1;Berlin;DE
+000582;1;Los Angeles;US
+000583;1;Bristol;GB
+000584;1;Lyon;FR
+000585;1;Vancouver;CA
+000586;1;Sydney;AU
+000587;1;Shanghai;CN
+000588;1;Bangalore;IN
+000589;1;Tel Aviv;IL
+000590;1;Mandalay;MM
+000591;1;Berlin;DE
+000592;1;Los Angeles;US
+000593;1;London;GB
+000594;1;Nantes;FR
+000595;1;Toronto;CA
+000596;1;Sydney;AU
+000597;1;Shanghai;CN
+000598;1;Bangalore;IN
+000599;1;Jerusalem;IL
+000600;1;Mandalay;MM
+000601;1;Berlin;DE
+000602;1;Los Angeles;US
+000603;1;Birmingham;GB
+000604;1;Marseille;FR
+000605;1;Ottawa;CA
+000606;1;Sydney;AU
+000607;1;Shanghai;CN
+000608;1;Bangalore;IN
+000609;1;Haifa;IL
+000610;1;Mandalay;MM
+000611;1;Berlin;DE
+000612;1;Los Angeles;US
+000613;1;Glasgow;GB
+000614;1;Nice;FR
+000615;1;Vancouver;CA
+000616;1;Sydney;AU
+000617;1;Shanghai;CN
+000618;1;Bangalore;IN
+000619;1;Tel Aviv;IL
+000620;1;Mandalay;MM
+000621;1;Berlin;DE
+000622;1;Los Angeles;US
+000623;1;Bristol;GB
+000624;1;Paris;FR
+000625;1;Toronto;CA
+000626;1;Sydney;AU
+000627;1;Shanghai;CN
+000628;1;Bangalore;IN
+000629;1;Jerusalem;IL
+000630;1;Mandalay;MM
+000631;1;Berlin;DE
+000632;1;Los Angeles;US
+000633;1;London;GB
+000634;1;Toulouse;FR
+000635;1;Ottawa;CA
+000636;1;Sydney;AU
+000637;1;Shanghai;CN
+000638;1;Bangalore;IN
+000639;1;Haifa;IL
+000640;1;Mandalay;MM
+000641;1;Berlin;DE
+000642;1;Los Angeles;US
+000643;1;Birmingham;GB
+000644;1;Strasbourg;FR
+000645;1;Vancouver;CA
+000646;1;Sydney;AU
+000647;1;Shanghai;CN
+000648;1;Bangalore;IN
+000649;1;Tel Aviv;IL
+000650;1;Mandalay;MM
+000651;1;Berlin;DE
+000652;1;Los Angeles;US
+000653;1;Glasgow;GB
+000654;1;Lyon;FR
+000655;1;Toronto;CA
+000656;1;Sydney;AU
+000657;1;Shanghai;CN
+000658;1;Bangalore;IN
+000659;1;Jerusalem;IL
+000660;1;Mandalay;MM
+000661;1;Berlin;DE
+000662;1;Los Angeles;US
+000663;1;Bristol;GB
+000664;1;Nantes;FR
+000665;1;Ottawa;CA
+000666;1;Sydney;AU
+000667;1;Shanghai;CN
+000668;1;Bangalore;IN
+000669;1;Haifa;IL
+000670;1;Mandalay;MM
+000671;1;Berlin;DE
+000672;1;Los Angeles;US
+000673;1;London;GB
+000674;1;Marseille;FR
+000675;1;Vancouver;CA
+000676;1;Sydney;AU
+000677;1;Shanghai;CN
+000678;1;Bangalore;IN
+000679;1;Tel Aviv;IL
+000680;1;Mandalay;MM
+000681;1;Berlin;DE
+000682;1;Los Angeles;US
+000683;1;Birmingham;GB
+000684;1;Nice;FR
+000685;1;Toronto;CA
+000686;1;Sydney;AU
+000687;1;Shanghai;CN
+000688;1;Bangalore;IN
+000689;1;Jerusalem;IL
+000690;1;Mandalay;MM
+000691;1;Berlin;DE
+000692;1;Los Angeles;US
+000693;1;Glasgow;GB
+000694;1;Paris;FR
+000695;1;Ottawa;CA
+000696;1;Sydney;AU
+000697;1;Shanghai;CN
+000698;1;Bangalore;IN
+000699;1;Haifa;IL
+000700;1;Mandalay;MM
+000701;1;Berlin;DE
+000702;1;Los Angeles;US
+000703;1;Bristol;GB
+000704;1;Toulouse;FR
+000705;1;Vancouver;CA
+000706;1;Sydney;AU
+000707;1;Shanghai;CN
+000708;1;Bangalore;IN
+000709;1;Tel Aviv;IL
+000710;1;Mandalay;MM
+000711;1;Berlin;DE
+000712;1;Los Angeles;US
+000713;1;London;GB
+000714;1;Strasbourg;FR
+000715;1;Toronto;CA
+000716;1;Sydney;AU
+000717;1;Shanghai;CN
+000718;1;Bangalore;IN
+000719;1;Jerusalem;IL
+000720;1;Mandalay;MM
+000721;1;Berlin;DE
+000722;1;Los Angeles;US
+000723;1;Birmingham;GB
+000724;1;Lyon;FR
+000725;1;Ottawa;CA
+000726;1;Sydney;AU
+000727;1;Shanghai;CN
+000728;1;Bangalore;IN
