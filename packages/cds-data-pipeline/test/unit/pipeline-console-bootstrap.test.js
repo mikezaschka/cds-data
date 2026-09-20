@@ -78,3 +78,47 @@ describe('pipeline-console-bootstrap', () => {
         expect(next).not.toHaveBeenCalled()
     })
 })
+
+describe('mountPipelineConsole', () => {
+
+    /**
+     * Mirrors @sap/cds/server.js: `serve(endpoint).from(...)` serves the folder
+     * *and* registers the endpoint in `_app_links`, which is what the index page
+     * lists. Identical in 9.0.2, 9.9.3 and 10.1.1.
+     */
+    const fakeApp = () => {
+        const app = { mounts: [], _app_links: undefined }
+        app.use = (path, handler) => app.mounts.push({ path, handler })
+        app.serve = endpoint => ({
+            from: (pkg, folder) => {
+                app.mounts.push({ path: endpoint, static: `${pkg}/${folder}` })
+                if (!endpoint.endsWith('/webapp')) (app._app_links ??= []).push(endpoint)
+            },
+        })
+        return app
+    }
+
+    const options = { consolePath: '/nonexistent/console', ui5Url: 'https://ui5.sap.com/1.150.0/resources/sap-ui-core.js' }
+
+    it('lists the console exactly once on the index page', () => {
+        const { mountPipelineConsole } = require('../../lib/pipeline-console-bootstrap')
+        const app = fakeApp()
+        expect(mountPipelineConsole(app, options)).toBe(true)
+        expect(app._app_links.filter(l => l === '/pipeline-console')).toHaveLength(1)
+    })
+
+    it('serves the built app and an index handler under the same path', () => {
+        const { mountPipelineConsole } = require('../../lib/pipeline-console-bootstrap')
+        const app = fakeApp()
+        mountPipelineConsole(app, options)
+        const paths = app.mounts.map(m => m.path)
+        expect(paths).toEqual(['/pipeline-console', '/pipeline-console'])
+        expect(app.mounts.find(m => m.static)?.static).toBe('cds-data-pipeline/app/pipeline-console')
+    })
+
+    it('reports when the app cannot serve static folders', () => {
+        const { mountPipelineConsole } = require('../../lib/pipeline-console-bootstrap')
+        expect(mountPipelineConsole({ use: () => {} }, options)).toBe(false)
+        expect(mountPipelineConsole(undefined, options)).toBe(false)
+    })
+})

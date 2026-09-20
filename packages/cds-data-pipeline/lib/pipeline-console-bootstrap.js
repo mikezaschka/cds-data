@@ -64,6 +64,30 @@ function createIndexHandler(consolePath, ui5Url) {
     }
 }
 
+/**
+ * Mounts the Pipeline Console on the bootstrapped express app.
+ *
+ * `app.serve(endpoint).from(...)` serves the folder *and* registers the
+ * endpoint in `app._app_links`, which is what the server's index page lists
+ * under "Web Applications" (@sap/cds/server.js, unchanged since 9.0.2). Pushing
+ * it again here would list the console twice.
+ *
+ * @param {object} app - the express app handed to the `bootstrap` event
+ * @param {object} options
+ * @param {string} options.consolePath - absolute path to the built console app
+ * @param {string} options.ui5Url - UI5 runtime the index page bootstraps from
+ * @returns {boolean} whether the console was mounted
+ */
+function mountPipelineConsole(app, { consolePath, ui5Url }) {
+    if (!app || typeof app.serve !== 'function') return false
+    const serveIndex = createIndexHandler(consolePath, ui5Url)
+    app.use('/pipeline-console', (req, res, next) =>
+        req.path === '/' || req.path === '/index.html' ? serveIndex(req, res, next) : next(),
+    )
+    app.serve('/pipeline-console').from('cds-data-pipeline', 'app/pipeline-console')
+    return true
+}
+
 module.exports = {
     DEFAULT_UI5_VERSION,
     DEFAULT_UI5_URL,
@@ -71,4 +95,5 @@ module.exports = {
     resolveUi5Url,
     renderIndexHtml,
     createIndexHandler,
+    mountPipelineConsole,
 }

@@ -56,23 +56,17 @@ if (reuseConsole) {
                 'Run "npm run build:pipeline-console" in the cds-data-pipeline package before using management.reuse.console.',
         )
     }
-    const { resolveUi5Url, createIndexHandler } = require('./lib/pipeline-console-bootstrap')
+    const { resolveUi5Url, mountPipelineConsole } = require('./lib/pipeline-console-bootstrap')
     const { url: ui5Url, warnings: ui5Warnings } = resolveUi5Url(pipelineEntries)
     for (const message of ui5Warnings) LOG.warn(message)
 
     cds.once('bootstrap', (app) => {
-        if (typeof app.serve !== 'function') {
+        if (!mountPipelineConsole(app, { consolePath, ui5Url })) {
             LOG.warn(
                 'cds-data-pipeline: app.serve is unavailable — export cds.server from server.js to mount Pipeline Console',
             )
             return
         }
-        const serveIndex = createIndexHandler(consolePath, ui5Url)
-        app.use('/pipeline-console', (req, res, next) =>
-            req.path === '/' || req.path === '/index.html' ? serveIndex(req, res, next) : next(),
-        )
-        app.serve('/pipeline-console').from('cds-data-pipeline', 'app/pipeline-console')
-        ;(app._app_links ??= []).push('/pipeline-console')
         LOG.info(`Serving Pipeline Console at /pipeline-console (UI5 from ${ui5Url})`)
     })
 }
