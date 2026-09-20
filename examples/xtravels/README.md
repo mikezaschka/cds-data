@@ -59,7 +59,7 @@ npm run examples:start:xtravels
 | http://localhost:4005/travels/webapp/index.html | xtravels Fiori app (`alice` / `admin`) |
 | http://localhost:4005/pipeline-console/ | Pipeline Console: the three replicate pipelines, runs, schedules |
 | http://localhost:4005/pipeline/Pipelines | Management OData API |
-| http://localhost:4005/showcase/ | Federation showcase: `Airlines` (plain delegate), `Airports` (delegate + response cache), and `LiveFlights` / `SnapshotFlights` / `CachedFlights` — one remote entity under four strategies |
+| http://localhost:4005/showcase/ | Federation showcase: `Airlines` (plain delegate), `Airports` (delegate + response cache), `Hotels` / `HotelBookings` (read-only vs write-through), and `LiveFlights` / `SnapshotFlights` / `CachedFlights` — one remote entity under four strategies |
 | http://localhost:4006 | xflights (flight master data provider) |
 | http://localhost:4008 | `HotelsService`, xtravels' bundled microservice, served over OData |
 | http://localhost:4009 | S/4 Business Partner API, mocked from `s4/srv/external/data/*.csv` |
@@ -101,6 +101,20 @@ Everything follows from one fact: **a delegated query is executed by the remote,
 a replicated one by SQLite.** Joins and aggregation across local data need the
 rows to be *here*, which is what replication buys and what no cache provides —
 a cache store is not part of the app's schema, so it cannot be joined either.
+
+### Writes
+
+Everything above is read-only, which is the default: without write flags the
+plugin enforces `@readonly` and CUD is rejected with 405. `HotelBookings` opts
+in with `@federation.delegate: { writable: true }` (create / update / delete can
+also be opted into individually) and forwards each write to the hotels
+microservice synchronously — the row lives only there, and the caller gets the
+remote's answer, including its errors. Writes are deliberately not outboxed: a
+queue would break the request/response contract the client is waiting on.
+
+Worth knowing: a write-through is exactly as strict as the remote. Booking a
+hotel ID that does not exist succeeds, because the remote enforces no foreign
+key — the plugin adds no validation of its own.
 
 Two sharp edges worth knowing:
 
