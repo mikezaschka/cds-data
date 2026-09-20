@@ -106,6 +106,14 @@ function stopServer(proc) {
     })
 }
 
+// CAP resolves `cds.requires` when it builds cds.env, adding `impl` and
+// `external: true` to anything with credentials. A binding assigned afterwards
+// skips that step, so a service the app also serves locally (xtravels serves
+// HotelsService itself) would silently resolve to the *local* one and never
+// touch the network. Spell the resolved shape out.
+const REMOTE_IMPL = '@sap/cds/srv/remote-service.js'
+const remote = (kind, url) => ({ impl: REMOTE_IMPL, external: true, kind, credentials: { url } })
+
 const processes = []
 let ports = null
 
@@ -132,17 +140,11 @@ async function startXtravelsProviders({ s4Protocol = 'v4' } = {}) {
     )
 
     const requires = (cds.env.requires ||= {})
-    requires['sap.capire.flights.FlightsService'] = {
-        kind: 'hcql',
-        credentials: { url: `http://localhost:${flights}/hcql/flights` },
-    }
-    requires['sap.capire.hotels.HotelsService'] = {
-        kind: 'odata',
-        credentials: { url: `http://localhost:${hotels}/odata/v4/hotels` },
-    }
+    requires['sap.capire.flights.FlightsService'] = remote('hcql', `http://localhost:${flights}/hcql/flights`)
+    requires['sap.capire.hotels.HotelsService'] = remote('odata', `http://localhost:${hotels}/odata/v4/hotels`)
     const s4Binding = s4Protocol === 'v2'
-        ? { kind: 'odata-v2', credentials: { url: `http://localhost:${s4}/odata/v2/api-business-partner` } }
-        : { kind: 'odata', credentials: { url: `http://localhost:${s4}/odata/v4/business-partner` } }
+        ? remote('odata-v2', `http://localhost:${s4}/odata/v2/api-business-partner`)
+        : remote('odata', `http://localhost:${s4}/odata/v4/business-partner`)
     requires['sap.capire.s4.business-partner'] = s4Binding
     // The @capire/s4 package maps the logical name onto the imported service.
     requires.API_BUSINESS_PARTNER = s4Binding

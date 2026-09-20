@@ -27,6 +27,21 @@ describe.skipIf(!isXtravelsAvailable())('xtravels — foundation', () => {
             expect(cds.env.requires['sap.capire.s4.business-partner'].kind).to.equal('odata')
             expect(cds.env.requires['sap.capire.hotels.HotelsService'].kind).to.equal('odata')
         })
+
+        it('connects each of them as a RemoteService, not a local one', async () => {
+            // xtravels serves HotelsService itself, so an incompletely resolved
+            // binding resolves to that local service and the tests below would
+            // pass without a single byte crossing the network. Fail loudly.
+            for (const name of [
+                'sap.capire.flights.FlightsService',
+                'sap.capire.s4.business-partner',
+                'sap.capire.hotels.HotelsService',
+            ]) {
+                const srv = await cds.connect.to(name)
+                expect(srv.constructor.name, name).to.equal('RemoteService')
+                expect(srv.isAppService, name).to.not.be.true
+            }
+        })
     })
 
     describe('@federation.replicate against the running providers', () => {
