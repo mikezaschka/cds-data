@@ -4,7 +4,7 @@
     "tagName": "cds-data-pipeline@${version}",
     "commitMessage": "chore: release cds-data-pipeline@${version}",
     "tagAnnotation": "Release cds-data-pipeline@${version}",
-    "commitsPath": "packages/cds-data-pipeline"
+    "commitsPath": "."
   },
   "github": {
     "release": true
@@ -32,9 +32,8 @@
         ]
       },
       "infile": "CHANGELOG.md",
-      "path": "packages/cds-data-pipeline",
       "gitRawCommitsOpts": {
-        "path": "packages/cds-data-pipeline"
+        "path": "."
       }
     }
   }
