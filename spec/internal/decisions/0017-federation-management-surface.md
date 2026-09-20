@@ -1,6 +1,6 @@
 # ADR 0017 — A federation management surface, built on the other plugins' APIs
 
-Status: Partially implemented — §1 the API is built (`srv/FederationManagementService.{cds,js}`, `srv/federation-registry.js`, `lib/plugin-roots.js`, `management.cds`); §2 the console remains gated on the delegate-instrumentation decision, which is still open
+Status: Partially implemented — §1 the API is built (`srv/FederationManagementService.{cds,js}`, `srv/federation-registry.js`, `lib/plugin-roots.js`, `management.cds`); §2 the console is specified and unblocked by ADR 0019, not yet built
 Date: 2026-09-20
 Supersedes: —
 Relates to: [ADR 0006 — Per-plugin published surface](0006-per-plugin-published-surface.md), [ADR 0013 — Event-driven pipeline runs](0013-event-driven-pipeline-runs.md), [ADR 0016 — Align service names](0016-align-service-names.md)
@@ -35,11 +35,63 @@ A read-mostly OData service projecting the annotation scanner's existing registr
 - `refreshEntityCache(entity)` — the existing public API, over HTTP
 - `invalidate(entity)` — wraps `deleteByTag('federation:<Entity>')`
 
-Activation: `federation.reuse.{api,console}`, matching the convention above.
+Activation: `requires.data-federation.management.reuse.{api,console}`, matching the convention above.
 
 **The identifier is the consumption-view FQN, everywhere.** This is the point of the API: one address for an annotated entity regardless of the strategy it carries, with the pipeline name and cache name exposed as navigation rather than as things a caller must know.
 
-### 2. The console is conditional on instrumenting the delegate path
+### 2. The console — requirements
+
+> **Gate resolved.** The delegate path is being instrumented behind an opt-in flag
+> ([ADR 0019](0019-delegate-instrumentation.md)), so the console is worth building.
+> The original conditional reasoning is kept below, because it is also the
+> specification for how the console must behave when that flag is **off**.
+
+**Job.** Inventory-led, serving both audiences: the list answers "what does this app
+federate, and how", and health plus actions appear per row where runtime data exists.
+An entity with no data shows its configuration and says why, never an empty gauge.
+
+**Landing view.** One row per federated entity, the shape `/federation/FederatedEntities`
+already returns: strategy, cache strategy, source, writable, scoped, pipeline. Sortable
+and filterable by strategy and source service, because "show me everything delegated to
+S/4" is the question that follows the first glance.
+
+**Detail view.** Federation owns a per-entity page carrying:
+
+- the resolved annotation — projected columns, renames, static `where`, write flags, cache settings
+- a last-run summary for replicate and entity-cache rows, read from `/pipeline`
+- a hit ratio for response-cache rows, read from `TagMetrics` filtered to `federation:<Entity>`
+- request, error, latency and write counters from ADR 0019, when that flag is on
+- the three actions: `refreshReplica`, `refreshEntityCache`, `invalidate`
+- deep links out for anything deeper
+
+**The line still holds** (§5 below): no filterable run table, no cache-key browser, no
+config-layer diff. Those exist in the consoles that own them, and the detail page links
+to them.
+
+**Landscape graph.** Rebuilt here, covering every strategy — remote services on one side,
+consumption views on the other, with delegates and caches included, which the pipeline's
+version structurally cannot show. The `/federation` inventory already carries every field
+the graph needs, so this is a rendering job rather than a data one. The Pipeline Console's
+own Overview graph then degrades to pipelines only, resolving the boundary noted under
+Consequences.
+
+**UI5 target: the active long-term maintenance release, 1.148.x** (maintained to Q3/2027).
+Worth stating what that costs, because the three consoles disagree today: `cds-caching`
+pins 1.136, itself an LTS but the older 2505 one, and the Pipeline Console pins 1.150.0,
+which is **not** an LTS at all. Converging on 1.148 therefore moves the Pipeline Console
+*down* one feature release. Doing it is what makes the shared leaf-control library in §6
+possible at all, since a page hosts one UI5 core.
+
+**Degradation is a first-class state, not an error.** With ADR 0019's flag off, delegate
+rows show configuration only. With `management.reuse.api` off, pipeline links are absent
+and say which flag to set. With `cds-caching`'s API off, the same for cache metrics. The
+inventory itself never degrades: it is built from the compiled model, which is always
+there.
+
+<details>
+<summary>The original gating argument, which remains the specification for the flag-off case</summary>
+
+#### The console was conditional on instrumenting the delegate path
 
 Today a plain delegate produces no runtime data: no request count, no error count, no latency. A federation console would therefore render deep links for replicate / entity-cache / response-cache rows, and *static configuration* for plain delegates.
 
@@ -49,6 +101,8 @@ Today a plain delegate produces no runtime data: no request count, no error coun
 **Decision: build the console if and only if the delegate path is instrumented.** Until that is decided, ship the API alone.
 
 If built, the federation console is the **entry point** for federation users, with the Pipeline Console and the caching dashboard as specialist views beneath it. This is permitted by the dependency direction — federation depends on both, neither depends on federation — and it must not be inverted.
+
+</details>
 
 ### 3. Depend on the other plugins' APIs, never on their UIs
 
