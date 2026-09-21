@@ -1,5 +1,3 @@
-const cds = require('@sap/cds')
-
 const AGGREGATE_FUNCS = new Set(['sum', 'count', 'min', 'max', 'avg'])
 
 /**

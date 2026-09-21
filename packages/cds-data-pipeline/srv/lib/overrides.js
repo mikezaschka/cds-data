@@ -421,7 +421,7 @@ function isPathOverridable(path) {
 /**
  * Whether a schedule/enabled hot-apply is needed after an overrides change.
  */
-function needsScheduleRestart(patch, previousOverrides, previousEffective) {
+function needsScheduleRestart(patch) {
     if (!patch) return false
     if ('schedule' in patch || 'enabled' in patch) return true
     // clearing schedule via clearOverrides

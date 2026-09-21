@@ -1,5 +1,5 @@
 const cds = require('@sap/cds')
-const { buildColumnMappingsFromProjection, projectedColumnToSelectArg, projectedColumnToRemoteKey } = require('cds-data-pipeline/srv/lib/columnRefPath')
+const { buildColumnMappingsFromProjection } = require('cds-data-pipeline/srv/lib/columnRefPath')
 
 const LOG = cds.log('cds-data-federation')
 const { injectEntityCacheDefinitions } = require('./entity-cache/cache-schema')

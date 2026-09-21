@@ -380,9 +380,8 @@ function buildLandscapeGraph(pipelines) {
  * @param {import('./Pipeline')} pipeline
  * @param {Map} hookRegistry
  * @param {string} [status]
- * @param {object} [opts]
  */
-function flowMetadataForPipeline(pipeline, hookRegistry, status = 'idle', opts = {}) {
+function flowMetadataForPipeline(pipeline, hookRegistry, status = 'idle') {
     const config = pipeline.config || {}
     const sourceCfg = config.source || {}
     const targetCfg = config.target || {}

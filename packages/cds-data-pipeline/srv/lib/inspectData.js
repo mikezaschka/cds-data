@@ -4,8 +4,6 @@ const { resolveSourceEntityRef } = require('../adapters/lib/entityShapeReadStrea
 const { sourceAdapterRetryOptions } = require('../adapters/lib/sourceAdapterRetryOptions')
 const { auditSensitiveRead } = require('./inspectAudit')
 
-const LOG = cds.log('cds-data-pipeline')
-
 const VALID_OPS = new Set(['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'contains'])
 const DEFAULT_TOP = 50
 const MAX_TOP = 200

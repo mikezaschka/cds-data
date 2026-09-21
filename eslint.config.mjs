@@ -25,6 +25,18 @@ export default [
     },
     ...cds.recommended,
     {
+        // The codebase marks deliberately unused names with a leading
+        // underscore: a caught error that is only logged around, a parameter
+        // kept for a stable signature. Honour that instead of flagging them.
+        rules: {
+            'no-unused-vars': ['warn', {
+                argsIgnorePattern: '^_',
+                varsIgnorePattern: '^_',
+                caughtErrorsIgnorePattern: '^_',
+            }],
+        },
+    },
+    {
         // Vitest exposes its API as globals (`globals: true` in vitest.config).
         // Declare them so lint doesn't flag `vi` and friends as undefined.
         files: ['**/test/**/*.js', '**/*.test.js'],

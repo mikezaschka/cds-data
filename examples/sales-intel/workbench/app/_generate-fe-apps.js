@@ -26,7 +26,7 @@ const DATA_SOURCES = {
     sales:    { uri: '/odata/v4/sales-intel/' }
 }
 
-function manifest({ id, title, entity, dataSource, template }) {
+function manifest({ id, entity, dataSource, template }) {
     const uri = DATA_SOURCES[dataSource].uri
     const isAlp = template === 'alp'
     const listTemplate = isAlp

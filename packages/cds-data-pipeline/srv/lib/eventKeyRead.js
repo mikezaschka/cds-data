@@ -1,4 +1,3 @@
-const cds = require('../runtime-cds')
 const { mergeStaticWhereIntoSelect } = require('./mergeStaticWhereIntoSelect')
 
 /**

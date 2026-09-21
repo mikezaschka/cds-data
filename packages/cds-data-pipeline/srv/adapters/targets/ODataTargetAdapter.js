@@ -117,7 +117,7 @@ class ODataTargetAdapter extends BaseTargetAdapter {
         return key
     }
 
-    async writeBatch(records, { mode, target }) {
+    async writeBatch(records, { target }) {
         if (!records || records.length === 0) {
             return { created: 0, updated: 0, deleted: 0 }
         }

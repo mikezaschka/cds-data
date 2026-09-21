@@ -17,7 +17,7 @@ describe('Delegate Strategy', () => {
         await Promise.all([startProvider(), startInventoryProvider()])
     }, 30000)
 
-    const { GET, POST, PATCH, DELETE: DEL, expect } = cds.test(require('path').join(__dirname, '../../fixtures/consumer'))
+    const { GET, expect } = cds.test(require('path').join(__dirname, '../../fixtures/consumer'))
 
     afterAll(async () => {
         await Promise.all([stopProvider(), stopInventoryProvider()])

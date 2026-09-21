@@ -627,7 +627,7 @@ class DataPipelineService extends cds.Service {
         }
         const tracker = await pipeline.getStatus()
         const status = opts.status || (tracker && tracker.status) || 'idle'
-        return JSON.stringify(flowMetadataForPipeline(pipeline, this._pipelineHooks, status, opts))
+        return JSON.stringify(flowMetadataForPipeline(pipeline, this._pipelineHooks, status))
     }
 
     /**
@@ -642,7 +642,7 @@ class DataPipelineService extends cds.Service {
         for (const pipeline of this.pipelines.values()) {
             const tracker = await pipeline.getStatus()
             const status = (tracker && tracker.status) || 'idle'
-            items.push(flowMetadataForPipeline(pipeline, this._pipelineHooks, status, opts))
+            items.push(flowMetadataForPipeline(pipeline, this._pipelineHooks, status))
         }
         return JSON.stringify({
             pipelines: items,

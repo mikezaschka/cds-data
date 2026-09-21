@@ -25,7 +25,7 @@ const APPS = [
     { dir: 'box-office',          id: 'ns.boxoffice',          title: 'Box Office',          entity: 'ReplicatedBoxOffice' }
 ]
 
-function manifest({ id, title, entity }) {
+function manifest({ id, entity }) {
     return {
         _version: '1.59.0',
         'sap.app': {

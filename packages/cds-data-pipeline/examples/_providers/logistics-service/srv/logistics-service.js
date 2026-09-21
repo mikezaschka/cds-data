@@ -60,7 +60,7 @@ cds.on('served', async () => {
 
 async function loadShipmentPayload(ID) {
     const db = await cds.connect.to('db')
-    const row = await SELECT.one.from('logistics.Shipments').where({ ID })
+    const row = await db.run(SELECT.one.from('logistics.Shipments').where({ ID }))
     if (!row) return null
     return {
         ID: row.ID,

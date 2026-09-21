@@ -1,5 +1,5 @@
 // @vitest-environment node
-const { resolvePolicy, purgeRunsForPipeline } = require('../../srv/lib/housekeeping')
+const { resolvePolicy } = require('../../srv/lib/housekeeping')
 const { getHousekeepingConfig, normalizeHousekeepingBlock } = require('../../lib/config-normalizer')
 
 describe('housekeeping resolvePolicy', () => {

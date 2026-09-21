@@ -1,4 +1,3 @@
-const cds = require('../runtime-cds')
 const BaseSourceAdapter = require('./BaseSourceAdapter')
 const { withRetry } = require('../lib/retry')
 const { entityShapeReadStream } = require('./lib/entityShapeReadStream')

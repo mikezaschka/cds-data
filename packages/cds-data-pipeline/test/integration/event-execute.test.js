@@ -7,16 +7,6 @@ const { getProviderCustomerById } = require('../support/customerRemote')
 
 const consumerRoot = path.join(__dirname, '../fixtures/consumer')
 
-/** @param {( ) => Promise<boolean>} fn */
-async function untilTrue(fn, { timeoutMs = 15000, intervalMs = 100 } = {}) {
-    const t0 = Date.now()
-    while (Date.now() - t0 < timeoutMs) {
-        if (await fn()) return
-        await new Promise((r) => setTimeout(r, intervalMs))
-    }
-    throw new Error('condition not met within timeout')
-}
-
 function sameCustomerFields(local, remote) {
     if (!local || !remote) return false
     const t1 = new Date(local.modifiedAt).getTime()

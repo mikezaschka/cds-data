@@ -27,7 +27,7 @@ function scanAnnotations(csn) {
             }
         }
 
-        const config = buildConfigFromAnnotation(name, def, csn)
+        const config = buildConfigFromAnnotation(name, def)
         if (!config) continue
 
         def['@cds.persistence.table'] = true
@@ -40,7 +40,7 @@ function scanAnnotations(csn) {
     return { configs }
 }
 
-function buildConfigFromAnnotation(entityName, entityDef, csn) {
+function buildConfigFromAnnotation(entityName, entityDef) {
     const options = collectSnapshotOptions(entityDef)
     if (!hasSnapshotAnnotation(entityDef, options)) return null
 

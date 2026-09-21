@@ -8,7 +8,6 @@ const {
 } = require('../support/helpers')
 
 const consumerRoot = path.join(__dirname, '../fixtures/consumer')
-const PIPELINES = 'plugin_data_pipeline_Pipelines'
 
 async function registerFresh(srv, name, config) {
     // Simulate process restart: drop in-memory registration so addPipeline can run again.
