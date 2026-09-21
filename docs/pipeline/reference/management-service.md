@@ -61,7 +61,7 @@ The plugin ships a pre-built **Pipeline Console** UI (flexible column layout) th
 
 The service requires an authenticated user by default, and so does the console route — see [Authorization](#authorization) for how to tighten or relax that.
 
-The full CDS (including `Common.ValueList` on the `start` parameters) is in the npm package at `srv/DataPipelineManagementService.cds`. Value-help rows for `PipelineRunModes` / `PipelineRunTriggers` are returned by `srv/DataPipelineManagementService.js` and are not stored in the database.
+The full CDS (including `Common.ValueList` on the `start` parameters) is in the npm package at `srv/DataPipelineManagementService.cds`. Value-help rows for `PipelineRunModes` / `PipelineRunTriggers` are returned by `srv/DataPipelineManagementService.js` and are not stored in the database. They still accept the usual query options (`$filter`, `$orderby`, `$top`/`$skip`, `$select`, `$search`, `$count`). A filter the service cannot evaluate is refused with a 400 rather than answered with the whole list.
 
 ## Authorization
 

@@ -1,5 +1,6 @@
 const cds = require('./runtime-cds')
 const { isManagementInspectEnabled } = require('../lib/config-normalizer')
+const { queryStaticRows, UnsupportedQuery } = require('./lib/staticRows')
 
 // Whitelist of trigger values accepted on the wire. Aligned with the
 // `RunTrigger` enum in db/index.cds. Any other value (including `undefined`)
@@ -44,21 +45,20 @@ async function runPipelineExecute(req, name, data) {
 
 class DataPipelineManagementService extends cds.ApplicationService {
     async init() {
-        this.on('READ', 'PipelineRunModes', (req) => {
-            const k = req.params?.[0]?.code
-            if (k !== undefined) {
-                return PIPELINE_RUN_MODES.filter((r) => r.code === k)
+        // Fixed lists with no table behind them: CAP applies no query, so the
+        // handler has to — the Start dialog sorts these with $orderby.
+        const serveList = (rows) => (req) => {
+            try {
+                return queryStaticRows(rows, req)
+            } catch (err) {
+                if (err instanceof UnsupportedQuery) {
+                    return req.reject(400, `Unsupported query on ${req.target?.name?.split('.').pop()}: ${err.message}`)
+                }
+                throw err
             }
-            return PIPELINE_RUN_MODES
-        })
-
-        this.on('READ', 'PipelineRunTriggers', (req) => {
-            const k = req.params?.[0]?.code
-            if (k !== undefined) {
-                return PIPELINE_RUN_TRIGGERS.filter((r) => r.code === k)
-            }
-            return PIPELINE_RUN_TRIGGERS
-        })
+        }
+        this.on('READ', 'PipelineRunModes', serveList(PIPELINE_RUN_MODES))
+        this.on('READ', 'PipelineRunTriggers', serveList(PIPELINE_RUN_TRIGGERS))
 
         this.on('start', 'Pipelines', async (req) => {
             const { name } = req.params[0]
