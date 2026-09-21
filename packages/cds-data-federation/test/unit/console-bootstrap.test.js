@@ -67,19 +67,69 @@ describe('federation console bootstrap', () => {
         expect(app.mounts[0].static).toBeUndefined()
     })
 
-    it('rejects an anonymous caller and asks for credentials', () => {
-        const headers = {}
-        let status
-        const res = {
-            status: c => { status = c; return res },
-            set: (n, v) => { headers[n] = v; return res },
-            end: () => {},
+    describe('the guard follows the model', () => {
+        // Secure by default, but an app that deliberately opens the service
+        // should not be locked out of its own console.
+        const cds = require('@sap/cds')
+        let savedModel, savedContext
+
+        const withModel = (requires) => {
+            cds.model = { definitions: { FederationManagementService: { '@requires': requires } } }
         }
-        let nexted = false
-        requireAuthenticatedUser({}, res, () => { nexted = true })
-        expect(nexted).toBe(false)
-        expect(status).toBe(401)
-        expect(headers['WWW-Authenticate']).toContain('Basic')
+        const asUser = (roles) => {
+            cds.context = { user: { is: r => roles.includes(r) } }
+        }
+        const call = () => {
+            const headers = {}
+            let status
+            const res = {
+                status: c => { status = c; return res },
+                set: (n, v) => { headers[n] = v; return res },
+                end: () => {},
+            }
+            let nexted = false
+            requireAuthenticatedUser({}, res, () => { nexted = true })
+            return { status, headers, nexted }
+        }
+
+        beforeEach(() => { savedModel = cds.model; savedContext = cds.context })
+        afterEach(() => { cds.model = savedModel; cds.context = savedContext })
+
+        it('challenges an anonymous caller when the service requires a user', () => {
+            withModel('authenticated-user')
+            asUser([])
+            const { status, headers, nexted } = call()
+            expect(nexted).toBe(false)
+            expect(status).toBe(401)
+            expect(headers['WWW-Authenticate']).toContain('Basic')
+        })
+
+        it('lets an authenticated caller through', () => {
+            withModel('authenticated-user')
+            asUser(['authenticated-user'])
+            expect(call().nexted).toBe(true)
+        })
+
+        it('forbids, not challenges, a signed-in user missing the role', () => {
+            // Re-prompting for credentials they already have is a dead end.
+            withModel('FederationAdmin')
+            asUser(['authenticated-user'])
+            const { status, nexted } = call()
+            expect(nexted).toBe(false)
+            expect(status).toBe(403)
+        })
+
+        it('honours a custom role', () => {
+            withModel('FederationAdmin')
+            asUser(['authenticated-user', 'FederationAdmin'])
+            expect(call().nexted).toBe(true)
+        })
+
+        it('opens the console when the service is deliberately open', () => {
+            withModel(null)
+            asUser([])
+            expect(call().nexted).toBe(true)
+        })
     })
 
     describe('directory redirect', () => {

@@ -31,14 +31,25 @@ Or import the model yourself, for a project-owned setup — but not both:
 using from 'cds-data-federation/management.cds';
 ```
 
-Both require an authenticated user. The service carries `@requires:
+Both require an authenticated user by default. The service carries `@requires:
 'authenticated-user'`, and the console route carries an express guard, because static
-files sit outside CAP's service adapters and inherit nothing from the model. Tighten it
-with a role of your own:
+files sit outside CAP's service adapters and inherit nothing from the model.
+
+Tighten it with a role of your own:
 
 ```cds
 annotate FederationManagementService with @requires: 'FederationAdmin';
 ```
+
+Or open it deliberately, when the endpoint already sits behind a network boundary:
+
+```cds
+annotate FederationManagementService with @requires: null;
+```
+
+The console guard reads that same annotation, so either change applies to the API and the
+UI together rather than leaving you locked out of your own console. A signed-in user
+missing the required role gets 403; an anonymous one gets 401 with a challenge.
 
 ## The Console
 

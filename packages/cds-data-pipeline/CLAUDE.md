@@ -39,7 +39,7 @@ Tests run serially (`--runInBand`, `maxConcurrency: 1`) because fixture provider
 
 - **Pipeline behavior is inferred from config shape**, not flags. Before adding a new option, check whether the existing inference rules (see `docs/pipeline/guide/concepts/inference.md` and `srv/lib/Pipeline.js`) already cover it.
 - **Event hooks use CAP's standard `before / on / after(event, pipelineName, handler)`** — don't introduce a parallel hook system. Lifecycle events: `PIPELINE.START` → `PIPELINE.READ` → (`PIPELINE.MAP` → `PIPELINE.WRITE`)* → `PIPELINE.DONE`.
-- **Authorization is the consumer's job** — the plugin does not put `@(requires:…)` on `/pipeline`. Don't add it.
+- **Secure by default, overridable by the consumer** — `DataPipelineManagementService` carries `@requires: 'authenticated-user'`, and the Pipeline Console route carries an express guard that reads that same annotation. This reverses the earlier rule ("authorization is the consumer's job, don't add it"): `/pipeline` exposes every pipeline's configuration and run history and can trigger runs, so open-by-default was the wrong default. A consumer tightens it with `annotate DataPipelineManagementService with @requires: 'PipelineAdmin';` or opens it deliberately with `@requires: null` — which opens the console with it, since the guard follows the model rather than hard-coding a rule.
 - **Peer dep** is `@sap/cds >= 9`; Node `>= 22`. Don't import from `@sap/cds` internals.
 - **Published `files`** in `package.json` is allowlist-only. New runtime code must live under an allowed path or be added to `files`.
 

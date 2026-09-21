@@ -59,22 +59,50 @@ Live schedule changes for `schedule.engine: 'queued'` are supported on CDS 10+; 
 
 The plugin ships a pre-built **Pipeline Console** UI (flexible column layout) that targets this OData service. Mount it from the npm package at `/pipeline-console` using CAP reuse-and-compose — see [Pipeline Console](../guide/pipeline-console.md).
 
-The plugin ships **no** `@(requires: ...)` annotations on this service. Your application decides how `/pipeline` is secured: annotate projections and operations in consumer CDS, define XSUAA scopes and role templates in `xs-security.json`, use the application router, or a combination.
+The service requires an authenticated user by default, and so does the console route — see [Authorization](#authorization) for how to tighten or relax that.
 
 The full CDS (including `Common.ValueList` on the `start` parameters) is in the npm package at `srv/DataPipelineManagementService.cds`. Value-help rows for `PipelineRunModes` / `PipelineRunTriggers` are returned by `srv/DataPipelineManagementService.js` and are not stored in the database.
 
-### Securing `/pipeline` in your app
+## Authorization
 
-After you add scopes and roles (for example a dedicated “pipeline runner” scope for schedulers), attach CAP authorization hints only in **your** model — for example annotate the projections that the plugin exposes:
+`DataPipelineManagementService` requires an authenticated user by default, and the
+Pipeline Console route is guarded the same way. This surface exposes every pipeline's
+configuration and run history, and can trigger runs, pause schedules and inspect source
+data, so it is not open by default.
+
+Tighten it with a role of your own:
+
+```cds
+annotate DataPipelineManagementService with @requires: 'PipelineAdmin';
+```
+
+Or open it deliberately, when the endpoint already sits behind a network boundary:
+
+```cds
+annotate DataPipelineManagementService with @requires: null;
+```
+
+The console guard reads that same annotation rather than hard-coding a rule, so either
+change applies to the API and the UI together. A signed-in user missing the required role
+gets 403; an anonymous one gets 401 with a challenge.
+
+For finer control, annotate individual projections and operations rather than the whole
+service — mutating operations (`execute`, `start`, `flush`, `setSchedule`,
+`clearSchedule`) often warrant a stricter role than reads:
 
 ```cds
 using from 'cds-data-pipeline/srv/DataPipelineManagementService';
 
-annotate DataPipelineManagementService.Pipelines with @(requires: 'authenticated-user');
 annotate DataPipelineManagementService.PipelineRuns with @(requires: 'authenticated-user');
+annotate DataPipelineManagementService.Pipelines   with @(requires: 'PipelineAdmin');
 ```
 
-Use the same idea for mutating operations (`execute`, `start`, `flush`, `setSchedule`, `clearSchedule`) and for `status` as your threat model requires. Depending on your CAP version, that may be additional `annotate` targets, an `extend service` block, or app-level enforcement only.
+Define the matching XSUAA scopes and role templates in `xs-security.json` as usual.
+
+**This changed:** earlier versions shipped no `@requires` at all and left `/pipeline`
+open unless the consuming app secured it. Upgrading tightens the default, so an app that
+relied on anonymous access needs the `@requires: null` override above.
+
 
 ## Entities
 

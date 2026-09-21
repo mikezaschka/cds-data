@@ -112,13 +112,30 @@ function redirectToDirectory(mount) {
 
 /**
  * The console is static files served outside CAP's service adapters, so it
- * inherits nothing from `@requires` on the model. Guarding the management
- * service alone would leave this route open.
+ * inherits nothing from `@requires` on the model. Guarding the management service alone
+ * would leave this route open.
+ *
+ * Rather than hard-code the requirement, read it from the model: whatever
+ * `DataPipelineManagementService` requires, the console requires. Secure by
+ * default because the service is annotated `authenticated-user`, and an app
+ * that deliberately opens it (`annotate DataPipelineManagementService with
+ * @requires: null`) opens both surfaces together instead of being locked out
+ * of its own console.
  */
 function requireAuthenticatedUser(req, res, next) {
     const cds = require('@sap/cds')
+    const required = cds.model?.definitions?.['DataPipelineManagementService']?.['@requires']
+    if (!required) return next()
+
+    const roles = Array.isArray(required) ? required : [required]
     const user = cds.context?.user
-    if (user?.is?.('authenticated-user')) return next()
+    if (roles.some(role => user?.is?.(role))) return next()
+
+    // Anonymous callers get a challenge; a signed-in user missing the role is
+    // forbidden, not unauthenticated.
+    if (user?.is?.('authenticated-user')) {
+        return res.status(403).end()
+    }
     res.status(401).set('WWW-Authenticate', 'Basic realm="cds-data-pipeline"').end()
 }
 

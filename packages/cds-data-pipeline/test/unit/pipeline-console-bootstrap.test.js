@@ -146,21 +146,56 @@ describe('mountPipelineConsole', () => {
         expect(firstMount.static).toBeUndefined()
     })
 
-    it('rejects an anonymous caller and asks for credentials', () => {
-        const { requireAuthenticatedUser } = require('../../lib/pipeline-console-bootstrap')
-        const headers = {}
-        let status
-        const res = {
-            status: (code) => { status = code; return res },
-            set: (name, value) => { headers[name] = value; return res },
-            end: () => {},
-        }
-        let nexted = false
-        requireAuthenticatedUser({}, res, () => { nexted = true })
+    describe('the guard follows the model', () => {
+        // Secure by default: DataPipelineManagementService is annotated
+        // `authenticated-user`. An app that deliberately opens it should not be
+        // locked out of its own console.
+        const cds = require('@sap/cds')
+        let savedModel, savedContext
 
-        expect(nexted).toBe(false)
-        expect(status).toBe(401)
-        expect(headers['WWW-Authenticate']).toContain('Basic')
+        const setup = (requires, roles) => {
+            cds.model = { definitions: { DataPipelineManagementService: { '@requires': requires } } }
+            cds.context = { user: { is: r => roles.includes(r) } }
+        }
+        const call = () => {
+            const headers = {}
+            let status
+            const res = {
+                status: c => { status = c; return res },
+                set: (n, v) => { headers[n] = v; return res },
+                end: () => {},
+            }
+            let nexted = false
+            const { requireAuthenticatedUser } = require('../../lib/pipeline-console-bootstrap')
+            requireAuthenticatedUser({}, res, () => { nexted = true })
+            return { status, headers, nexted }
+        }
+
+        beforeEach(() => { savedModel = cds.model; savedContext = cds.context })
+        afterEach(() => { cds.model = savedModel; cds.context = savedContext })
+
+        it('challenges an anonymous caller', () => {
+            setup('authenticated-user', [])
+            const { status, headers, nexted } = call()
+            expect(nexted).toBe(false)
+            expect(status).toBe(401)
+            expect(headers['WWW-Authenticate']).toContain('Basic')
+        })
+
+        it('lets an authenticated caller through', () => {
+            setup('authenticated-user', ['authenticated-user'])
+            expect(call().nexted).toBe(true)
+        })
+
+        it('forbids a signed-in user missing a custom role', () => {
+            setup('PipelineAdmin', ['authenticated-user'])
+            expect(call().status).toBe(403)
+        })
+
+        it('opens the console when the service is deliberately open', () => {
+            setup(null, [])
+            expect(call().nexted).toBe(true)
+        })
     })
 
     it('reports when the app cannot serve static folders', () => {
