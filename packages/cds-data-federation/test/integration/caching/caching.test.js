@@ -80,17 +80,37 @@ describe('Delegate Strategy', () => {
         describe('TTL expiration', () => {
 
             it('[4.3.2] C5: should expire cached entries after TTL', async () => {
-                await GET(`${base}/CachedCustomers`)
-                let metrics = await cache.getCurrentMetrics()
-                expect(metrics.misses).to.equal(1)
+                // Moves the clock rather than sleeping past it. A real 6s sleep
+                // against the 5s TTL, inside a 15s budget alongside two remote
+                // fetches, occasionally overran when the suite ran in parallel.
+                // cds-caching's default memory store (Keyv) expires entries
+                // against Date.now(), and the store runs in this process, so
+                // shifting Date.now() expires the entry exactly. The offset only
+                // ever grows, so real elapsed time can only push further past
+                // the TTL, never back under it.
+                const ttl = 5000 // @federation.delegate: { cache: { ttl: 5000 } } on CachedCustomers
+                const realNow = Date.now
+                let offset = 0
+                const clock = vi.spyOn(Date, 'now').mockImplementation(() => realNow.call(Date) + offset)
+                try {
+                    const first = await GET(`${base}/CachedCustomers`)
+                    expect(first.headers['x-sap-cap-cache']).to.equal('miss')
 
-                await new Promise(resolve => setTimeout(resolve, 6000))
+                    const within = await GET(`${base}/CachedCustomers`)
+                    expect(within.headers['x-sap-cap-cache']).to.equal('hit')
 
-                await GET(`${base}/CachedCustomers`)
-                metrics = await cache.getCurrentMetrics()
+                    offset = ttl + 1
+                    const expired = await GET(`${base}/CachedCustomers`)
+                    expect(expired.headers['x-sap-cap-cache']).to.equal('miss')
+                    expect(expired.data.value).to.have.length(5)
+                } finally {
+                    clock.mockRestore()
+                }
+
+                const metrics = await cache.getCurrentMetrics()
                 expect(metrics.misses).to.equal(2)
-                expect(metrics.hits).to.equal(0)
-            }, 15000)
+                expect(metrics.hits).to.equal(1)
+            })
         })
 
         // ── Cache with consumption view renames ──────────────────────────
