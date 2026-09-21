@@ -36,6 +36,9 @@ The rest of xtravels is unchanged: the Fiori app, the draft/status flows, the
 - a concurrency guard
 - the Pipeline Console
 - a management API for manual runs
+- the Federation Console, listing every federated entity including the plain
+  delegates that have no pipeline
+- request, error and latency counters for every delegate
 
 ## Run it
 
@@ -57,8 +60,11 @@ npm run examples:start:xtravels
 | URL | What |
 |---|---|
 | http://localhost:4005/travels/webapp/index.html | xtravels Fiori app (`alice` / `admin`) |
+| http://localhost:4005/federation-console/ | Federation Console: all eleven federated entities, delegate metrics, landscape graph |
+| http://localhost:4005/federation/FederatedEntities | Its OData API |
 | http://localhost:4005/pipeline-console/ | Pipeline Console: the three replicate pipelines, runs, schedules |
 | http://localhost:4005/pipeline/Pipelines | Management OData API |
+| http://localhost:4005/caching-dashboard/ | `cds-caching` dashboard: response-cache hit ratios |
 | http://localhost:4005/showcase/ | Federation showcase: `Airlines` (plain delegate), `Airports` (delegate + response cache), `Hotels` / `HotelBookings` (read-only vs write-through), `Organizations` (S/4, renames + scope), and `LiveFlights` / `SnapshotFlights` / `CachedFlights` — one remote entity under four strategies |
 | http://localhost:4006 | xflights (flight master data provider) |
 | http://localhost:4008 | `HotelsService`, xtravels' bundled microservice, served over OData |
@@ -203,7 +209,7 @@ against upstream is one commit:
 
 - `apis/capire/xflights.cds`, `apis/capire/s4.cds`: `@federated` becomes `@federation.replicate: { ... }`.
 - `srv/data-federation.js`, `srv/server.js`: deleted. The plugin replaces them.
-- `package.json`: adds `cds-data-federation` / `cds-data-pipeline` / `cds-caching`, the `data-pipeline` management console, and the `[federated]` profile.
+- `package.json`: adds `cds-data-federation` / `cds-data-pipeline` / `cds-caching`, all three consoles with delegate and tag metrics on, and the `[federated]` profile.
 - `srv/showcase/`: a `FederationShowcaseService` for live-delegation scenarios — additive, so `TravelService` and the Fiori app are untouched.
 
 The other three are plain copies (without `.git` / `.github`); refresh one by

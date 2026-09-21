@@ -24,7 +24,7 @@ CAP gives you the right concepts — consumption views, projection chains, `cds.
 | **Cross-service mashups** | `$expand` and navigation across local ↔ remote boundaries handled inside the plugin — not manual request interception per scenario |
 | **Scheduled replication** | Full/delta sync into local tables via `cds-data-pipeline` — retry, concurrency guard, run history, REST sources |
 | **Optional caching** | Per-query (`cds-caching`) or full-entity SQLite snapshots on delegate |
-| **Observability** | Federation-bound pipelines in `/pipeline` and the [Pipeline Console](https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console) |
+| **Observability** | Every federated entity — delegates included — in the [Federation Console](https://mikezaschka.github.io/cds-data/federation/reference/management-api), with opt-in delegate metrics; replicate and entity-cache pipelines also in `/pipeline` and the [Pipeline Console](https://mikezaschka.github.io/cds-data/pipeline/guide/pipeline-console) |
 
 Full positioning against CAP samples and other approaches: [Comparison with CAP](https://mikezaschka.github.io/cds-data/federation/reference/comparison).
 
@@ -72,6 +72,7 @@ The **consumption view IS the federation contract** — the `@federation.*` anno
 | **Replicate** | Full/delta sync, UPSERT, `replicated` aspect, pipeline hooks | [First replication](https://mikezaschka.github.io/cds-data/federation/getting-started/first-replication) |
 | **Caching** | Per-query (`response`) or full-entity SQLite (`entity`) | [Caching](https://mikezaschka.github.io/cds-data/federation/integration/caching) |
 | **Cross-service** | `$expand` and navigation across local ↔ remote boundaries | [Cross-service scenarios](https://mikezaschka.github.io/cds-data/federation/concepts/cross-service-scenarios) |
+| **Management** | `/federation` inventory and actions, the Federation Console, opt-in delegate metrics | [Management API and Console](https://mikezaschka.github.io/cds-data/federation/reference/management-api) |
 
 Full capability list: [Features](https://mikezaschka.github.io/cds-data/federation/reference/features).
 
@@ -108,6 +109,31 @@ pipelines.before('PIPELINE.MAP', 'ReplicatedPartners', async (req) => {
 ```
 
 See [pipeline features](https://mikezaschka.github.io/cds-data/pipeline/reference/features) and [first replication](https://mikezaschka.github.io/cds-data/federation/getting-started/first-replication).
+
+## Federation Console and metrics
+
+The Pipeline Console sees only what runs as a pipeline, so a plain `@federation.delegate` — no pipeline, no cache — never appears there. The Federation Console lists every federated entity:
+
+```json
+"cds": {
+  "requires": {
+    "data-federation": {
+      "management": { "reuse": { "api": true, "console": true } },
+      "metrics": { "enabled": true }
+    }
+  }
+}
+```
+
+- **`/federation`** — an OData inventory, one row per `@federation.*` entity keyed by its consumption-view name: strategy, source, projected columns, renames, scope, write flags and the backing pipeline. Bound actions `refreshReplica`, `refreshEntityCache` and `invalidate` do what the entity's strategy supports.
+- **`/federation-console`** — that inventory as a UI. Filter by strategy or search by entity or source service; open an entity for its resolved projection, runtime tiles and actions; switch to the landscape graph for remote services against consumption views.
+- **`metrics.enabled`** — request, error, latency and write counters for every delegate, accumulated in memory and flushed to a table on an interval. Off by default and free when off: the handlers are not even wrapped. The console can pause and resume collection, and that choice survives a restart.
+
+The console links out rather than duplicating: replication runs stay in the Pipeline Console, response-cache hit ratios in `cds-caching`'s API.
+
+Both surfaces require an authenticated user. Tighten with `annotate FederationManagementService with @requires: 'FederationAdmin';` or open deliberately with `@requires: null` — the console follows whatever the service requires.
+
+Reference: [Management API and Console](https://mikezaschka.github.io/cds-data/federation/reference/management-api).
 
 ## Pipeline Console
 

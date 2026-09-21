@@ -60,8 +60,22 @@ Two optional strategies on `@federation.delegate` (and a rarely useful response 
 | **Tag-based invalidation** | `response` only — auto-tag `federation:<entityName>`, static/dynamic/template tags via `cds-caching`. |
 | **Backend flexibility** | `response`: in-memory, Redis, HANA, … via `cds-caching`. `entity`: primary `db` or optional `cds.requires.'data-federation-cache'` SQLite. |
 | **Configurable cache service** | `cache.service` selects a `cds-caching` instance (`response` only). |
-| **Hit / miss metrics** | `cds-caching` statistics API (`response`). |
+| **Hit / miss metrics** | `cds-caching` statistics API (`response`), attributable per entity through `TagMetrics` on the automatic `federation:<entityName>` tag (`cds-caching` ≥ 3.1). |
 | **Graceful degradation** | Missing `cds-caching` → skip `response` with warning. Missing pipeline/SQLite → skip `entity` with warning; live delegate continues. |
+
+## Management and observability
+
+Full reference: [Management API and Console](./management-api.md).
+
+| Feature | Description |
+|---|---|
+| **Inventory API** | `/federation/FederatedEntities` — one row per `@federation.*` entity, keyed by consumption-view FQN: strategy, source, projected columns, renames, static scope, write flags, cache and backing pipeline. Honours `$filter`, `$orderby` and `$top`. Enabled with `management.reuse.api`. |
+| **Actions** | `refreshReplica` (whole pipeline, or one row by key), `refreshEntityCache`, `invalidate`. Each is rejected with 400 on an entity whose strategy does not support it. |
+| **Federation Console** | `/federation-console` — inventory, per-entity detail with runtime tiles and actions, and a landscape graph covering delegates and caches as well as pipelines. Enabled with `management.reuse.console`. |
+| **Delegate metrics** | Requests, errors, latency and writes per delegate, flushed to `DelegateMetrics` on an interval. Opt-in via `metrics.enabled`; with it off, handlers are not wrapped and no table is deployed. |
+| **Pause switch** | `setMetricsCollection` pauses or resumes collection; persisted, and the database wins over configuration. |
+| **Reference, not copy** | Run history stays in `/pipeline`, cache metrics in `cds-caching` — the console links to them. |
+| **Secure by default** | `@requires: 'authenticated-user'` on the service; the console guard follows the same annotation. |
 
 ## Cross-service scenarios
 
