@@ -164,6 +164,23 @@ describe('Federation management API (ADR 0017)', () => {
             }
         })
 
+        it('reports projected columns as remote names, renamed ones included', async () => {
+            // A renamed column is held internally as a CQN ref. The API declares
+            // `array of String`, and passing refs through surfaced in the
+            // console as "[object Object], [object Object]".
+            const rows = await byEntity()
+            const renamed = Object.values(rows).filter(r => r.renames?.length && !r.wildcardProjection)
+            expect(renamed.length, 'no fixture entity renames a projected column').to.be.greaterThan(0)
+            for (const row of Object.values(rows)) {
+                for (const column of row.projectedColumns) {
+                    expect(column, `${row.entity}: ${JSON.stringify(column)}`).to.be.a('string')
+                }
+            }
+            // And the renamed remote column is there under its remote name.
+            const { remote } = renamed[0].renames[0]
+            expect(renamed[0].projectedColumns).to.include(remote)
+        })
+
         it('flags a view carrying a static where as scoped', async () => {
             const rows = await byEntity()
             const scoped = Object.values(rows).filter(r => r.scoped)

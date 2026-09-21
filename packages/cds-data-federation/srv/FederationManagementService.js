@@ -12,6 +12,21 @@ const PIPELINE_API = 'DataPipelineManagementService'
 const CACHING_API = 'plugin.cds_caching.CachingApiService'
 
 /**
+ * The scanner keeps projected columns in the shape the remote fetch needs: a
+ * plain name for a column taken as-is, a CQN ref such as
+ * `{ ref: ['BusinessPartner'], as: 'ID' }` for one renamed with `as`. This API
+ * promises remote column names, so flatten here rather than change the
+ * scanner, which other code relies on. Passed through unflattened, a renamed
+ * view came back as `[object Object]` — the `array of String` type does not
+ * make CAP coerce anything.
+ */
+function remoteColumnName(column) {
+    if (typeof column === 'string') return column
+    if (Array.isArray(column?.ref)) return column.ref.join('.')
+    return String(column?.name ?? column)
+}
+
+/**
  * Federation management API (ADR 0017).
  *
  * Reads the other plugins' services rather than embedding or copying them: the
@@ -81,7 +96,7 @@ class FederationManagementService extends cds.ApplicationService {
             writeVerbs: verbs.join(','),
             wildcardProjection: vm.isWildcard === true,
             scoped: vm.staticWhere != null,
-            projectedColumns: vm.isWildcard ? [] : (vm.projectedColumns || []),
+            projectedColumns: vm.isWildcard ? [] : (vm.projectedColumns || []).map(remoteColumnName),
             renames: Object.entries(vm.localToRemote || {})
                 .filter(([local, remote]) => local !== remote)
                 .map(([local, remote]) => ({ local, remote })),
