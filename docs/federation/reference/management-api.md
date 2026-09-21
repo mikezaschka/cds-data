@@ -103,6 +103,12 @@ A single entity reads by its FQN:
 GET /federation/FederatedEntities('sap.capire.xflights.Flights')
 ```
 
+The rows are computed on each request, yet the usual query options work on them: `$filter` (including `contains`), `$orderby`, `$top`/`$skip` and `$select`. `$select` takes plain fields only. The `entity` key is always returned. A query the service cannot evaluate is refused with a 400, never answered with the unfiltered set.
+
+```http
+GET /federation/FederatedEntities?$select=name,pipeline&$filter=strategy eq 'replicate'
+```
+
 ## What it does not serve
 
 No run history, no cache metrics, no configuration changes. This service **references**

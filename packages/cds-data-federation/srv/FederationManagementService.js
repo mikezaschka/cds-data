@@ -66,12 +66,41 @@ class FederationManagementService extends cds.ApplicationService {
         const select = req.query?.SELECT || {}
         const entityDef = req.target
         try {
-            return applyExpandedSemantics(rows, select.where, select.orderBy, select.limit, entityDef)
+            // Project last: a $filter or $orderby may name a column $select leaves out.
+            const matched = applyExpandedSemantics(rows, select.where, select.orderBy, select.limit, entityDef)
+            return this._project(matched, select.columns, entityDef)
         } catch (err) {
             // An unsupported predicate must not silently return everything.
             LOG.warn('federation management: unsupported query —', err.message)
             return req.reject(400, `Unsupported query on FederatedEntities: ${err.message}`)
         }
+    }
+
+    /**
+     * `$select` arrives as `SELECT.columns`, which CAP's OData layer then
+     * serialises as given: return whole rows and every field goes back. Only
+     * plain element refs are meaningful on this flat entity; anything else is
+     * refused rather than silently widened to the full row. The key always
+     * stays, as it does on any CAP-served entity.
+     */
+    _project(rows, columns, entityDef) {
+        if (!Array.isArray(columns) || columns.length === 0 || columns.includes('*')) return rows
+        const picks = columns.map(column => {
+            if (column === '*' || column?.ref?.[0] === '*') return null
+            if (!Array.isArray(column?.ref) || column.ref.length !== 1) {
+                throw new Error(`only plain elements can be selected, got ${JSON.stringify(column)}`)
+            }
+            const [name] = column.ref
+            if (entityDef?.elements && !entityDef.elements[name]) throw new Error(`no element '${name}'`)
+            return { from: name, as: column.as || name }
+        })
+        if (picks.includes(null)) return rows
+        const keys = Object.keys(entityDef?.keys || { entity: 1 })
+        for (const key of keys) {
+            if (!picks.some(pick => pick.as === key)) picks.unshift({ from: key, as: key })
+        }
+        const project = row => Object.fromEntries(picks.map(({ from, as }) => [as, row[from]]))
+        return Array.isArray(rows) ? rows.map(project) : rows && project(rows)
     }
 
     _toRow(cfg) {

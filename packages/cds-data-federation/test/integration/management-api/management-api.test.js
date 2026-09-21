@@ -145,6 +145,36 @@ describe('Federation management API (ADR 0017)', () => {
             expect(names).to.eql([...names].sort().reverse())
         })
 
+        it('returns only the selected fields, plus the key', async () => {
+            // CAP serialises whatever the handler returns, so an ignored
+            // $select sent every field back.
+            const { status, data } = await GET('/federation/FederatedEntities?$select=name,strategy')
+            expect(status).to.equal(200)
+            for (const row of data.value) {
+                expect(Object.keys(row).sort()).to.eql(['entity', 'name', 'strategy'])
+            }
+        })
+
+        it('filters and orders on fields the $select leaves out', async () => {
+            const { data } = await GET(
+                "/federation/FederatedEntities?$select=name&$filter=strategy eq 'replicate'&$orderby=entity desc",
+            )
+            expect(data.value.length).to.be.greaterThan(0)
+            const names = data.value.map(r => r.entity)
+            expect(names).to.eql([...names].sort().reverse())
+            for (const row of data.value) expect(row).to.not.have.property('strategy')
+        })
+
+        it('honours $select on a by-key read', async () => {
+            const { status, data } = await GET(
+                "/federation/FederatedEntities('consumer.ReplicatedCustomers')?$select=pipeline",
+            )
+            expect(status).to.equal(200)
+            expect(data.pipeline).to.equal('ReplicatedCustomers')
+            expect(data.entity).to.equal('consumer.ReplicatedCustomers')
+            expect(data).to.not.have.property('strategy')
+        })
+
         it('returns nothing for a filter that matches nothing', async () => {
             const { data } = await GET("/federation/FederatedEntities?$filter=strategy eq 'nonsense'")
             expect(data.value).to.have.length(0)
