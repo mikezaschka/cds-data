@@ -1,2 +1,106 @@
-.fedCode { font-family: "72Mono", monospace; font-size: 0.85rem; }
-.fedWrap { white-space: normal; word-break: break-all; }
+/*
+ * Federation Console — spacing.
+ *
+ * One vertical rhythm for both views, set in one place: sections are separated
+ * by a single flex `gap` on their container rather than each panel carrying its
+ * own margin, which is how two panels ended up with 0px between them while the
+ * toolbar above them had 16px. Horizontal insets follow the DynamicPage title,
+ * so cards line up with the heading above them.
+ *
+ * Colours, radii and shadows come from theme parameters, so this follows
+ * Horizon light and dark (and high contrast) without its own palette.
+ */
+
+:root {
+    --fed-gap: 1rem;
+    --fed-inset: 2rem;
+}
+
+/* Match the DynamicPage title's horizontal padding at each breakpoint. */
+@media (max-width: 1023px) { :root { --fed-inset: 1rem; } }
+@media (max-width: 599px)  { :root { --fed-inset: 0.5rem; --fed-gap: 0.75rem; } }
+
+/* ── Cards ────────────────────────────────────────────────────────────── */
+
+.fedCard {
+    border-radius: var(--sapElement_BorderCornerRadius, 0.75rem);
+    box-shadow: var(--sapContent_Shadow0);
+    overflow: hidden;
+}
+
+/* A Panel draws its own bottom border; inside a card it only doubles the edge. */
+.fedCard.sapMPanel > .sapMPanelContent,
+.fedCard.sapMPanel .sapMPanelWrappingDiv {
+    border-bottom: none;
+}
+
+/* ── Detail: sections ─────────────────────────────────────────────────── */
+
+.fedSections {
+    display: flex;
+    flex-direction: column;
+    gap: var(--fed-gap);
+    padding: var(--fed-gap) var(--fed-inset) calc(var(--fed-gap) * 2);
+}
+
+/* Items stacked inside one section: message strips, tiles, links. */
+.fedStack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* A hidden strip still occupies a flex slot's gap; collapse it entirely. */
+.fedStack > .sapUiHidden,
+.fedStack > [style*="display: none"] {
+    display: none !important;
+}
+
+.fedTiles {
+    gap: 0.75rem;
+}
+
+/* The tiles supply their own spacing through `gap`; drop UI5's default margins. */
+.fedTiles .sapMGT {
+    margin: 0;
+}
+
+.fedLinks {
+    gap: 1.5rem;
+}
+
+/* ── Detail: header facts ─────────────────────────────────────────────── */
+
+.fedHeaderFacts {
+    column-gap: 3rem;
+    row-gap: 0.5rem;
+}
+
+/* ── List ─────────────────────────────────────────────────────────────── */
+
+.fedTabs > .sapMITBContainerContent {
+    padding: var(--fed-gap) var(--fed-inset) calc(var(--fed-gap) * 2);
+}
+
+.fedTraits {
+    gap: 0.5rem;
+}
+
+/* Secondary line under a name: the FQN, the source service. */
+.fedSubtle {
+    color: var(--sapContent_LabelColor);
+    font-size: var(--sapFontSmallSize);
+}
+
+/* Uniform row height: cells no longer wrap, so give them room to breathe. */
+.fedCard .sapMListTblCell {
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+}
+
+/* ── Type ─────────────────────────────────────────────────────────────── */
+
+.fedCode {
+    font-family: var(--sapFontFamilyMono, "72Mono", monospace);
+    font-size: var(--sapFontSmallSize);
+}

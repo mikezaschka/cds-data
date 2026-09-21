@@ -2,62 +2,94 @@
     controllerName="federation.console.controller.List"
     xmlns="sap.m"
     xmlns:mvc="sap.ui.core.mvc"
+    xmlns:f="sap.f"
     xmlns:graph="sap.suite.ui.commons.networkgraph">
-    <Page id="listPage" title="{i18n>appTitle}" class="sapUiResponsiveContentPadding">
-        <headerContent>
-            <!-- Only offered when metrics are configured: a runtime switch can
-                 pause collection, not instrument the handlers. -->
-            <Label text="{i18n>metricsLabel}" visible="{ui>/metricsEnabled}" class="sapUiTinyMarginEnd" />
-            <Switch state="{ui>/metricsCollecting}" change=".onToggleMetrics"
-                    visible="{ui>/metricsEnabled}" tooltip="{i18n>metricsTooltip}" />
-            <Button icon="sap-icon://refresh" tooltip="{i18n>refresh}" press=".onRefresh" />
-        </headerContent>
-        <content>
-            <IconTabBar id="tabs" expanded="true" selectedKey="{ui>/selectedTab}" select=".onTabSelect" class="sapUiResponsiveContentPadding">
+    <f:DynamicPage id="listPage" headerExpanded="true" showFooter="false"
+                   class="sapUiNoContentPadding">
+        <f:title>
+            <f:DynamicPageTitle>
+                <f:heading>
+                    <Title text="{i18n>appTitle}" />
+                </f:heading>
+                <f:actions>
+                    <!-- Only offered when metrics are configured: a runtime switch can
+                         pause collection, not instrument the handlers. -->
+                    <Label text="{i18n>metricsLabel}" visible="{ui>/metricsEnabled}" labelFor="metricsSwitch" />
+                    <Switch id="metricsSwitch" state="{ui>/metricsCollecting}" change=".onToggleMetrics"
+                            visible="{ui>/metricsEnabled}" tooltip="{i18n>metricsTooltip}" />
+                    <Button icon="sap-icon://refresh" type="Transparent" tooltip="{i18n>refresh}" press=".onRefresh" />
+                </f:actions>
+            </f:DynamicPageTitle>
+        </f:title>
+
+        <f:content>
+            <IconTabBar id="tabs" expanded="true" selectedKey="{ui>/selectedTab}" select=".onTabSelect"
+                        applyContentPadding="false" stretchContentHeight="false"
+                        headerBackgroundDesign="Transparent" backgroundDesign="Transparent"
+                        class="fedTabs">
                 <items>
                     <IconTabFilter key="entities" text="{i18n>tabEntities}" icon="sap-icon://tree">
-                        <Toolbar>
-                            <SearchField width="18rem" search=".onSearch" placeholder="{i18n>searchPlaceholder}" />
-                            <ToolbarSpacer />
-                            <SegmentedButton selectedKey="{ui>/strategyFilter}" selectionChange=".onFilterStrategy">
-                                <items>
-                                    <SegmentedButtonItem key="all" text="{i18n>filterAll}" />
-                                    <SegmentedButtonItem key="delegate" text="{i18n>filterDelegate}" />
-                                    <SegmentedButtonItem key="replicate" text="{i18n>filterReplicate}" />
-                                </items>
-                            </SegmentedButton>
-                        </Toolbar>
+                        <!-- contextualWidth="Auto": column visibility follows the table's
+                             own width, not the screen's. In the begin column of a
+                             two-column layout the screen is wide but the table is narrow,
+                             so screen-based breakpoints popped every column in and made
+                             rows 47–89px tall. Now the narrow list is entity + strategy,
+                             and the wide one shows everything. -->
                         <Table id="entityTable" items="{/FederatedEntities}" mode="SingleSelectMaster"
-                               selectionChange=".onSelectionChange" growing="true" growingThreshold="50">
+                               selectionChange=".onSelectionChange" growing="true" growingThreshold="50"
+                               contextualWidth="Auto" class="fedCard">
+                            <headerToolbar>
+                                <OverflowToolbar>
+                                    <SearchField search=".onSearch" placeholder="{i18n>searchPlaceholder}">
+                                        <layoutData>
+                                            <OverflowToolbarLayoutData shrinkable="true" minWidth="10rem" maxWidth="22rem" />
+                                        </layoutData>
+                                    </SearchField>
+                                    <ToolbarSpacer />
+                                    <SegmentedButton selectedKey="{ui>/strategyFilter}" selectionChange=".onFilterStrategy">
+                                        <items>
+                                            <SegmentedButtonItem key="all" text="{i18n>filterAll}" />
+                                            <SegmentedButtonItem key="delegate" text="{i18n>filterDelegate}" />
+                                            <SegmentedButtonItem key="replicate" text="{i18n>filterReplicate}" />
+                                        </items>
+                                    </SegmentedButton>
+                                </OverflowToolbar>
+                            </headerToolbar>
                             <columns>
                                 <Column><Text text="{i18n>colEntity}" /></Column>
-                                <Column><Text text="{i18n>colStrategy}" /></Column>
-                                <Column minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>colSource}" /></Column>
-                                <Column minScreenWidth="Tablet" demandPopin="true"><Text text="{i18n>colTraits}" /></Column>
-                                <Column minScreenWidth="Desktop" demandPopin="true"><Text text="{i18n>colBackedBy}" /></Column>
+                                <!-- Two constraints meet here. Too wide and the entity name loses
+                                     out in the narrow begin column: 9rem took 144px of 289 and cut
+                                     CachedFlights, HotelBookings and Organizations. Too narrow and
+                                     "response cache" wraps: 7rem split it over two lines. -->
+                                <Column width="8rem"><Text text="{i18n>colStrategy}" /></Column>
+                                <Column minScreenWidth="44rem" demandPopin="false"><Text text="{i18n>colSource}" /></Column>
+                                <Column minScreenWidth="56rem" demandPopin="false" width="11rem"><Text text="{i18n>colTraits}" /></Column>
+                                <Column minScreenWidth="68rem" demandPopin="false"><Text text="{i18n>colBackedBy}" /></Column>
                             </columns>
                             <items>
                                 <ColumnListItem type="Navigation">
                                     <cells>
-                                        <VBox>
-                                            <Text text="{name}" class="sapMTextBold" />
-                                            <Text text="{entity}" class="sapUiTinyText fedWrap" />
+                                        <!-- One line each, ellipsised, full text on hover: a
+                                             break-anywhere wrap split FQNs mid-word. -->
+                                        <VBox renderType="Bare">
+                                            <Text text="{name}" wrapping="false" tooltip="{name}" class="sapMTextBold" />
+                                            <Text text="{entity}" wrapping="false" tooltip="{entity}" class="fedSubtle" />
                                         </VBox>
-                                        <VBox>
+                                        <VBox renderType="Bare">
                                             <ObjectStatus text="{strategy}" state="{= ${strategy} === 'replicate' ? 'Success' : 'Information' }" />
                                             <ObjectStatus text="{= ${path: 'cacheStrategy', targetType: 'any'} ? ${path: 'cacheStrategy', targetType: 'any'} + ' cache' : '' }"
                                                           visible="{= !!${path: 'cacheStrategy', targetType: 'any'} }" state="Warning" />
                                         </VBox>
-                                        <VBox>
-                                            <Text text="{sourceEntity}" />
-                                            <Text text="{sourceService}" class="sapUiTinyText fedWrap" />
+                                        <VBox renderType="Bare">
+                                            <Text text="{sourceEntity}" wrapping="false" />
+                                            <Text text="{sourceService}" wrapping="false" tooltip="{sourceService}" class="fedSubtle" />
                                         </VBox>
-                                        <HBox>
-                                            <ObjectStatus text="{i18n>traitWritable}" state="Warning" visible="{writable}" class="sapUiTinyMarginEnd" />
-                                            <ObjectStatus text="{i18n>traitScoped}" state="Information" visible="{scoped}" class="sapUiTinyMarginEnd" />
+                                        <HBox wrap="Wrap" class="fedTraits">
+                                            <ObjectStatus text="{i18n>traitWritable}" state="Warning" visible="{writable}" />
+                                            <ObjectStatus text="{i18n>traitScoped}" state="Information" visible="{scoped}" />
                                             <ObjectStatus text="{i18n>traitReadOnly}" state="None" visible="{= !${writable} }" />
                                         </HBox>
-                                        <Text text="{= ${pipeline} || '–' }" class="fedWrap" />
+                                        <Text text="{= ${pipeline} || '–' }" wrapping="false" tooltip="{pipeline}" />
                                     </cells>
                                 </ColumnListItem>
                             </items>
@@ -68,13 +100,13 @@
                                       visible="{= !${ui>/landscapeReady} }" class="sapUiSmallMarginBottom" />
                         <!-- The graph needs a parent with an explicit pixel height: given
                              only a CSS class it renders its toolbar over a 10px canvas. -->
-                        <VBox width="100%" height="800px">
+                        <VBox width="100%" height="780px" class="fedCard">
                             <graph:Graph id="landscapeGraph" orientation="LeftRight" enableWheelZoom="true"
                                          visible="{ui>/landscapeReady}" />
                         </VBox>
                     </IconTabFilter>
                 </items>
             </IconTabBar>
-        </content>
-    </Page>
+        </f:content>
+    </f:DynamicPage>
 </mvc:View>
