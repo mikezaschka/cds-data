@@ -418,16 +418,6 @@ function isPathOverridable(path) {
     return OVERRIDABLE_PATHS.includes(path)
 }
 
-/**
- * Whether a schedule/enabled hot-apply is needed after an overrides change.
- */
-function needsScheduleRestart(patch) {
-    if (!patch) return false
-    if ('schedule' in patch || 'enabled' in patch) return true
-    // clearing schedule via clearOverrides
-    return false
-}
-
 module.exports = {
     OVERRIDABLE_PATHS,
     OVERRIDABLE_TOP,
@@ -442,6 +432,5 @@ module.exports = {
     applyOverrides,
     buildConfigView,
     isPathOverridable,
-    needsScheduleRestart,
     safeClone,
 }
