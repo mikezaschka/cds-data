@@ -14,6 +14,7 @@ sap.ui.define([
     var SERVICE = "svc:";
     var ENTITY = "ent:";
     var REMOTE_GROUP = "remote";
+    var VIEW_GROUP = "svcgrp:";
 
     return Controller.extend("federation.console.controller.List", {
 
@@ -147,9 +148,11 @@ sap.ui.define([
 
         /**
          * The landscape: remote services on the left, consumption views on the
-         * right, one line per federated entity. Built from the same inventory
-         * the table shows, because /federation already carries sourceService,
-         * strategy and cacheStrategy.
+         * right grouped by the CAP service exposing them — the same grouping the
+         * Pipeline Console uses, which keeps an app with several services
+         * readable. Built from the same inventory the table shows, because
+         * /federation already carries service, sourceService, strategy and
+         * cacheStrategy.
          */
         _loadLandscape: function () {
             var graph = this.byId("landscapeGraph");
@@ -170,6 +173,10 @@ sap.ui.define([
                 });
         },
 
+        _text: function (key) {
+            return this.getOwnerComponent().getModel("i18n").getResourceBundle().getText(key);
+        },
+
         _renderLandscape: function (graph, rows) {
             // destroy, not removeAll: the control keeps the detached aggregation
             // content alive otherwise, and a refresh then doubles every node.
@@ -179,21 +186,29 @@ sap.ui.define([
 
             if (!rows.length) {
                 this.ui().setProperty("/landscapeReady", false);
-            this._syncMetricsState();
+                this._syncMetricsState();
                 return;
             }
 
             // Every node naming a group needs that group to exist, or the whole
             // graph refuses to render with "Inconsistent model: Node belonging
             // to a nonexistent group" — and paints nothing but its toolbar.
-            graph.addGroup(new Group({ key: REMOTE_GROUP, title: "Remote services" }));
+            graph.addGroup(new Group({ key: REMOTE_GROUP, title: this._text("graphRemoteGroup") }));
 
             var services = {};
+            var exposing = {};
             rows.forEach(function (row) {
                 if (row.sourceService) services[row.sourceService] = true;
+                if (row.service) exposing[row.service] = true;
             });
 
-            Object.keys(services).forEach(function (name) {
+            // One group per exposing service, titled with its full name: two
+            // services can hold views of the same name.
+            Object.keys(exposing).sort().forEach(function (name) {
+                graph.addGroup(new Group({ key: VIEW_GROUP + name, title: name }));
+            });
+
+            Object.keys(services).sort().forEach(function (name) {
                 graph.addNode(new Node({
                     key: SERVICE + name,
                     title: name,
@@ -207,6 +222,7 @@ sap.ui.define([
                     key: ENTITY + row.entity,
                     title: row.name,
                     shape: "Box",
+                    group: row.service ? VIEW_GROUP + row.service : undefined,
                     // A delegate is live, a replica is a local table: the status
                     // colour carries that distinction at a glance.
                     status: row.strategy === "replicate" ? "Success" : "Standard",
