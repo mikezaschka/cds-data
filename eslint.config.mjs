@@ -37,6 +37,15 @@ export default [
         },
     },
     {
+        // Command-line scripts run with `node`, outside CAP: the terminal is their
+        // output, so console is correct here. The no-console rule is for plugin
+        // and engine code, which logs through cds.log.
+        files: ['scripts/**', '**/scripts/**'],
+        rules: {
+            'no-console': 'off',
+        },
+    },
+    {
         // Vitest exposes its API as globals (`globals: true` in vitest.config).
         // Declare them so lint doesn't flag `vi` and friends as undefined.
         files: ['**/test/**/*.js', '**/*.test.js'],
