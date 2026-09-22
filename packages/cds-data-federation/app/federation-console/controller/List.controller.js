@@ -11,9 +11,9 @@ sap.ui.define([
     "use strict";
 
     /** Node keys need a stable prefix per kind so services and views cannot collide. */
-    var SERVICE = "svc:";
+    var SOURCE = "src:";
     var ENTITY = "ent:";
-    var REMOTE_GROUP = "remote";
+    var REMOTE_GROUP = "remotegrp:";
     var VIEW_GROUP = "svcgrp:";
 
     return Controller.extend("federation.console.controller.List", {
@@ -147,12 +147,15 @@ sap.ui.define([
         },
 
         /**
-         * The landscape: remote services on the left, consumption views on the
-         * right grouped by the CAP service exposing them — the same grouping the
-         * Pipeline Console uses, which keeps an app with several services
-         * readable. Built from the same inventory the table shows, because
-         * /federation already carries service, sourceService, strategy and
-         * cacheStrategy.
+         * The landscape: a group per service on both sides — remote services on
+         * the left holding the entities each one exposes, consumption views on
+         * the right under the CAP service exposing them, the way the Pipeline
+         * Console groups its own landscape. Drawing the remote entities rather
+         * than one node per remote service says which entity backs which view,
+         * and keeps every view projecting on the same service from hanging off
+         * a single node. Built from the same inventory the table shows, because
+         * /federation already carries service, sourceService, sourceEntity,
+         * strategy and cacheStrategy.
          */
         _loadLandscape: function () {
             var graph = this.byId("landscapeGraph");
@@ -173,10 +176,6 @@ sap.ui.define([
                 });
         },
 
-        _text: function (key) {
-            return this.getOwnerComponent().getModel("i18n").getResourceBundle().getText(key);
-        },
-
         _renderLandscape: function (graph, rows) {
             // destroy, not removeAll: the control keeps the detached aggregation
             // content alive otherwise, and a refresh then doubles every node.
@@ -193,28 +192,40 @@ sap.ui.define([
             // Every node naming a group needs that group to exist, or the whole
             // graph refuses to render with "Inconsistent model: Node belonging
             // to a nonexistent group" — and paints nothing but its toolbar.
-            graph.addGroup(new Group({ key: REMOTE_GROUP, title: this._text("graphRemoteGroup") }));
-
-            var services = {};
+            var remotes = {};
             var exposing = {};
             rows.forEach(function (row) {
-                if (row.sourceService) services[row.sourceService] = true;
+                if (row.sourceService) remotes[row.sourceService] = true;
                 if (row.service) exposing[row.service] = true;
             });
 
+            Object.keys(remotes).sort().forEach(function (name) {
+                graph.addGroup(new Group({ key: REMOTE_GROUP + name, title: name }));
+            });
             // One group per exposing service, titled with its full name: two
             // services can hold views of the same name.
             Object.keys(exposing).sort().forEach(function (name) {
                 graph.addGroup(new Group({ key: VIEW_GROUP + name, title: name }));
             });
 
-            Object.keys(services).sort().forEach(function (name) {
-                graph.addNode(new Node({
-                    key: SERVICE + name,
-                    title: name,
-                    group: REMOTE_GROUP,
-                    shape: "Box",
-                }));
+            // Several views can project on one remote entity, so add each node
+            // once and let the lines carry the fan-out.
+            var drawn = {};
+            rows.forEach(function (row) {
+                if (!row.sourceService) return;
+                // A source without a CDS model (a REST target given through
+                // options.source) has no entity to name; stand in for it with
+                // the service, so the view still has something to link to.
+                var key = SOURCE + row.sourceService + ":" + (row.sourceEntity || "");
+                if (!drawn[key]) {
+                    drawn[key] = true;
+                    graph.addNode(new Node({
+                        key: key,
+                        title: row.sourceEntity || row.sourceService,
+                        group: REMOTE_GROUP + row.sourceService,
+                        shape: "Box",
+                    }));
+                }
             });
 
             rows.forEach(function (row) {
@@ -232,7 +243,10 @@ sap.ui.define([
                     ],
                 }));
                 if (row.sourceService) {
-                    graph.addLine(new Line({ from: SERVICE + row.sourceService, to: ENTITY + row.entity }));
+                    graph.addLine(new Line({
+                        from: SOURCE + row.sourceService + ":" + (row.sourceEntity || ""),
+                        to: ENTITY + row.entity,
+                    }));
                 }
             });
 
